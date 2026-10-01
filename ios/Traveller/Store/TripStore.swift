@@ -178,7 +178,7 @@ final class TripStore {
             }
             .map { Schengen.Stay(id: $0.id, start: $0.startDate, end: $0.endDate, label: $0.name) }
         let manual = (manualStays[memberID] ?? []).map {
-            Schengen.Stay(id: $0.id, start: $0.start, end: $0.end, label: $0.note.isEmpty ? "Önceki ziyaret" : $0.note)
+            Schengen.Stay(id: $0.id, start: $0.start, end: $0.end, label: $0.note.isEmpty ? String(localized: "Önceki ziyaret") : $0.note)
         }
         return fromTrips + manual
     }
@@ -222,6 +222,22 @@ final class TripStore {
                 trip.members[index].iban = profile.iban
             }
         }
+    }
+
+    // MARK: Emergency
+
+    private static let emergencyKey = "traveller.emergency"
+
+    /// Kan grubu, alerjiler, ilaçlar ve acil kişi. Yalnızca bu cihazda; ekiple paylaşılmaz.
+    private(set) var emergency: EmergencyInfo = {
+        guard let data = UserDefaults.standard.data(forKey: TripStore.emergencyKey),
+              let decoded = try? JSONDecoder().decode(EmergencyInfo.self, from: data) else { return EmergencyInfo() }
+        return decoded
+    }()
+
+    func saveEmergency(_ info: EmergencyInfo) {
+        emergency = info
+        if let data = try? JSONEncoder().encode(info) { UserDefaults.standard.set(data, forKey: Self.emergencyKey) }
     }
 
     // MARK: Onboarding

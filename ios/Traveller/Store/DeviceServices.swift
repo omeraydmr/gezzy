@@ -151,7 +151,7 @@ final class OfflineMapStore {
     func save(_ trip: Trip) async {
         let days = trip.days().filter { day in trip.stops(on: day).contains { $0.coordinate != nil } }
         guard !days.isEmpty else {
-            states[trip.id] = .failed("Konumu olan durak yok.")
+            states[trip.id] = .failed(String(localized: "Konumu olan durak yok."))
             return
         }
         let folder = directory.appendingPathComponent(trip.id.uuidString, isDirectory: true)

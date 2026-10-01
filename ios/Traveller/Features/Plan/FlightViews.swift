@@ -28,7 +28,7 @@ struct FlightsCard: View {
             }
 
             if flights.isEmpty {
-                EmptyHint(symbol: "airplane.departure", text: "Uçuşunu elle yaz ya da e-bilet, ekran görüntüsü veya Wallet kartından içe aktar.")
+                EmptyHint(symbol: "airplane.departure", text: String(localized: "Uçuşunu elle yaz ya da e-bilet, ekran görüntüsü veya Wallet kartından içe aktar."))
                 HStack(spacing: 10) {
                     Button {
                         isAdding = true
@@ -84,7 +84,7 @@ struct FlightRow: View {
                 Text("\(AppFormat.dayPill(flight.departure)) · \(AppFormat.time(flight.departure, timeZone: flight.departureTimeZone)) → \(AppFormat.time(flight.arrival, timeZone: flight.arrivalTimeZone))")
                     .font(.tBody)
                     .foregroundStyle(Color.ink2)
-                Text([flight.flightNumber, flight.seat.map { "koltuk \($0)" }, flight.gate.map { "kapı \($0)" }]
+                Text([flight.flightNumber, flight.seat.map { String(localized: "koltuk \($0)") }, flight.gate.map { String(localized: "kapı \($0)") }]
                     .compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · "))
                     .font(.caption)
                     .foregroundStyle(Color.ink3)
@@ -193,7 +193,7 @@ struct FlightSheet: View {
                     } else {
                         Text(zoneNote(arrivalZone, code: to, city: toAirport?.city ?? toCity)
                              + (arrivalInstant > departureInstant
-                                ? " Uçuş süresi \(AppFormat.duration(minutes: Int(arrivalInstant.timeIntervalSince(departureInstant) / 60)))."
+                                ? String(localized: " Uçuş süresi \(AppFormat.duration(minutes: Int(arrivalInstant.timeIntervalSince(departureInstant) / 60))).")
                                 : ""))
                     }
                 }
@@ -216,14 +216,14 @@ struct FlightSheet: View {
                     }
                 }
             }
-            .navigationTitle(editing == nil ? "Uçuş ekle" : "Uçuş")
+            .navigationTitle(editing == nil ? String(localized: "Uçuş ekle") : String(localized: "Uçuş"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Vazgeç") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(editing == nil ? "Ekle" : "Kaydet", action: save)
+                    Button(editing == nil ? String(localized: "Ekle") : String(localized: "Kaydet"), action: save)
                         .disabled(!isValid)
                 }
             }
@@ -274,12 +274,12 @@ struct FlightSheet: View {
 
     private func zoneNote(_ zone: String?, code: String, city: String) -> String {
         if zone != nil {
-            return city.isEmpty ? "Havalimanının yerel saatiyle." : "\(city) saatiyle."
+            return city.isEmpty ? String(localized: "Havalimanının yerel saatiyle.") : String(localized: "\(city) saatiyle.")
         }
         if code.count < 3 {
-            return "Saat, havalimanının yerel saatiyle girilir."
+            return String(localized: "Saat, havalimanının yerel saatiyle girilir.")
         }
-        return "\(code) tanınmadı; saat bu cihazın saatiyle kaydedilir."
+        return String(localized: "\(code) tanınmadı; saat bu cihazın saatiyle kaydedilir.")
     }
 
     private func save() {

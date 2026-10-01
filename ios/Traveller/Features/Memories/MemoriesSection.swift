@@ -18,12 +18,13 @@ struct MemoriesSection: View {
     private var library: PhotoLibrary { .shared }
 
     var body: some View {
-        ModuleCard("Anılar", symbol: "photo.on.rectangle.angled") {
+        ModuleCard(String(localized: "Anılar"), symbol: "photo.on.rectangle.angled") {
+            TripSummaryCard(trip: trip)
             if !library.canRead {
                 permissionPrompt
             } else if let moments {
                 if moments.isEmpty {
-                    EmptyHint(symbol: "photo", text: "Seyahat tarihlerinde çekilmiş fotoğraf bulunamadı.").tray()
+                    EmptyHint(symbol: "photo", text: String(localized: "Seyahat tarihlerinde çekilmiş fotoğraf bulunamadı.")).tray()
                 } else {
                     content(moments)
                 }
@@ -113,7 +114,7 @@ struct MemoriesSection: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 1) {
                         Text(moment.stopName ?? timeRange(moment)).font(.tBodyStrong).foregroundStyle(Color.ink)
-                        Text(moment.stopName == nil ? "\(moment.count) fotoğraf" : "\(timeRange(moment)) · \(moment.count) fotoğraf")
+                        Text(moment.stopName == nil ? String(localized: "\(moment.count) fotoğraf") : String(localized: "\(timeRange(moment)) · \(moment.count) fotoğraf"))
                             .font(.caption)
                             .foregroundStyle(Color.ink3)
                     }
@@ -197,14 +198,14 @@ struct MemoriesSection: View {
     // MARK: Metinler
 
     private func headline(_ moments: [PhotoClusterer.Moment], biggest: PhotoClusterer.Moment?) -> String {
-        var text = "\(photoCount) fotoğraf, \(moments.count) an."
-        if let name = biggest?.stopName { text += " En çok fotoğraf: \(name)." }
+        var text = String(localized: "\(photoCount) fotoğraf, \(moments.count) an.")
+        if let name = biggest?.stopName { text += String(localized: " En çok fotoğraf: \(name).") }
         return text
     }
 
     private func dayTitle(_ day: Date) -> String {
         let number = (trip.days().firstIndex { Calendar.current.isDate($0, inSameDayAs: day) } ?? 0) + 1
-        return "\(number). gün · \(AppFormat.dayPill(day))"
+        return String(localized: "\(number). gün · \(AppFormat.dayPill(day))")
     }
 
     private func timeRange(_ moment: PhotoClusterer.Moment) -> String {
@@ -272,10 +273,10 @@ struct PostcardView: View {
 
             HStack(alignment: .center) {
                 VStack(alignment: .leading, spacing: 8) {
-                    stat("\(trip.days().count)", "gün")
-                    stat("\(photoCount)", "fotoğraf")
+                    stat("\(trip.days().count)", String(localized: "gün"))
+                    stat("\(photoCount)", String(localized: "fotoğraf"))
                     stat("\(momentCount)", "an")
-                    stat("\(trip.stops.count)", "durak")
+                    stat("\(trip.stops.count)", String(localized: "durak"))
                 }
                 Spacer()
                 StampImprint(subtitle: stamp, scale: 0.8)

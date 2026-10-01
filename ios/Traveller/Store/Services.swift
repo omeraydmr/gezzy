@@ -64,8 +64,8 @@ enum ServiceError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .unsupportedCurrency: "Bu para birimi için güncel kur yok; kuru elle girebilirsin."
-        case .badResponse: "Sunucuya ulaşılamadı."
+        case .unsupportedCurrency: String(localized: "Bu para birimi için güncel kur yok; kuru elle girebilirsin.")
+        case .badResponse: String(localized: "Sunucuya ulaşılamadı.")
         }
     }
 }

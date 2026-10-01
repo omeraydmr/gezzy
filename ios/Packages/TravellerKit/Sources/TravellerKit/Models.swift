@@ -401,6 +401,10 @@ public struct Trip: Codable, Hashable, Identifiable, Sendable {
     public var visaApplications: [VisaApplication]?
     /// Belge kasası.
     public var documents: [TravelDocument]?
+    /// Gidiş öncesi yapılacaklar (harç, roaming, sigorta…); eski kayıtlarda yok.
+    public var checklist: [ChecklistItem]?
+    /// Tax-free (KDV iadesi) kayıtları; eski kayıtlarda yok.
+    public var taxRefunds: [TaxRefund]?
 
     public init(id: UUID = UUID(), name: String, destination: Destination, startDate: Date, endDate: Date,
                 status: TripStatus = .planned, currency: String = "EUR", coverSeed: Int = 0, coverPhoto: String? = nil,
@@ -457,6 +461,8 @@ public struct Trip: Codable, Hashable, Identifiable, Sendable {
     public var lodgingList: [Lodging] { (lodgings ?? []).sorted { $0.checkIn < $1.checkIn } }
     public var ideaList: [Stop] { ideas ?? [] }
     public var documentList: [TravelDocument] { (documents ?? []).sorted { $0.addedAt > $1.addedAt } }
+    public var checklistItems: [ChecklistItem] { checklist ?? [] }
+    public var taxRefundList: [TaxRefund] { (taxRefunds ?? []).sorted { $0.purchaseDate < $1.purchaseDate } }
 
     public func visaApplication(for memberID: UUID) -> VisaApplication? {
         visaApplications?.first { $0.memberID == memberID }
@@ -585,6 +591,8 @@ public struct Trip: Codable, Hashable, Identifiable, Sendable {
         ids += (visaApplications ?? []).map(\.id)
         ids += (documents ?? []).map(\.id)
         ids += flights.map(\.id)
+        ids += (checklist ?? []).map(\.id)
+        ids += (taxRefunds ?? []).map(\.id)
         return Set(ids)
     }
 
@@ -624,6 +632,10 @@ public struct Trip: Codable, Hashable, Identifiable, Sendable {
         result.visaApplications = applications.isEmpty ? nil : applications
         let documents = union(result.documents ?? [], older.documents ?? [])
         result.documents = documents.isEmpty ? nil : documents
+        let checklist = union(result.checklist ?? [], older.checklist ?? [])
+        result.checklist = checklist.isEmpty ? nil : checklist
+        let refunds = union(result.taxRefunds ?? [], older.taxRefunds ?? [])
+        result.taxRefunds = refunds.isEmpty ? nil : refunds
         result.tombstones = deleted.isEmpty ? nil : deleted
         return result
     }

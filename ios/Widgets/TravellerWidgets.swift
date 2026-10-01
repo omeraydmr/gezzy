@@ -49,7 +49,7 @@ struct FlightLiveActivity: Widget {
                 }
                 DynamicIslandExpandedRegion(.bottom) {
                     HStack {
-                        Label(context.state.gate.map { "Kapı \($0)" } ?? "Kapı —", systemImage: "door.left.hand.open")
+                        Label(context.state.gate.map { String(localized: "Kapı \($0)") } ?? String(localized: "Kapı —"), systemImage: "door.left.hand.open")
                         Spacer()
                         if context.state.isCanceled {
                             Text("İptal").foregroundStyle(.red)
@@ -128,9 +128,9 @@ struct LockScreenTicket: View {
                 }
             }
             HStack(spacing: 8) {
-                if let terminal = state.terminal { chip("Terminal", terminal) }
-                chip("Kapı", state.gate ?? "—")
-                chip("Koltuk", state.seat ?? "—")
+                if let terminal = state.terminal { chip(String(localized: "Terminal"), terminal) }
+                chip(String(localized: "Kapı"), state.gate ?? "—")
+                chip(String(localized: "Koltuk"), state.seat ?? "—")
                 Spacer()
                 if !state.isCanceled {
                     VStack(alignment: .trailing, spacing: 0) {

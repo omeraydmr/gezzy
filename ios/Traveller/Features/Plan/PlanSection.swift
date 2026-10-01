@@ -139,22 +139,22 @@ struct PlanSection: View {
                     .font(.tBodyStrong)
                     .foregroundStyle(Color.ink)
                 HStack(spacing: 6) {
-                    StatChip(symbol: "mappin", text: "\(stops.count) durak")
+                    StatChip(symbol: "mappin", text: String(localized: "\(stops.count) durak"))
                     if totalMeters > 0 {
                         StatChip(symbol: "point.topleft.down.to.point.bottomright.curvepath",
                                  text: AppFormat.distance(meters: totalMeters))
-                        StatChip(symbol: "figure.walk", text: "\(Geo.walkingMinutes(meters: totalMeters)) dk")
+                        StatChip(symbol: "figure.walk", text: String(localized: "\(Geo.walkingMinutes(meters: totalMeters)) dk"))
                     }
                     let warnings = plan.warningCount
                     if warnings > 0 {
-                        StatChip(symbol: "clock.badge.exclamationmark", text: "\(warnings) saat uyarısı", accent: .orange)
+                        StatChip(symbol: "clock.badge.exclamationmark", text: String(localized: "\(warnings) saat uyarısı"), accent: .orange)
                     }
                 }
             }
             .padding(.bottom, 14)
 
             if stops.isEmpty {
-                EmptyHint(symbol: "mappin.and.ellipse", text: "Bu gün için henüz durak yok.")
+                EmptyHint(symbol: "mappin.and.ellipse", text: String(localized: "Bu gün için henüz durak yok."))
             }
 
             if let lodging = trip.lodging(forMorningOf: plan.day), let first = stops.first {
@@ -221,7 +221,7 @@ struct PlanSection: View {
 
     private func dayTitle(_ plan: DayPlan) -> String {
         let number = (plan.days.firstIndex(of: plan.day) ?? 0) + 1
-        return "\(number). gün · \(AppFormat.dayPill(plan.day)) · \(trip.destination.city)"
+        return String(localized: "\(number). gün · \(AppFormat.dayPill(plan.day)) · \(trip.destination.city)")
     }
 
     @ViewBuilder
@@ -465,8 +465,8 @@ struct StopRow: View {
 
     private func fixTitle(_ fix: Trip.HoursFix) -> String {
         switch fix {
-        case let .setStart(minutes): "Saati \(AppFormat.time(minutes: minutes)) yap"
-        case let .moveTo(day): "Taşı: \(AppFormat.dayPill(day))"
+        case let .setStart(minutes): String(localized: "Saati \(AppFormat.time(minutes: minutes)) yap")
+        case let .moveTo(day): String(localized: "Taşı: \(AppFormat.dayPill(day))")
         }
     }
 
@@ -523,7 +523,7 @@ struct HopRow: View {
                 }
             }
         } else if let estimate {
-            Label(estimate > 30 ? "Toplu taşıma önerilir · \(estimate) dk yürüyüş" : "\(estimate) dk",
+            Label(estimate > 30 ? String(localized: "Toplu taşıma önerilir · \(estimate) dk yürüyüş") : String(localized: "\(estimate) dk"),
                   systemImage: estimate > 30 ? "tram.fill" : "figure.walk")
         } else {
             Label("Geçiş", systemImage: "arrow.down")
@@ -588,11 +588,11 @@ struct HoursLabel: View {
     private var text: String {
         let clock = OpeningHours.clock
         switch status {
-        case .closedAllDay: return "O gün kapalı"
-        case let .alreadyClosed(at): return "Bu saatte kapalı · kapanış \(clock(at))"
-        case let .opensLater(at): return "Henüz kapalı · açılış \(clock(at))"
-        case let .closesDuringVisit(at): return "Kapanış \(clock(at)) · süre yetmeyebilir"
-        case let .open(until): return "Açık · kapanış \(clock(until))"
+        case .closedAllDay: return String(localized: "O gün kapalı")
+        case let .alreadyClosed(at): return String(localized: "Bu saatte kapalı · kapanış \(clock(at))")
+        case let .opensLater(at): return String(localized: "Henüz kapalı · açılış \(clock(at))")
+        case let .closesDuringVisit(at): return String(localized: "Kapanış \(clock(at)) · süre yetmeyebilir")
+        case let .open(until): return String(localized: "Açık · kapanış \(clock(until))")
         case let .openToday(intervals):
             return intervals.map { "\(clock($0.start))–\(clock($0.end))" }.joined(separator: ", ")
         }
@@ -846,7 +846,7 @@ struct OfflineMapRow: View {
                     .foregroundStyle(Color.ink)
                     .accessibilityLabel("Kayıtlı haritayı göster")
                 }
-                Button(isSaved(state) ? "Güncelle" : "Kaydet") {
+                Button(isSaved(state) ? String(localized: "Güncelle") : String(localized: "Kaydet")) {
                     Task { await store.save(trip) }
                 }
                 .font(.system(.footnote, weight: .semibold))
@@ -887,9 +887,9 @@ struct OfflineMapRow: View {
 
     private func text(_ state: OfflineMapStore.State) -> String {
         switch state {
-        case .idle: "Haritaları internetsiz kullanım için kaydet"
-        case let .saving(done, total): "Kaydediliyor · \(done + 1)/\(total) gün"
-        case let .saved(date): "Çevrimdışı kayıtlı · \(AppFormat.shortDate(date)) \(AppFormat.time(date))"
+        case .idle: String(localized: "Haritaları internetsiz kullanım için kaydet")
+        case let .saving(done, total): String(localized: "Kaydediliyor · \(done + 1)/\(total) gün")
+        case let .saved(date): String(localized: "Çevrimdışı kayıtlı · \(AppFormat.shortDate(date)) \(AppFormat.time(date))")
         case let .failed(message): message
         }
     }

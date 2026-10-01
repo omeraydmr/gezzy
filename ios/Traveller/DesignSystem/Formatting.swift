@@ -2,7 +2,11 @@ import Foundation
 import TravellerKit
 
 enum AppFormat {
-    static let locale = Locale(identifier: "tr_TR")
+    /// Arayüz dili Türkçeyse Türkçe biçim; değilse İngilizce (bölge cihazdan).
+    static let locale: Locale = {
+        if Bundle.main.preferredLocalizations.first == "tr" { return Locale(identifier: "tr_TR") }
+        return Locale(identifier: "en_" + (Locale.current.region?.identifier ?? "US"))
+    }()
 
     /// Kuruş/cent → "€2.900" ya da "€12,50".
     static func money(_ minor: Int, _ currency: String) -> String {
@@ -59,8 +63,9 @@ enum AppFormat {
     /// "12 – 17 Eki" veya "28 Eki – 2 Kas".
     static func dateRange(_ start: Date, _ end: Date, calendar: Calendar = .current) -> String {
         if calendar.isDate(start, equalTo: end, toGranularity: .month) {
-            let day = start.formatted(.dateTime.day().locale(locale))
-            return "\(day) – \(shortDate(end))"
+            // Ay adının yeri dile göre değişir: "12 – 17 Eki" / "Oct 12 – 17".
+            let interval = start..<max(end, start.addingTimeInterval(1))
+            return interval.formatted(.interval.day().month(.abbreviated).locale(locale))
         }
         return "\(shortDate(start)) – \(shortDate(end))"
     }
@@ -86,9 +91,9 @@ enum AppFormat {
         let h = minutes / 60
         let m = minutes % 60
         switch (h, m) {
-        case (0, _): return "\(m) dk"
-        case (_, 0): return "\(h) sa"
-        default: return "\(h) sa \(m) dk"
+        case (0, _): return String(localized: "\(m) dk")
+        case (_, 0): return String(localized: "\(h) sa")
+        default: return String(localized: "\(h) sa \(m) dk")
         }
     }
 
@@ -99,11 +104,11 @@ enum AppFormat {
 
     static func countdown(_ countdown: Countdown) -> String {
         switch countdown {
-        case .today: "Bugün"
-        case let .days(n): n == 1 ? "Yarın" : "\(n) gün"
-        case let .months(n): "\(n) ay"
-        case let .ongoing(day, total): "Gün \(day)/\(total)"
-        case .past: "Bitti"
+        case .today: String(localized: "Bugün")
+        case let .days(n): n == 1 ? String(localized: "Yarın") : String(localized: "\(n) gün")
+        case let .months(n): String(localized: "\(n) ay")
+        case let .ongoing(day, total): String(localized: "Gün \(day)/\(total)")
+        case .past: String(localized: "Bitti")
         }
     }
 }
@@ -118,7 +123,7 @@ enum Countries {
     }
 
     static func name(_ code: String) -> String {
-        if code.uppercased() == "XK" { return "Kosova" }
+        if code.uppercased() == "XK" { return String(localized: "Kosova") }
         return AppFormat.locale.localizedString(forRegionCode: code) ?? code
     }
 

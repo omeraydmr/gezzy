@@ -86,6 +86,30 @@ public enum NotificationPlanner {
             }
         }
 
+        // Gidiş öncesi listesi: son günü gelen, yapılmamış maddeler (aynı gün olanlar tek bildirimde).
+        var dueGroups: [Date: [ChecklistItem]] = [:]
+        for item in trip.checklistItems where !item.isDone {
+            if let due = DepartureChecklist.dueDate(of: item, in: trip, calendar: calendar) { dueGroups[due, default: []].append(item) }
+        }
+        for (due, items) in dueGroups {
+            guard let morning = at(hour: 9, minute: 0, on: due, calendar) else { continue }
+            let key = Int(due.timeIntervalSince1970)
+            let title = items.count == 1 ? "Bugün: \(items[0].title)" : "Gidiş öncesi \(items.count) iş bugün"
+            let body = items.count == 1 ? (items[0].note.isEmpty ? trip.name : items[0].note)
+                                        : items.map(\.title).joined(separator: " · ")
+            result.append(PlannedNotification(id: "\(prefix)-todo-\(key)", date: morning, title: title, body: body,
+                                              link: TripLink(tripID: trip.id, section: "packing")))
+        }
+
+        // Tax-free: dönüş günü sabahı, gümrükte onaylatılmamış form varsa.
+        let pendingForms = trip.taxRefundList.filter { $0.status == .formReceived }.count
+        if pendingForms > 0, let lastDay = days.last, let morning = at(hour: 8, minute: 0, on: lastDay, calendar) {
+            result.append(PlannedNotification(id: "\(prefix)-taxfree", date: morning,
+                                              title: "Tax-free formlarını onaylat",
+                                              body: "\(pendingForms) form bekliyor; havalimanında check-in'den önce gümrüğe/kiosk'a uğra.",
+                                              link: TripLink(tripID: trip.id, section: "money")))
+        }
+
         // Her sabah günün planı.
         for (index, day) in days.enumerated() {
             let stops = trip.stops(on: day, calendar: calendar)

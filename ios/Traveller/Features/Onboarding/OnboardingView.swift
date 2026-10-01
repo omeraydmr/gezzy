@@ -148,16 +148,16 @@ struct OnboardingView: View {
                     .foregroundStyle(Color.ink2)
             }
             VStack(spacing: 12) {
-                featureRow("map.fill", .green, "Plan ve harita",
-                           "Günlere durak ekle; rota açılış saatlerine ve en kısa yürüyüşe göre dizilsin, harita internetsiz de açılsın.")
-                featureRow("airplane", .blue, "Uçuş ve konaklama",
-                           "Uçuşu elle yaz ya da e-bilet, ekran görüntüsü veya Wallet kartından içe aktar.")
-                featureRow("chart.pie.fill", .orange, "Bütçe ve hesaplaşma",
-                           "Masrafları böl, makbuzu okut; kimin kime ne borçlu olduğu tek dokunuşta.")
-                featureRow("person.text.rectangle.fill", .purple, "Vize ve belgeler",
-                           "Pasaportuna göre vize durumu, Schengen 90/180 sayacı, belge kasası.")
-                featureRow("person.2.fill", .green, "Ekip",
-                           "Seyahati iCloud ile paylaş; herkes aynı planı anında görsün.")
+                featureRow("map.fill", .green, String(localized: "Plan ve harita"),
+                           String(localized: "Günlere durak ekle; rota açılış saatlerine ve en kısa yürüyüşe göre dizilsin, harita internetsiz de açılsın."))
+                featureRow("airplane", .blue, String(localized: "Uçuş ve konaklama"),
+                           String(localized: "Uçuşu elle yaz ya da e-bilet, ekran görüntüsü veya Wallet kartından içe aktar."))
+                featureRow("chart.pie.fill", .orange, String(localized: "Bütçe ve hesaplaşma"),
+                           String(localized: "Masrafları böl, makbuzu okut; kimin kime ne borçlu olduğu tek dokunuşta."))
+                featureRow("person.text.rectangle.fill", .purple, String(localized: "Vize ve belgeler"),
+                           String(localized: "Pasaportuna göre vize durumu, Schengen 90/180 sayacı, belge kasası."))
+                featureRow("person.2.fill", .green, String(localized: "Ekip"),
+                           String(localized: "Seyahati iCloud ile paylaş; herkes aynı planı anında görsün."))
             }
         }
     }
@@ -182,8 +182,8 @@ struct OnboardingView: View {
 
     private var profileStep: some View {
         VStack(alignment: .leading, spacing: 20) {
-            stepTitle("Profilini oluştur",
-                      "Ekibin seni bu adla görür. Ayrı bir şifre yok: hesabın bu profil ve cihazının iCloud'u.")
+            stepTitle(String(localized: "Profilini oluştur"),
+                      String(localized: "Ekibin seni bu adla görür. Ayrı bir şifre yok: hesabın bu profil ve cihazının iCloud'u."))
 
             HStack(spacing: 16) {
                 AvatarView(member: previewMember, size: 64)
@@ -263,19 +263,19 @@ struct OnboardingView: View {
 
     private var survey: some View {
         VStack(alignment: .leading, spacing: 22) {
-            stepTitle("Nasıl seyahat ediyorsun?", "Üç kısa soru; uygulamayı sana göre açarız. Cevaplar cihazında kalır.")
+            stepTitle(String(localized: "Nasıl seyahat ediyorsun?"), String(localized: "Üç kısa soru; uygulamayı sana göre açarız. Cevaplar cihazında kalır."))
 
-            question("Genelde kiminle?") {
+            question(String(localized: "Genelde kiminle?")) {
                 chips(TravelPreferences.Companion.allCases, selected: { preferences.companion == $0 }, title: companionTitle) {
                     preferences.companion = preferences.companion == $0 ? nil : $0
                 }
             }
-            question("Yılda kaç kez yurt dışına çıkıyorsun?") {
+            question(String(localized: "Yılda kaç kez yurt dışına çıkıyorsun?")) {
                 chips(TravelPreferences.Frequency.allCases, selected: { preferences.frequency == $0 }, title: frequencyTitle) {
                     preferences.frequency = preferences.frequency == $0 ? nil : $0
                 }
             }
-            question("En çok neyde yardım istersin?", note: "Birden fazla seçebilirsin; ilk seçtiğin, seyahat açılınca ilk gelir.") {
+            question(String(localized: "En çok neyde yardım istersin?"), note: String(localized: "Birden fazla seçebilirsin; ilk seçtiğin, seyahat açılınca ilk gelir.")) {
                 chips(TravelPreferences.Interest.allCases, selected: { preferences.interests.contains($0) }, title: interestTitle) {
                     preferences.toggle($0)
                 }
@@ -314,9 +314,9 @@ struct OnboardingView: View {
 
     private func companionTitle(_ value: TravelPreferences.Companion) -> String {
         switch value {
-        case .solo: "Yalnız"
+        case .solo: String(localized: "Yalnız")
         case .partner: "Partnerimle"
-        case .friends: "Arkadaşlarla"
+        case .friends: String(localized: "Arkadaşlarla")
         case .family: "Ailemle"
         }
     }
@@ -325,17 +325,17 @@ struct OnboardingView: View {
         switch value {
         case .once: "1 kez ya da daha az"
         case .fewTimes: "2–3 kez"
-        case .often: "4 ve üzeri"
+        case .often: String(localized: "4 ve üzeri")
         }
     }
 
     private func interestTitle(_ value: TravelPreferences.Interest) -> String {
         switch value {
         case .planning: "Rota ve plan"
-        case .money: "Bütçe ve masraf"
-        case .visa: "Vize ve belgeler"
-        case .packing: "Valiz"
-        case .memories: "Anılar"
+        case .money: String(localized: "Bütçe ve masraf")
+        case .visa: String(localized: "Vize ve belgeler")
+        case .packing: String(localized: "Valiz")
+        case .memories: String(localized: "Anılar")
         }
     }
 
@@ -343,7 +343,7 @@ struct OnboardingView: View {
 
     private var cloud: some View {
         VStack(alignment: .leading, spacing: 20) {
-            stepTitle("iCloud ile bağlan", "Seyahatlerin cihazların arasında eşitlenir ve ekibini davet edebilirsin. Veriler Apple'ın iCloud'unda, senin hesabında durur; ayrı bir sunucumuz yok.")
+            stepTitle(String(localized: "iCloud ile bağlan"), String(localized: "Seyahatlerin cihazların arasında eşitlenir ve ekibini davet edebilirsin. Veriler Apple'ın iCloud'unda, senin hesabında durur; ayrı bir sunucumuz yok."))
 
             HStack(spacing: 14) {
                 Image(systemName: cloudSymbol)
@@ -382,8 +382,8 @@ struct OnboardingView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Hatırlatmalar").font(.tBodyStrong).foregroundStyle(Color.ink)
                 Text(scheduler.authorizationDenied
-                     ? "Bildirim izni kapalı; Ayarlar > Traveller'dan açabilirsin."
-                     : "Valiz, uçuş, günün planı ve ekipten gelen değişiklikler.")
+                     ? String(localized: "Bildirim izni kapalı; Ayarlar > Traveller'dan açabilirsin.")
+                     : String(localized: "Valiz, uçuş, günün planı ve ekipten gelen değişiklikler."))
                     .font(.caption)
                     .foregroundStyle(Color.ink2)
             }
@@ -402,20 +402,20 @@ struct OnboardingView: View {
     private var cloudTitle: String {
         switch cloudStatus {
         case .checking: "iCloud kontrol ediliyor…"
-        case .available: "iCloud bağlı"
-        case .noAccount: "iCloud'a giriş yapılmamış"
-        case .restricted: "iCloud bu cihazda kısıtlı"
-        case .unknown: "iCloud'a ulaşılamadı"
+        case .available: String(localized: "iCloud bağlı")
+        case .noAccount: String(localized: "iCloud'a giriş yapılmamış")
+        case .restricted: String(localized: "iCloud bu cihazda kısıtlı")
+        case .unknown: String(localized: "iCloud'a ulaşılamadı")
         }
     }
 
     private var cloudDetail: String {
         switch cloudStatus {
         case .checking: "Bir saniye."
-        case .available: "Hesabın bu iCloud kimliğine bağlandı; seyahatlerin eşitlenecek ve paylaşabileceksin."
-        case .noAccount: "Ayarlar > [adın] > iCloud'dan giriş yap. O zamana kadar uygulama yalnızca bu cihazda çalışır."
-        case .restricted: "Ekran Süresi ya da kurum ayarları iCloud'u kısıtlıyor; uygulama yalnızca bu cihazda çalışır."
-        case .unknown: "İnternet bağlantını kontrol edip tekrar dene; uygulama bu sırada yerel çalışır."
+        case .available: String(localized: "Hesabın bu iCloud kimliğine bağlandı; seyahatlerin eşitlenecek ve paylaşabileceksin.")
+        case .noAccount: String(localized: "Ayarlar > [adın] > iCloud'dan giriş yap. O zamana kadar uygulama yalnızca bu cihazda çalışır.")
+        case .restricted: String(localized: "Ekran Süresi ya da kurum ayarları iCloud'u kısıtlıyor; uygulama yalnızca bu cihazda çalışır.")
+        case .unknown: String(localized: "İnternet bağlantını kontrol edip tekrar dene; uygulama bu sırada yerel çalışır.")
         }
     }
 
@@ -448,14 +448,14 @@ struct OnboardingView: View {
     private var done: some View {
         VStack(alignment: .leading, spacing: 20) {
             AvatarView(member: store.me, size: 72)
-            stepTitle("Hazırsın, \(store.me.name)!",
+            stepTitle(String(localized: "Hazırsın, \(store.me.name)!"),
                       cloudStatus == .available
-                        ? "Profilin iCloud hesabına bağlandı. İlk seyahatini planla ya da bir arkadaşının davetini aç."
-                        : "Profilin bu cihazda hazır. iCloud'a giriş yapınca seyahatlerin kendiliğinden eşitlenmeye başlar.")
+                        ? String(localized: "Profilin iCloud hesabına bağlandı. İlk seyahatini planla ya da bir arkadaşının davetini aç.")
+                        : String(localized: "Profilin bu cihazda hazır. iCloud'a giriş yapınca seyahatlerin kendiliğinden eşitlenmeye başlar."))
             VStack(alignment: .leading, spacing: 10) {
-                tip("hand.tap.fill", "Bir seyahat kartına dokun; plan, bütçe, valiz ve vize sekmeleri açılır.")
-                tip("person.crop.circle", "Sağ üstteki avatarından profiline, pasaportuna ve gezdiğin ülkelere ulaşırsın.")
-                tip("square.and.arrow.up", "Ekip sekmesinden seyahati iCloud ile paylaşıp arkadaşlarını davet et.")
+                tip("hand.tap.fill", String(localized: "Bir seyahat kartına dokun; plan, bütçe, valiz ve vize sekmeleri açılır."))
+                tip("person.crop.circle", String(localized: "Sağ üstteki avatarından profiline, pasaportuna ve gezdiğin ülkelere ulaşırsın."))
+                tip("square.and.arrow.up", String(localized: "Ekip sekmesinden seyahati iCloud ile paylaşıp arkadaşlarını davet et."))
             }
             .tray(padding: 16)
         }

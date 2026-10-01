@@ -156,11 +156,16 @@ struct TripsView: View {
 
     private var header: some View {
         HStack {
+            // Dar ekranda seçici yazıları kesilmesin; gerekirse başlık küçülür.
             Label("Seyahatler", systemImage: "suitcase.fill")
                 .font(.tTitle)
                 .foregroundStyle(Color.ink2)
-            Spacer()
-            PillPicker(selection: $scope, options: [.upcoming, .past]) { $0 == .upcoming ? "Yaklaşan" : "Geçmiş" }
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                .layoutPriority(-1)
+            Spacer(minLength: 8)
+            PillPicker(selection: $scope, options: [.upcoming, .past]) { $0 == .upcoming ? String(localized: "Yaklaşan") : String(localized: "Geçmiş") }
+                .fixedSize()
             Button {
                 isShowingProfile = true
             } label: {
@@ -177,7 +182,7 @@ struct TripsView: View {
             Image(systemName: "map")
                 .font(.system(size: 40))
                 .foregroundStyle(Color.ink3)
-            Text(scope == .upcoming ? "Henüz planlanmış bir seyahat yok." : "Geçmiş seyahat yok.")
+            Text(scope == .upcoming ? String(localized: "Henüz planlanmış bir seyahat yok.") : String(localized: "Geçmiş seyahat yok."))
                 .font(.tBodyStrong)
                 .foregroundStyle(Color.ink2)
             if scope == .upcoming {
@@ -211,9 +216,9 @@ struct TripGlance: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            tile(.visa, symbol: "person.text.rectangle.fill", accent: visa.accent, value: visa.value, caption: "Vize")
-            tile(.money, symbol: "chart.pie.fill", accent: .blue, value: budgetValue, caption: "Bütçe")
-            tile(.packing, symbol: "bag.fill", accent: .purple, value: packingValue, caption: "Valiz")
+            tile(.visa, symbol: "person.text.rectangle.fill", accent: visa.accent, value: visa.value, caption: String(localized: "Vize"))
+            tile(.money, symbol: "chart.pie.fill", accent: .blue, value: budgetValue, caption: String(localized: "Bütçe"))
+            tile(.packing, symbol: "bag.fill", accent: .purple, value: packingValue, caption: String(localized: "Valiz"))
         }
     }
 
@@ -249,7 +254,7 @@ struct TripGlance: View {
 
     private var visa: (value: String, accent: Accent) {
         let pending = trip.members.filter { store.visaAssessment(for: $0, in: trip).needsAction }.count
-        return pending == 0 ? ("Hazır ✓", .green) : ("\(pending) kişi bekliyor", .orange)
+        return pending == 0 ? (String(localized: "Hazır ✓"), .green) : (String(localized: "\(pending) kişi bekliyor"), .orange)
     }
 
     private var budgetValue: String {
@@ -259,7 +264,7 @@ struct TripGlance: View {
     }
 
     private var packingValue: String {
-        guard !trip.packing.isEmpty else { return "Boş" }
+        guard !trip.packing.isEmpty else { return String(localized: "Boş") }
         return "\(trip.packing.filter(\.isPacked).count)/\(trip.packing.count)"
     }
 }

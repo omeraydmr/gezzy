@@ -140,8 +140,8 @@ struct TripTicketCard: View, Equatable {
     }
 
     private var summary: String {
-        var parts = ["\(trip.nights()) gece"]
-        if trip.members.count > 1 { parts.append("\(trip.members.count) kişi") }
+        var parts = [String(localized: "\(trip.nights()) gece")]
+        if trip.members.count > 1 { parts.append(String(localized: "\(trip.members.count) kişi")) }
         return parts.joined(separator: " · ")
     }
 

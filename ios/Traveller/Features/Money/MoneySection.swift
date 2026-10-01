@@ -23,6 +23,7 @@ struct MoneySection: View {
             }
             balancesCard
             expensesCard
+            TaxFreeCard(trip: trip)
         }
         .sheet(isPresented: $isAddingExpense) {
             AddExpenseSheet(trip: trip)
@@ -54,7 +55,7 @@ struct MoneySection: View {
 
     private var budgetCard: some View {
         let summary = self.summary
-        return ModuleCard("Bütçe", symbol: "chart.pie.fill", accessory: {
+        return ModuleCard(String(localized: "Bütçe"), symbol: "chart.pie.fill", accessory: {
             Button("Düzenle") { isEditingBudget = true }
                 .font(.system(.subheadline, weight: .medium))
                 .foregroundStyle(Color.ink2)
@@ -92,7 +93,7 @@ struct MoneySection: View {
             }
 
             if summary.categories.isEmpty {
-                EmptyHint(symbol: "chart.bar", text: "Kategori limitleri belirle, harcamalar burada dolsun.")
+                EmptyHint(symbol: "chart.bar", text: String(localized: "Kategori limitleri belirle, harcamalar burada dolsun."))
                     .tray()
             } else {
                 LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
@@ -111,11 +112,11 @@ struct MoneySection: View {
 
     private func paceChip(_ pace: BudgetPace) -> (text: String, symbol: String, accent: Accent) {
         switch pace {
-        case .notStarted: ("Ön harcamalar", "clock", .gray)
-        case let .under(day, total): ("Gün \(day)/\(total) · tempo gerisinde", "tortoise.fill", .green)
-        case let .onTrack(day, total): ("Gün \(day)/\(total) · tam temposunda", "checkmark", .blue)
-        case let .ahead(day, total): ("Gün \(day)/\(total) · biraz önde", "hare.fill", .orange)
-        case .finished: ("Seyahat tamamlandı", "flag.checkered", .gray)
+        case .notStarted: (String(localized: "Ön harcamalar"), "clock", .gray)
+        case let .under(day, total): (String(localized: "Gün \(day)/\(total) · tempo gerisinde"), "tortoise.fill", .green)
+        case let .onTrack(day, total): (String(localized: "Gün \(day)/\(total) · tam temposunda"), "checkmark", .blue)
+        case let .ahead(day, total): (String(localized: "Gün \(day)/\(total) · biraz önde"), "hare.fill", .orange)
+        case .finished: (String(localized: "Seyahat tamamlandı"), "flag.checkered", .gray)
         }
     }
 
@@ -125,7 +126,7 @@ struct MoneySection: View {
         // Borç sadeleştirme bir kez hesaplanır; başlık, liste ve "hesabı kapalı" satırı aynı sonucu kullanır.
         let transfers = self.transfers
         let settled = settledMembers(transfers)
-        return ModuleCard("Bakiyeler", symbol: "wallet.pass.fill") {
+        return ModuleCard(String(localized: "Bakiyeler"), symbol: "wallet.pass.fill") {
             StoryHeadline(text: balancesHeadline(transfers))
 
             if !transfers.isEmpty {
@@ -147,7 +148,7 @@ struct MoneySection: View {
             if !settled.isEmpty {
                 HStack(spacing: 10) {
                     AvatarStack(members: settled, size: 28, limit: 5)
-                    Text(transfers.isEmpty ? "Herkesin hesabı kapalı" : "Hesabı kapalı")
+                    Text(transfers.isEmpty ? String(localized: "Herkesin hesabı kapalı") : String(localized: "Hesabı kapalı"))
                         .font(.tBody)
                         .foregroundStyle(Color.ink2)
                     Spacer()
@@ -167,7 +168,7 @@ struct MoneySection: View {
 
     /// Mesajlaşma uygulamalarına gönderilecek düz metin hesaplaşma özeti.
     private func settlementSummary(_ transfers: [Transfer]) -> String {
-        var lines = ["\(trip.name) · hesaplaşma"]
+        var lines = [String(localized: "\(trip.name) · hesaplaşma")]
         for transfer in transfers {
             var line = "• \(name(transfer.from)) → \(name(transfer.to)): \(money(transfer.amount))"
             if let iban = trip.member(transfer.to)?.iban, IBAN.isValid(iban) {
@@ -176,7 +177,7 @@ struct MoneySection: View {
             lines.append(line)
         }
         let total = trip.expenses.filter { !$0.isTransfer }.reduce(0) { $0 + $1.amount }
-        lines.append("Toplam harcama: \(money(total))")
+        lines.append(String(localized: "Toplam harcama: \(money(total))"))
         return lines.joined(separator: "\n")
     }
 
@@ -187,14 +188,14 @@ struct MoneySection: View {
 
     private func balancesHeadline(_ transfers: [Transfer]) -> String {
         switch transfers.count {
-        case 0: "Herkes dengede."
-        case 1: "Tek transfer tüm seyahati kapatıyor."
-        default: "\(Self.numberWord(transfers.count)) transfer tüm seyahati kapatıyor."
+        case 0: String(localized: "Herkes dengede.")
+        case 1: String(localized: "Tek transfer tüm seyahati kapatıyor.")
+        default: String(localized: "\(Self.numberWord(transfers.count)) transfer tüm seyahati kapatıyor.")
         }
     }
 
     private static func numberWord(_ n: Int) -> String {
-        let words = ["Sıfır", "Bir", "İki", "Üç", "Dört", "Beş", "Altı", "Yedi", "Sekiz", "Dokuz", "On"]
+        let words = [String(localized: "Sıfır"), String(localized: "Bir"), String(localized: "İki"), String(localized: "Üç"), String(localized: "Dört"), String(localized: "Beş"), String(localized: "Altı"), String(localized: "Yedi"), String(localized: "Sekiz"), String(localized: "Dokuz"), String(localized: "On")]
         return n < words.count ? words[n] : "\(n)"
     }
 
@@ -205,9 +206,9 @@ struct MoneySection: View {
         let groups = Dictionary(grouping: trip.expenses) { calendar.startOfDay(for: $0.date) }
             .map { ExpenseDay(date: $0.key, items: $0.value.sorted { $0.date > $1.date }) }
             .sorted { $0.date > $1.date }
-        return ModuleCard("Harcamalar", symbol: "list.bullet.rectangle.fill") {
+        return ModuleCard(String(localized: "Harcamalar"), symbol: "list.bullet.rectangle.fill") {
             if groups.isEmpty {
-                EmptyHint(symbol: "creditcard", text: "Henüz harcama yok.").tray()
+                EmptyHint(symbol: "creditcard", text: String(localized: "Henüz harcama yok.")).tray()
             } else {
                 VStack(alignment: .leading, spacing: 14) {
                     ForEach(groups) { group in
@@ -265,7 +266,7 @@ struct MoneySection: View {
     // MARK: Helpers
 
     private func settle(_ transfer: Transfer) {
-        let payment = Expense(title: "Hesaplaşma", amount: transfer.amount, category: .other, paidBy: transfer.from,
+        let payment = Expense(title: String(localized: "Hesaplaşma"), amount: transfer.amount, category: .other, paidBy: transfer.from,
                               splitAmong: [transfer.to], date: .now, isTransfer: true)
         store.update(trip.id) { $0.expenses.append(payment) }
     }
@@ -299,7 +300,7 @@ struct CategoryTile: View {
                 Text(AppFormat.money(item.spent, currency))
                     .font(.system(.headline, weight: .semibold))
                     .foregroundStyle(item.isOver ? Color.food : accent.base)
-                Text(item.limit > 0 ? "/ \(AppFormat.money(item.limit, currency))" : "limit yok")
+                Text(item.limit > 0 ? "/ \(AppFormat.money(item.limit, currency))" : String(localized: "limit yok"))
                     .font(.caption)
                     .foregroundStyle(Color.ink3)
             }
@@ -324,7 +325,7 @@ struct TransferTicket: View {
     var body: some View {
         Button(action: onSettle) {
             HStack(spacing: 10) {
-                person(transfer.from, caption: "öder")
+                person(transfer.from, caption: String(localized: "öder"))
                 ZStack {
                     TransferArc()
                         .stroke(Color.ink3, style: StrokeStyle(lineWidth: 1.5, lineCap: .round, dash: [2, 4]))
@@ -339,7 +340,7 @@ struct TransferTicket: View {
                         .offset(y: 10)
                 }
                 .frame(maxWidth: .infinity)
-                person(transfer.to, caption: "alır", trailing: true)
+                person(transfer.to, caption: String(localized: "alır"), trailing: true)
             }
             .padding(.horizontal, 22)
             .frame(height: Self.height)
@@ -437,9 +438,9 @@ struct ExpenseRow: View {
 
     private var subtitle: String {
         let payer = trip.member(expense.paidBy)?.name ?? "?"
-        if expense.isTransfer { return "Hesaplaşma · \(AppFormat.shortDate(expense.date))" }
-        let split = expense.shares == nil ? "\(expense.splitAmong.count) kişi" : "kalem kalem"
-        return "\(payer) ödedi · \(split) · \(AppFormat.shortDate(expense.date))"
+        if expense.isTransfer { return String(localized: "Hesaplaşma · \(AppFormat.shortDate(expense.date))") }
+        let split = expense.shares == nil ? String(localized: "\(expense.splitAmong.count) kişi") : String(localized: "kalem kalem")
+        return String(localized: "\(payer) ödedi · \(split) · \(AppFormat.shortDate(expense.date))")
     }
 }
 
@@ -492,7 +493,7 @@ struct CurrencyBreakdownCard: View {
 
     var body: some View {
         let sum = max(totals.reduce(0) { $0 + $1.convertedTotal }, 1)
-        ModuleCard("Para birimleri", symbol: "dollarsign.arrow.circlepath") {
+        ModuleCard(String(localized: "Para birimleri"), symbol: "dollarsign.arrow.circlepath") {
             StoryHeadline(text: headline(totals, sum: sum))
 
             GeometryReader { proxy in
@@ -549,6 +550,6 @@ struct CurrencyBreakdownCard: View {
         let foreign = totals.filter { $0.currency != trip.currency }
         let share = Int((Double(foreign.reduce(0) { $0 + $1.convertedTotal }) / Double(sum) * 100).rounded())
         let names = foreign.map(\.currency).joined(separator: ", ")
-        return "Harcamaların %\(TurkishGrammar.withPossessive(share)) \(names) ile yapıldı."
+        return String(localized: "Harcamaların %\(share) kadarı \(names) ile yapıldı.")
     }
 }

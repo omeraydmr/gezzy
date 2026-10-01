@@ -91,6 +91,15 @@ ios/
     └── Features                Trips, TripDetail, Plan, Money, Packing, Visa, Crew
 ```
 
+## Diller
+
+Kaynak dil Türkçe, ikinci dil İngilizce. Arayüz metinleri `Traveller/Resources/Localizable.xcstrings` ve
+`Widgets/Localizable.xcstrings` String Catalog'larında. Yeni metin eklerken SwiftUI'da doğrudan `Text("…")`
+kullan; `String` dönen yerlerde `String(localized: "…")` yaz. Çeviriyi Xcode'da catalog üzerinden ya da
+`xcodebuild -exportLocalizations` / `-importLocalizations` ile ekle.
+
+TravellerKit'in ürettiği metinler (vize notları, valiz ve gidiş öncesi önerileri, bildirim metinleri) henüz yalnızca Türkçe.
+
 ## Test
 
 ```bash

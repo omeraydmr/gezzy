@@ -193,6 +193,6 @@ final class CoverImageStore {
     enum CoverError: LocalizedError {
         case unreadableImage
 
-        var errorDescription: String? { "Fotoğraf okunamadı." }
+        var errorDescription: String? { String(localized: "Fotoğraf okunamadı.") }
     }
 }

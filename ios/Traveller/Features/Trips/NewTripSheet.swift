@@ -57,7 +57,7 @@ struct NewTripSheet: View {
                     Text("Senin için vize durumu")
                 }
             }
-            .navigationTitle("Yeni seyahat")
+            .navigationTitle(String(localized: "Yeni seyahat"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -106,7 +106,7 @@ struct NewTripSheet: View {
             .environment(\.coverOverride, previewImage)
             .overlay(alignment: .topLeading) {
                 PhotosPicker(selection: $photoItem, matching: .images) {
-                    Label(previewImage == nil ? "Fotoğraf ekle" : "Değiştir", systemImage: "camera.fill")
+                    Label(previewImage == nil ? String(localized: "Fotoğraf ekle") : String(localized: "Değiştir"), systemImage: "camera.fill")
                         .font(.system(.footnote, weight: .semibold))
                         .foregroundStyle(Color.ink)
                         .padding(.horizontal, 10)
@@ -123,7 +123,7 @@ struct NewTripSheet: View {
         var owner = store.me
         owner.role = .owner
         let trimmedCity = city.trimmingCharacters(in: .whitespacesAndNewlines)
-        return Trip(name: trimmedName.isEmpty ? "Yeni seyahat" : trimmedName,
+        return Trip(name: trimmedName.isEmpty ? String(localized: "Yeni seyahat") : trimmedName,
                     destination: Destination(countryCode: countryCode,
                                              city: trimmedCity.isEmpty ? Countries.name(countryCode) : trimmedCity),
                     startDate: Calendar.current.startOfDay(for: startDate),
@@ -165,7 +165,7 @@ struct CountryPicker: View {
                 }
             }
         }
-        .searchable(text: $query, prompt: "Ülke ara")
+        .searchable(text: $query, prompt: String(localized: "Ülke ara"))
         .navigationTitle("Ülke")
     }
 

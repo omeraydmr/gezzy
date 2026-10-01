@@ -51,18 +51,18 @@ Gerçek cihaz (iPhone 15) testi sürüyor; iCloud paylaşım/yetki akışları i
 
 ## 3. Yeni adaylar
 
-Kalanlar (harfler önceki listeyle aynı):
+Listedeki tüm adaylar yapıldı:
 
-| # | Özellik | Değer | Efor | Not |
-|---|---|---|---|---|
-| F | Tax-free iade takibi | Orta | Küçük | |
-| G | Gidiş öncesi kontrol listesi (harç, roaming/eSIM, sigorta, kart) | Orta | Küçük | Valize benzer |
-| K | Acil durum kartı (konsolosluk, acil numaralar, alerji kartı) | Orta | Küçük | İnternetsiz |
-| L | Seyahat özeti (harcama, adım, yerler) paylaşılabilir kart | Orta | Orta | HealthKit isteğe bağlı |
-| M | Canlı kartı sunucu push'u ile güncelleme | Düşük-orta | Büyük | Sunucu gerekir |
-| N | İngilizce yerelleştirme | Orta | Orta | Global kitle için |
+| # | Özellik | Not |
+|---|---|---|
+| F | Tax-free iade takibi | Bütçe sekmesinde; ülkenin KDV oranından tahmini iade, durum takibi, dönüş günü gümrük hatırlatması |
+| G | Gidiş öncesi kontrol listesi | Valiz sekmesinde; harç pulu, eSIM, kartlar, sigorta, vize, check-in… son günü gelince sabah bildirimi |
+| K | Acil durum kartı | Vize sekmesinde; ülkenin acil numaraları, konsolosluk çağrı merkezi, cihazda kalan sağlık bilgileri, yerel dilde alerji kartı |
+| L | Paylaşılabilir seyahat özeti | Anılar sekmesinde; gün, durak, rota, harcama ve öne çıkanlar görsel olarak paylaşılır (HealthKit adım sayısı yok) |
+| M | Canlı kartı sunucu push'u ile güncelleme | `server/` Cloudflare Worker + APNs; kurulum ve anahtarlar gerekli, henüz canlıya alınmadı |
+| N | İngilizce yerelleştirme | Arayüz String Catalog ile İngilizce; TravellerKit'in ürettiği metinler (vize notları, öneriler, bildirimler) henüz Türkçe |
 
-Yapılanlar (ayrıntı §1 ve §2'de): B Anılar · C Biletten doldurma (PDF, ekran görüntüsü, Wallet `.pkpass`) ·
+Daha önce yapılanlar (ayrıntı §1 ve §2'de): B Anılar · C Biletten doldurma (PDF, ekran görüntüsü, Wallet `.pkpass`) ·
 D Schengen 90/180 · E Vize randevu ve belge takibi · H Hesaplaşma (IBAN, ödendi, özet) ·
 I Konaklama ve giriş/çıkış bildirimleri · J Duraklar arası toplu taşıma süreleri.
 A (cihazda test turu + TestFlight) listeden çıkarıldı: iPhone 15'te sürüyor.
@@ -73,7 +73,6 @@ A (cihazda test turu + TestFlight) listeden çıkarıldı: iPhone 15'te sürüyo
 - Uygulama hedefi için UI testleri ve ekran görüntüsü testleri yok; yalnızca TravellerKit birim testleri var.
 - Çökme raporlama yok.
 - Vize kural tablosu elle güncelleniyor; kaynak ve güncelleme tarihi gösterilmeli.
-- Ana ekrandaki Yaklaşan/Geçmiş seçicisinde "Geçmiş" yazısı "Geç…" diye kesiliyor (avatar düğmesi yer daraltıyor).
 
 ## 5. Performans turu (bu değişiklik)
 

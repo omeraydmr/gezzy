@@ -37,7 +37,7 @@ struct TripTimelineProvider: TimelineProvider {
         let start = Calendar.current.date(byAdding: .day, value: 12, to: Calendar.current.startOfDay(for: .now)) ?? .now
         let end = Calendar.current.date(byAdding: .day, value: 4, to: start) ?? start
         return WidgetSnapshot(items: [
-            .init(id: UUID(), name: "Lizbon Haftası", city: "Lizbon", flag: "🇵🇹", tint: 0x2F7D5B, start: start, end: end,
+            .init(id: UUID(), name: String(localized: "Lizbon Haftası"), city: String(localized: "Lizbon"), flag: "🇵🇹", tint: 0x2F7D5B, start: start, end: end,
                   flightLabel: "IST → LIS · 09:45",
                   stops: [.init(name: "Belém Kulesi", day: start, startMinutes: 10 * 60, durationMinutes: 90,
                                 symbol: "building.columns.fill")]),
@@ -50,8 +50,8 @@ struct TripCountdownWidget: Widget {
         StaticConfiguration(kind: SharedContainer.widgetKind, provider: TripTimelineProvider()) { entry in
             TripWidgetView(entry: entry)
         }
-        .configurationDisplayName("Sıradaki seyahat")
-        .description("Seyahate kalan gün; yoldayken günün sıradaki durağı.")
+        .configurationDisplayName(String(localized: "Sıradaki seyahat"))
+        .description(String(localized: "Seyahate kalan gün; yoldayken günün sıradaki durağı."))
         .supportedFamilies([.systemSmall, .systemMedium])
     }
 }
@@ -130,14 +130,14 @@ struct TripWidgetView: View {
                     + Text(" / \(total)").font(.system(size: 15, weight: .semibold, design: .rounded)).foregroundColor(.secondary)
                 Spacer(minLength: 2)
                 if let stop {
-                    Text(isFirst ? "Günün ilk durağı" : "Sıradaki durak")
+                    Text(isFirst ? String(localized: "Günün ilk durağı") : String(localized: "Sıradaki durak"))
                         .font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
                     HStack(spacing: 6) {
                         Image(systemName: stop.symbol).font(.caption.weight(.bold)).foregroundStyle(tint)
                         Text(stop.name).font(.subheadline.weight(.semibold)).lineLimit(1)
                     }
                     if let start = stop.startMinutes {
-                        Text(String(format: "%02d:%02d", start / 60, start % 60) + (remaining > 1 ? " · +\(remaining - 1) durak" : ""))
+                        Text(String(format: "%02d:%02d", start / 60, start % 60) + (remaining > 1 ? String(localized: " · +\(remaining - 1) durak") : ""))
                             .font(.caption).foregroundStyle(.secondary)
                     }
                 } else {

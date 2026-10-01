@@ -21,7 +21,7 @@ struct VisaSection: View {
         let rows = assessments
         let readyCount = rows.filter { !$0.result.needsAction }.count
         VStack(spacing: 16) {
-            ModuleCard("Vize", symbol: "person.text.rectangle.fill") {
+            ModuleCard(String(localized: "Vize"), symbol: "person.text.rectangle.fill") {
                 StoryHeadline(text: headline(ready: readyCount, total: rows.count))
 
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -85,6 +85,7 @@ struct VisaSection: View {
             }
 
             DocumentsCard(trip: trip)
+            EmergencyCard(trip: trip)
         }
     }
 
@@ -93,10 +94,10 @@ struct VisaSection: View {
     }
 
     private func headline(ready: Int, total: Int) -> String {
-        if total == 0 { return "Ekipte kimse yok." }
-        if ready == total { return total == 1 ? "Girişe hazırsın." : "Herkes girişe hazır." }
+        if total == 0 { return String(localized: "Ekipte kimse yok.") }
+        if ready == total { return total == 1 ? String(localized: "Girişe hazırsın.") : String(localized: "Herkes girişe hazır.") }
         let waiting = total - ready
-        return ready == 0 ? "\(waiting) kişinin yapacakları var." : "\(ready) kişi hazır, \(waiting) kişinin yapacakları var."
+        return ready == 0 ? String(localized: "\(waiting) kişinin yapacakları var.") : String(localized: "\(ready) kişi hazır, \(waiting) kişinin yapacakları var.")
     }
 }
 
@@ -161,8 +162,8 @@ struct PassportCard: View {
     }
 
     private var passportLine: String {
-        guard let passport = member.passport else { return "Pasaport bilgisi yok" }
-        return "Geçerlilik \(AppFormat.longDate(passport.expiresOn))"
+        guard let passport = member.passport else { return String(localized: "Pasaport bilgisi yok") }
+        return String(localized: "Geçerlilik \(AppFormat.longDate(passport.expiresOn))")
     }
 }
 
@@ -412,24 +413,24 @@ enum VisaText {
     static func zoneName(_ zone: VisaZone?) -> String {
         switch zone {
         case .schengen: "Schengen"
-        case .uk: "Birleşik Krallık"
+        case .uk: String(localized: "Birleşik Krallık")
         case .us: "ABD"
-        case .canada: "Kanada"
+        case .canada: String(localized: "Kanada")
         case nil: ""
         }
     }
 
     static func subtitle(_ result: VisaAssessment) -> String {
         switch result.status {
-        case .domestic: return "Yurt içi seyahat"
-        case let .notRequired(days): return "Vizesiz · \(days) güne kadar"
-        case .eVisa: return "Önceden e-vize alınmalı"
-        case let .onArrival(days): return days.map { "Kapıda vize · \($0) gün" } ?? "Kapıda vize"
-        case let .required(zone): return "\(zoneName(zone)) vizesi gerekli".trimmingCharacters(in: .whitespaces)
+        case .domestic: return String(localized: "Yurt içi seyahat")
+        case let .notRequired(days): return String(localized: "Vizesiz · \(days) güne kadar")
+        case .eVisa: return String(localized: "Önceden e-vize alınmalı")
+        case let .onArrival(days): return days.map { String(localized: "Kapıda vize · \($0) gün") } ?? String(localized: "Kapıda vize")
+        case let .required(zone): return String(localized: "\(zoneName(zone)) vizesi gerekli").trimmingCharacters(in: .whitespaces)
         case let .coveredByHeldVisa(zone, until):
-            return "\(zoneName(zone)) vizesi · bitiş \(AppFormat.longDate(until))"
-        case .noPassport: return "Pasaport bilgisi eklenmedi"
-        case .unknown: return "Bu ülke için veri yok"
+            return String(localized: "\(zoneName(zone)) vizesi · bitiş \(AppFormat.longDate(until))")
+        case .noPassport: return String(localized: "Pasaport bilgisi eklenmedi")
+        case .unknown: return String(localized: "Bu ülke için veri yok")
         }
     }
 
@@ -441,11 +442,11 @@ enum VisaText {
             return ("Pasaport", .orange)
         }
         switch result.status {
-        case .domestic, .notRequired: return result.needsAction ? ("Uyarı", .orange) : ("Gerekmez", .green)
-        case .coveredByHeldVisa: return result.needsAction ? ("Uyarı", .orange) : ("Geçerli ✓", .green)
-        case .onArrival: return ("Kapıda", .blue)
-        case .eVisa: return ("e-Vize", .blue)
-        case .required: return ("Başvuru", .orange)
+        case .domestic, .notRequired: return result.needsAction ? (String(localized: "Uyarı"), .orange) : (String(localized: "Gerekmez"), .green)
+        case .coveredByHeldVisa: return result.needsAction ? (String(localized: "Uyarı"), .orange) : (String(localized: "Geçerli ✓"), .green)
+        case .onArrival: return (String(localized: "Kapıda"), .blue)
+        case .eVisa: return (String(localized: "e-Vize"), .blue)
+        case .required: return (String(localized: "Başvuru"), .orange)
         case .noPassport: return ("Eksik", .orange)
         case .unknown: return ("Kontrol et", .gray)
         }
@@ -454,28 +455,28 @@ enum VisaText {
     static func warning(_ warning: VisaWarning) -> String {
         switch warning {
         case let .passportExpiresDuringTrip(date):
-            return "Pasaport seyahat bitmeden sona eriyor (\(AppFormat.shortDate(date))). Yenilemen gerekiyor."
+            return String(localized: "Pasaport seyahat bitmeden sona eriyor (\(AppFormat.shortDate(date))). Yenilemen gerekiyor.")
         case let .passportValidityShort(months, mandatory, _):
             return mandatory
-                ? "Pasaport dönüşten sonra en az \(months) ay geçerli olmalı."
-                : "Pasaportun dönüşten sonra \(months) aydan az geçerli; bazı havayolları ve sınır kapıları sorun çıkarabilir."
+                ? String(localized: "Pasaport dönüşten sonra en az \(months) ay geçerli olmalı.")
+                : String(localized: "Pasaportun dönüşten sonra \(months) aydan az geçerli; bazı havayolları ve sınır kapıları sorun çıkarabilir.")
         case let .stayExceedsLimit(maxDays, tripDays):
-            return "Seyahat \(tripDays) gün; vizesiz kalış sınırı \(maxDays) gün."
+            return String(localized: "Seyahat \(tripDays) gün; vizesiz kalış sınırı \(maxDays) gün.")
         case let .heldVisaExpiresDuringTrip(zone, until):
-            return "\(zoneName(zone)) vizen seyahat bitmeden sona eriyor (\(AppFormat.shortDate(until)))."
+            return String(localized: "\(zoneName(zone)) vizen seyahat bitmeden sona eriyor (\(AppFormat.shortDate(until))).")
         case let .schengenOverstay(firstDay, latestExit, days):
-            let exit = latestExit.map { " En geç \(AppFormat.shortDate($0)) günü çıkmalısın." } ?? ""
-            return "Schengen 90/180 sınırı \(AppFormat.shortDate(firstDay)) günü aşılıyor (\(days) gün fazla).\(exit)"
+            let exit = latestExit.map { String(localized: " En geç \(AppFormat.shortDate($0)) günü çıkmalısın.") } ?? ""
+            return String(localized: "Schengen 90/180 sınırı \(AppFormat.shortDate(firstDay)) günü aşılıyor (\(days) gün fazla).\(exit)")
         }
     }
 
     static func statusTitle(_ status: VisaApplication.Status) -> String {
         switch status {
-        case .preparing: "Hazırlanıyor"
-        case .appointmentBooked: "Randevu alındı"
-        case .submitted: "Başvuruldu"
-        case .approved: "Onaylandı"
-        case .rejected: "Reddedildi"
+        case .preparing: String(localized: "Hazırlanıyor")
+        case .appointmentBooked: String(localized: "Randevu alındı")
+        case .submitted: String(localized: "Başvuruldu")
+        case .approved: String(localized: "Onaylandı")
+        case .rejected: String(localized: "Reddedildi")
         }
     }
 
@@ -490,16 +491,16 @@ enum VisaText {
 
     static func documents(for zone: VisaZone?) -> [String] {
         var list = [
-            "Başvuru formu",
-            "Biyometrik fotoğraf",
+            String(localized: "Başvuru formu"),
+            String(localized: "Biyometrik fotoğraf"),
             "Pasaport ve eski vizelerin fotokopisi",
-            "Uçak rezervasyonu",
-            "Konaklama rezervasyonu",
-            "Son 3 ayın banka hesap dökümü",
-            "İşveren yazısı / SGK dökümü veya öğrenci belgesi",
+            String(localized: "Uçak rezervasyonu"),
+            String(localized: "Konaklama rezervasyonu"),
+            String(localized: "Son 3 ayın banka hesap dökümü"),
+            String(localized: "İşveren yazısı / SGK dökümü veya öğrenci belgesi"),
         ]
         if zone == .schengen {
-            list.insert("En az 30.000 € teminatlı seyahat sağlık sigortası", at: 4)
+            list.insert(String(localized: "En az 30.000 € teminatlı seyahat sağlık sigortası"), at: 4)
         }
         return list
     }
