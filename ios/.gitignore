@@ -1,0 +1,7 @@
+Traveller.xcodeproj/
+build/
+DerivedData/
+.build/
+.swiftpm/
+*.xcuserstate
+build.log

@@ -1,0 +1,46 @@
+name: Traveller
+options:
+  bundleIdPrefix: app.traveller
+  deploymentTarget:
+    iOS: "17.0"
+  developmentLanguage: tr
+  createIntermediateGroups: true
+
+packages:
+  TravellerKit:
+    path: Packages/TravellerKit
+
+targets:
+  Traveller:
+    type: application
+    platform: iOS
+    sources:
+      - path: Traveller
+    dependencies:
+      - package: TravellerKit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.traveller.ios
+        PRODUCT_NAME: Traveller
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "5.0"
+        TARGETED_DEVICE_FAMILY: "1"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Traveller
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
+        DEVELOPMENT_LANGUAGE: tr
+        ENABLE_PREVIEWS: YES
+
+schemes:
+  Traveller:
+    build:
+      targets:
+        Traveller: all
+    run:
+      config: Debug
+    archive:
+      config: Release
