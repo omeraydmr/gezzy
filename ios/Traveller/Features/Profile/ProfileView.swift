@@ -17,6 +17,19 @@ struct ProfileView: View {
                     meCard
                     countriesCard(visited)
                     Button {
+                        store.restartOnboarding()
+                    } label: {
+                        HStack {
+                            Label("Tanıtımı ve anketi yeniden göster", systemImage: "sparkles")
+                                .font(.tBodyStrong)
+                                .foregroundStyle(Color.ink)
+                            Spacer()
+                            Image(systemName: "chevron.right").foregroundStyle(Color.ink3)
+                        }
+                        .tray()
+                    }
+                    .buttonStyle(.plain)
+                    Button {
                         isShowingAbout = true
                     } label: {
                         HStack {

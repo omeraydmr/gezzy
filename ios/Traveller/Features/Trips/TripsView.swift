@@ -10,6 +10,7 @@ struct TripRoute: Hashable {
 struct TripsView: View {
     @Environment(TripStore.self) private var store
     @State private var scope: Scope = .upcoming
+    @State private var isOnboarding = false
     @State private var index = 0
     @State private var isCreating = false
     @State private var path: [TripRoute] = []
@@ -37,7 +38,7 @@ struct TripsView: View {
                     TripDeck(
                         trips: trips,
                         index: Binding(get: { focusedIndex }, set: { index = $0 }),
-                        onOpen: { path.append(TripRoute(id: $0.id)) },
+                        onOpen: { path.append(TripRoute(id: $0.id, section: preferredSection)) },
                         onChangeCover: { coverTarget = $0.id },
                         onRemoveCover: { trip in withAnimation { store.removeCoverPhoto(for: trip.id) } },
                         onDelete: { pendingDelete = $0 },
@@ -93,6 +94,29 @@ struct TripsView: View {
             }
             .coverPhotoPicker(for: $coverTarget)
             .sheet(isPresented: $isShowingProfile) { ProfileView() }
+            .fullScreenCover(isPresented: $isOnboarding) {
+                OnboardingView(store: store) { planFirstTrip in
+                    isOnboarding = false
+                    if planFirstTrip {
+                        Task {
+                            try? await Task.sleep(for: .milliseconds(450))
+                            isCreating = true
+                        }
+                    }
+                }
+            }
+            .onAppear {
+                if !store.hasCompletedOnboarding { isOnboarding = true }
+            }
+            .onChange(of: store.hasCompletedOnboarding) { _, completed in
+                // Profilden "tanıtımı yeniden göster": önce profil sayfası kapansın.
+                guard !completed, !isOnboarding else { return }
+                isShowingProfile = false
+                Task {
+                    try? await Task.sleep(for: .milliseconds(500))
+                    isOnboarding = true
+                }
+            }
             .confirmationDialog("Seyahat silinsin mi?", isPresented: Binding(
                 get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } }
             ), titleVisibility: .visible, presenting: pendingDelete) { trip in
@@ -154,10 +178,22 @@ struct TripsView: View {
                 .font(.system(size: 40))
                 .foregroundStyle(Color.ink3)
             Text(scope == .upcoming ? "Henüz planlanmış bir seyahat yok." : "Geçmiş seyahat yok.")
-                .font(.tBody)
+                .font(.tBodyStrong)
                 .foregroundStyle(Color.ink2)
+            if scope == .upcoming {
+                Text("Aşağıdan ilk seyahatini planla ya da bir arkadaşının iCloud davetini aç.")
+                    .font(.tBody)
+                    .foregroundStyle(Color.ink3)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
+            }
         }
         .frame(maxWidth: .infinity)
+    }
+
+    /// Anketteki ilgiye göre seyahat açılınca ilk gelen sekme.
+    private var preferredSection: TripDetailView.TripSection {
+        TripDetailView.TripSection(rawValue: store.preferences.preferredSection) ?? .plan
     }
 
     /// Odaktaki seyahatin renginden gelen yumuşak ışık.

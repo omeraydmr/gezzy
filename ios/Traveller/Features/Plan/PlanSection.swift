@@ -9,7 +9,6 @@ struct PlanSection: View {
     @State private var selectedDay: Date?
     @State private var cameraPosition: MapCameraPosition = .automatic
     @State private var isAddingStop = false
-    @State private var isImporting = false
     @State private var lastOrderBeforeOptimize: [Stop.ID: Int]?
     @State private var dropTarget: Stop.ID?
     @State private var editingHours: Stop?
@@ -73,7 +72,7 @@ struct PlanSection: View {
                 } else {
                     map(plan)
                 }
-                OfflineMapRow(trip: trip)
+                OfflineMapRow(trip: trip, day: plan.day)
             }
 
             stopList(plan)
@@ -99,24 +98,14 @@ struct PlanSection: View {
                         Image(systemName: "point.topleft.down.to.point.bottomright.curvepath.fill")
                     }
                     .buttonStyle(.circleIcon)
-                    .disabled(plan.coordinates.count < (trip.lodging(forMorningOf: plan.day)?.coordinate == nil ? 3 : 2))
-                    .accessibilityLabel("Rotayı en kısa sıraya diz")
+                    .disabled(plan.coordinates.count < 2)
+                    .accessibilityLabel("Rotayı açılış saatlerine ve en kısa yürüyüşe göre diz")
                 }
-
-                Button {
-                    isImporting = true
-                } label: {
-                    Image(systemName: "doc.viewfinder")
-                }
-                .buttonStyle(.circleIcon)
-                .accessibilityLabel("Rezervasyon içe aktar")
             }
 
+            FlightsCard(trip: trip)
             IdeasCard(trip: trip, day: plan.day)
             LodgingCard(trip: trip)
-        }
-        .sheet(isPresented: $isImporting) {
-            BookingImportSheet(trip: trip)
         }
         .sheet(isPresented: $isAddingStop) {
             AddStopSheet(trip: trip, day: plan.day)
@@ -383,17 +372,20 @@ struct PlanSection: View {
         }
     }
 
-    /// Koordinatı olan durakları en kısa yürüyüş sırasına dizer; koordinatsızlar sona kalır.
+    /// Koordinatı olan durakları açılış saatlerine ve verilmiş saatlere uyan, sonra en kısa yürüyüş sırasına dizer;
+    /// koordinatsızlar sona kalır. Durakların saatleri değiştirilmez.
     private func optimize() {
         let located = stops.filter { $0.coordinate != nil }
         let others = stops.filter { $0.coordinate == nil }
-        // Sabah otelden çıkılıyorsa rota otelden başlar.
-        let order: [Int]
-        if let hotel = trip.lodging(forMorningOf: day)?.coordinate {
-            order = RouteOptimizer.order(located.compactMap(\.coordinate), from: hotel)
-        } else {
-            order = RouteOptimizer.order(located.compactMap(\.coordinate))
+        let weekday = OpeningHours.dayIndex(calendarWeekday: Calendar.current.component(.weekday, from: day))
+        let visits = located.map { stop in
+            RouteOptimizer.Visit(coordinate: stop.coordinate!, duration: stop.durationMinutes,
+                                 open: stop.openingHours.flatMap(OpeningHours.cached)?.intervals(onDay: weekday),
+                                 fixedStart: stop.startMinutes)
         }
+        let dayStart = min(9 * 60, located.compactMap(\.startMinutes).min() ?? 9 * 60)
+        // Sabah otelden çıkılıyorsa rota otelden başlar.
+        let order = RouteOptimizer.order(visits, from: trip.lodging(forMorningOf: day)?.coordinate, dayStart: dayStart)
         lastOrderBeforeOptimize = Dictionary(uniqueKeysWithValues: stops.map { ($0.id, $0.order) })
         withAnimation(.spring(duration: 0.35)) {
             applyOrder(order.map { located[$0].id } + others.map(\.id))
@@ -666,34 +658,169 @@ struct OpeningHoursEditor: View {
     }
 }
 
-/// İnternet yokken gösterilen kayıtlı harita görüntüsü.
+/// İnternet yokken gösterilen kayıtlı harita görüntüsü; dokununca tam ekran yakınlaştırılabilir açılır.
 struct OfflineMapImage: View {
     let image: UIImage
+    @State private var isExpanded = false
 
     var body: some View {
-        Image(uiImage: image)
-            .resizable()
-            .scaledToFill()
-            .frame(height: 240)
-            .clipShape(RoundedRectangle(cornerRadius: Radius.tray, style: .continuous))
-            .overlay(alignment: .topLeading) {
-                Label("Çevrimdışı harita", systemImage: "wifi.slash")
+        Button {
+            isExpanded = true
+        } label: {
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFill()
+                .frame(height: 240)
+                .clipShape(RoundedRectangle(cornerRadius: Radius.tray, style: .continuous))
+                .overlay(alignment: .topLeading) {
+                    Label("Çevrimdışı harita", systemImage: "wifi.slash")
+                        .font(.system(.caption, weight: .semibold))
+                        .foregroundStyle(Color.ink)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(.regularMaterial, in: Capsule())
+                        .padding(10)
+                }
+                .overlay(alignment: .bottomTrailing) {
+                    Image(systemName: "arrow.up.left.and.arrow.down.right")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(Color.ink)
+                        .frame(width: 32, height: 32)
+                        .background(.regularMaterial, in: Circle())
+                        .padding(10)
+                }
+        }
+        .buttonStyle(.plain)
+        .cardBackground(Color.tray, in: RoundedRectangle(cornerRadius: Radius.tray, style: .continuous))
+        .accessibilityLabel("Kayıtlı çevrimdışı harita")
+        .accessibilityHint("Büyütmek için dokun")
+        .fullScreenCover(isPresented: $isExpanded) {
+            OfflineMapViewer(image: image)
+        }
+    }
+}
+
+/// Kayıtlı harita görüntüsünü iki parmakla yakınlaştırma, kaydırma ve çift dokunuşla büyütme.
+struct OfflineMapViewer: View {
+    let image: UIImage
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        ZoomableImage(image: image)
+            .ignoresSafeArea()
+            .background(Color.black)
+            .overlay(alignment: .topTrailing) {
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(Color.ink)
+                        .frame(width: 40, height: 40)
+                        .background(.regularMaterial, in: Circle())
+                }
+                .padding(16)
+                .accessibilityLabel("Kapat")
+            }
+            .overlay(alignment: .bottom) {
+                Label("Çevrimdışı harita · iki parmakla yakınlaştır", systemImage: "wifi.slash")
                     .font(.system(.caption, weight: .semibold))
                     .foregroundStyle(Color.ink)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
                     .background(.regularMaterial, in: Capsule())
-                    .padding(10)
+                    .padding(.bottom, 24)
             }
-            .cardBackground(Color.tray, in: RoundedRectangle(cornerRadius: Radius.tray, style: .continuous))
-            .accessibilityLabel("Kayıtlı çevrimdışı harita")
+            .statusBarHidden()
+    }
+}
+
+/// UIScrollView tabanlı yakınlaştırma (SwiftUI'da iOS 17 için yerleşik karşılığı yok).
+struct ZoomableImage: UIViewRepresentable {
+    let image: UIImage
+    var maximumZoom: CGFloat = 4
+
+    func makeUIView(context: Context) -> UIScrollView {
+        let scrollView = CenteringScrollView()
+        scrollView.delegate = context.coordinator
+        scrollView.showsVerticalScrollIndicator = false
+        scrollView.showsHorizontalScrollIndicator = false
+        scrollView.decelerationRate = .fast
+        scrollView.contentInsetAdjustmentBehavior = .never
+        let imageView = UIImageView(image: image)
+        imageView.contentMode = .scaleAspectFit
+        scrollView.addSubview(imageView)
+        scrollView.imageView = imageView
+        context.coordinator.imageView = imageView
+
+        let doubleTap = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.doubleTapped(_:)))
+        doubleTap.numberOfTapsRequired = 2
+        scrollView.addGestureRecognizer(doubleTap)
+        scrollView.maximumZoom = maximumZoom
+        return scrollView
+    }
+
+    func updateUIView(_ scrollView: UIScrollView, context: Context) {}
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    final class Coordinator: NSObject, UIScrollViewDelegate {
+        weak var imageView: UIImageView?
+
+        func viewForZooming(in scrollView: UIScrollView) -> UIView? { imageView }
+
+        func scrollViewDidZoom(_ scrollView: UIScrollView) {
+            (scrollView as? CenteringScrollView)?.centerContent()
+        }
+
+        @objc func doubleTapped(_ recognizer: UITapGestureRecognizer) {
+            guard let scrollView = recognizer.view as? UIScrollView, let imageView else { return }
+            if scrollView.zoomScale > scrollView.minimumZoomScale * 1.01 {
+                scrollView.setZoomScale(scrollView.minimumZoomScale, animated: true)
+            } else {
+                let point = recognizer.location(in: imageView)
+                let scale = min(scrollView.maximumZoomScale, scrollView.minimumZoomScale * 2.5)
+                let size = CGSize(width: scrollView.bounds.width / scale, height: scrollView.bounds.height / scale)
+                scrollView.zoom(to: CGRect(x: point.x - size.width / 2, y: point.y - size.height / 2,
+                                           width: size.width, height: size.height), animated: true)
+            }
+        }
+    }
+
+    /// Görüntüyü ekrana sığdıran en küçük yakınlığı boyut değiştikçe yeniden hesaplar ve ortalar.
+    final class CenteringScrollView: UIScrollView {
+        weak var imageView: UIImageView?
+        var maximumZoom: CGFloat = 4
+        private var lastBounds: CGSize = .zero
+
+        override func layoutSubviews() {
+            super.layoutSubviews()
+            guard let imageView, let image = imageView.image, bounds.size != lastBounds, bounds.width > 0 else { return }
+            lastBounds = bounds.size
+            imageView.frame = CGRect(origin: .zero, size: image.size)
+            contentSize = image.size
+            let fit = min(bounds.width / image.size.width, bounds.height / image.size.height)
+            minimumZoomScale = fit
+            maximumZoomScale = fit * maximumZoom
+            zoomScale = fit
+            centerContent()
+        }
+
+        func centerContent() {
+            guard let imageView else { return }
+            let horizontal = max(0, (bounds.width - imageView.frame.width) / 2)
+            let vertical = max(0, (bounds.height - imageView.frame.height) / 2)
+            contentInset = UIEdgeInsets(top: vertical, left: horizontal, bottom: vertical, right: horizontal)
+        }
     }
 }
 
 /// Haritaları çevrimdışı kullanım için kaydetme satırı.
 struct OfflineMapRow: View {
     let trip: Trip
+    let day: Date
     private var store: OfflineMapStore { .shared }
+    @State private var isPreviewing = false
 
     var body: some View {
         let state = store.state(for: trip.id)
@@ -709,6 +836,16 @@ struct OfflineMapRow: View {
             if case .saving = state {
                 ProgressView().controlSize(.small)
             } else {
+                if isSaved(state), store.image(tripID: trip.id, day: day) != nil {
+                    Button {
+                        isPreviewing = true
+                    } label: {
+                        Image(systemName: "eye")
+                    }
+                    .font(.system(.footnote, weight: .semibold))
+                    .foregroundStyle(Color.ink)
+                    .accessibilityLabel("Kayıtlı haritayı göster")
+                }
                 Button(isSaved(state) ? "Güncelle" : "Kaydet") {
                     Task { await store.save(trip) }
                 }
@@ -719,6 +856,11 @@ struct OfflineMapRow: View {
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
         .cardBackground(Color.tray, in: Capsule())
+        .fullScreenCover(isPresented: $isPreviewing) {
+            if let image = store.image(tripID: trip.id, day: day) {
+                OfflineMapViewer(image: image)
+            }
+        }
     }
 
     private func isSaved(_ state: OfflineMapStore.State) -> Bool {

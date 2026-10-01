@@ -54,22 +54,29 @@ struct CrewSection: View {
             ActivityFeed(entries: store.activity[trip.id] ?? [])
 
             if CloudSync.shared.sharedWithMe.contains(trip.id), !trip.members.contains(where: { $0.id == store.me.id }) {
+                let canJoin = store.canEdit(trip)
                 HStack(spacing: 12) {
                     AvatarView(member: store.me, size: 40)
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Bu seyahate katıldın").font(.tBodyStrong).foregroundStyle(Color.ink)
-                        Text("Harcama ve valizde görünmek için kendini ekle.").font(.caption).foregroundStyle(Color.ink2)
+                        Text(canJoin ? "Harcama ve valizde görünmek için kendini ekle."
+                                     : "Seyahatin sahibi seni yalnızca görüntüleyici olarak davet etti.")
+                            .font(.caption).foregroundStyle(Color.ink2)
                     }
                     Spacer()
-                    Button("Ekle") {
-                        var me = store.me
-                        me.role = .editor
-                        me.colorIndex = trip.members.count
-                        store.update(trip.id) { $0.members.append(me) }
+                    if canJoin {
+                        Button("Ekle") {
+                            var me = store.me
+                            me.role = .editor
+                            me.colorIndex = trip.members.count
+                            // Sahip yetkini değiştirdiğinde iCloud izni de seninle eşleşsin.
+                            me.cloudUserID = CloudSync.shared.currentUserID
+                            store.update(trip.id) { $0.members.append(me) }
+                        }
+                        .font(.system(.subheadline, weight: .semibold))
+                        .buttonStyle(.borderedProminent)
+                        .tint(Color.ink)
                     }
-                    .font(.system(.subheadline, weight: .semibold))
-                    .buttonStyle(.borderedProminent)
-                    .tint(Color.ink)
                 }
                 .tray(padding: 14)
             }
@@ -172,6 +179,12 @@ struct MemberEditor: View {
                             Text(MemberRole.editor.title).tag(MemberRole.editor)
                             Text(MemberRole.viewer.title).tag(MemberRole.viewer)
                         }
+                    }
+                } footer: {
+                    if member.role != .owner && canChangeRole && !isNew {
+                        Text(member.cloudUserID == nil
+                             ? "Bu kişi iCloud davetiyle katılıp kendini eklemediği için yetki yalnızca uygulamada uygulanır."
+                             : "Yetki iCloud paylaşımına da uygulanır: \"Sadece görür\" kişi seyahati hiçbir cihazdan değiştiremez.")
                     }
                 }
 

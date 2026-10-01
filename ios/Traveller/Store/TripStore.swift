@@ -22,24 +22,23 @@ final class TripStore {
     private(set) var extraVisitedCountries: Set<String> =
         Set(UserDefaults.standard.stringArray(forKey: TripStore.visitedKey) ?? [])
 
-    init(fileURL: URL = TripStore.defaultFileURL, seedIfEmpty: Bool = true) {
+    init(fileURL: URL = TripStore.defaultFileURL) {
         self.fileURL = fileURL
         if let data = UserDefaults.standard.data(forKey: Self.meKey),
            let me = try? JSONDecoder().decode(Member.self, from: data) {
             self.me = me
         } else {
-            self.me = Member(name: "Ben", role: .owner, colorIndex: 3,
-                             passport: Passport(expiresOn: Calendar.current.date(byAdding: .year, value: 5, to: .now) ?? .now))
+            let me = Member(name: "Ben", role: .owner, colorIndex: 3,
+                            passport: Passport(expiresOn: Calendar.current.date(byAdding: .year, value: 5, to: .now) ?? .now))
+            self.me = me
+            // Hemen kaydet: yoksa her açılışta yeni kimlik üretilir ve seyahatlerdeki "ben" eşleşmez.
+            if let data = try? JSONEncoder().encode(me) { UserDefaults.standard.set(data, forKey: Self.meKey) }
         }
         if let data = UserDefaults.standard.data(forKey: Self.manualStaysKey),
            let stays = try? JSONDecoder().decode([UUID: [ManualStay]].self, from: data) {
             manualStays = stays
         }
         load()
-        if trips.isEmpty && seedIfEmpty {
-            trips = SampleData.trips(me: me)
-            save()
-        }
     }
 
     nonisolated static var defaultFileURL: URL {
@@ -100,9 +99,12 @@ final class TripStore {
     // MARK: Roles
 
     /// Bu cihazın kullanıcısının seyahatteki rolü. Ekipte yoksa: paylaşılan seyahatte düzenleyici, kendi seyahatinde sahip.
+    /// Sahip iCloud'da salt okunur yaptıysa ekipteki rol ne olursa olsun görüntüleyici.
     func role(in trip: Trip) -> MemberRole {
-        if let member = trip.members.first(where: { $0.id == me.id }) { return member.role }
-        return CloudSync.shared.sharedWithMe.contains(trip.id) ? .editor : .owner
+        let cloud = CloudSync.shared
+        return SharePermissions.effectiveRole(memberRole: trip.members.first(where: { $0.id == me.id })?.role,
+                                              shareAccess: cloud.myAccess[trip.id],
+                                              isSharedWithMe: cloud.sharedWithMe.contains(trip.id))
     }
 
     /// "Sadece görür" yetkisindeki kişi seyahati değiştiremez.
@@ -222,6 +224,56 @@ final class TripStore {
         }
     }
 
+    // MARK: Onboarding
+
+    private static let preferencesKey = "traveller.preferences"
+    private static let onboardingKey = "traveller.onboarding.completed.v1"
+
+    /// İlk açılış anketinin cevapları.
+    private(set) var preferences: TravelPreferences = {
+        guard let data = UserDefaults.standard.data(forKey: TripStore.preferencesKey),
+              let decoded = try? JSONDecoder().decode(TravelPreferences.self, from: data) else { return TravelPreferences() }
+        return decoded
+    }()
+
+    /// İlk açılış tanıtımı ve profil oluşturma tamamlandı mı.
+    private(set) var hasCompletedOnboarding = UserDefaults.standard.bool(forKey: TripStore.onboardingKey)
+
+    /// Tanıtımın sonunda: profil ("hesap") ve anket kaydedilir; iCloud kimliği biliniyorsa profile bağlanır.
+    func completeOnboarding(profile: Member, preferences: TravelPreferences, cloudUserID: String?) {
+        var profile = profile
+        // Eski sürüm profili kaydetmediği için kimlik değişmiş olabilir: seyahatlerde sahibi olan
+        // varsayılan "Ben" kaydı varsa onun kimliği benimsenir (harcamalar ve valiz ona bağlı).
+        if !trips.contains(where: { $0.members.contains { $0.id == me.id } }),
+           let legacy = trips.lazy.flatMap(\.members).first(where: { $0.role == .owner && $0.name == "Ben" }) {
+            updateMe { $0.id = legacy.id }
+            profile.id = legacy.id
+        }
+        saveProfile(profile)
+        updateMe { me in
+            me.colorIndex = profile.colorIndex
+            if let cloudUserID { me.cloudUserID = cloudUserID }
+        }
+        for trip in trips where trip.members.contains(where: { $0.id == profile.id }) {
+            update(trip.id) { trip in
+                guard let index = trip.members.firstIndex(where: { $0.id == profile.id }) else { return }
+                trip.members[index].colorIndex = profile.colorIndex
+            }
+        }
+        self.preferences = preferences
+        if let data = try? JSONEncoder().encode(preferences) {
+            UserDefaults.standard.set(data, forKey: Self.preferencesKey)
+        }
+        hasCompletedOnboarding = true
+        UserDefaults.standard.set(true, forKey: Self.onboardingKey)
+    }
+
+    /// Profilden "tanıtımı yeniden göster".
+    func restartOnboarding() {
+        hasCompletedOnboarding = false
+        UserDefaults.standard.set(false, forKey: Self.onboardingKey)
+    }
+
     func setVisited(_ code: String, _ visited: Bool) {
         if visited { extraVisitedCountries.insert(code.uppercased()) } else { extraVisitedCountries.remove(code.uppercased()) }
         UserDefaults.standard.set(Array(extraVisitedCountries), forKey: Self.visitedKey)
@@ -234,9 +286,9 @@ final class TripStore {
         }
     }
 
-    func resetToSamples() {
-        trips = SampleData.trips(me: me)
-        save()
+    /// Hakkında > "Tüm seyahatleri sil": her seyahat tek tek silinir (fotoğraflar ve iCloud kaydı dahil).
+    func deleteAllTrips() {
+        for id in trips.map(\.id) { delete(id) }
     }
 
     // MARK: Persistence

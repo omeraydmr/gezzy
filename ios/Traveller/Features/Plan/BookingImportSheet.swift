@@ -4,7 +4,7 @@ import SwiftUI
 import TravellerKit
 import UniformTypeIdentifiers
 
-/// E-bilet ya da otel onayını (PDF veya ekran görüntüsü) okur, bulunan uçuş ve konaklamaları
+/// E-bilet ya da otel onayını (PDF, ekran görüntüsü ya da Wallet biniş kartı) okur, bulunan uçuş ve konaklamaları
 /// gösterir; seçilenler seyahate eklenir. Metin tamamen cihazda okunur.
 struct BookingImportSheet: View {
     @Environment(TripStore.self) private var store
@@ -26,13 +26,13 @@ struct BookingImportSheet: View {
                     Button {
                         isPickingFile = true
                     } label: {
-                        Label("PDF ya da dosya seç", systemImage: "doc.fill")
+                        Label("PDF, Wallet kartı ya da dosya seç", systemImage: "doc.fill")
                     }
                     PhotosPicker(selection: $photoItem, matching: .images) {
                         Label("Ekran görüntüsü seç", systemImage: "photo")
                     }
                 } footer: {
-                    Text("E-bilet ya da otel onayı. Metin cihazda okunur, hiçbir yere gönderilmez.")
+                    Text("E-bilet, otel onayı ya da Wallet biniş kartı (.pkpass). Metin cihazda okunur, hiçbir yere gönderilmez.")
                 }
 
                 if isReading {
@@ -84,7 +84,7 @@ struct BookingImportSheet: View {
                         .disabled(selectedFlights.isEmpty && selectedLodgings.isEmpty)
                 }
             }
-            .fileImporter(isPresented: $isPickingFile, allowedContentTypes: [.pdf, .image]) { outcome in
+            .fileImporter(isPresented: $isPickingFile, allowedContentTypes: [.pdf, .image, .walletPass]) { outcome in
                 if case let .success(url) = outcome {
                     Task { await read(url: url) }
                 }
@@ -156,7 +156,13 @@ struct BookingImportSheet: View {
         defer { isReading = false }
         errorText = nil
 
-        if url.pathExtension.lowercased() == "pdf", let document = PDFDocument(url: url) {
+        if url.pathExtension.lowercased() == "pkpass" {
+            guard let data = try? Data(contentsOf: url), let parsed = PassParser.parse(pkpass: data) else {
+                errorText = "Wallet kartı okunamadı."
+                return
+            }
+            apply(parsed)
+        } else if url.pathExtension.lowercased() == "pdf", let document = PDFDocument(url: url) {
             let text = document.string ?? ""
             if text.trimmingCharacters(in: .whitespacesAndNewlines).count > 40 {
                 apply(BookingParser.parse(text))
@@ -206,4 +212,9 @@ struct BookingImportSheet: View {
         }
         dismiss()
     }
+}
+
+private extension UTType {
+    /// Wallet kartı. Info.plist'te içe aktarılan tür olarak bildirilir (UTImportedTypeDeclarations).
+    static let walletPass = UTType(importedAs: "com.apple.pkpass", conformingTo: .data)
 }
