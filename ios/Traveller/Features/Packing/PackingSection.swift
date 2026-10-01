@@ -137,8 +137,7 @@ struct PackingSection: View {
                 .foregroundStyle(isSelected ? Color.onInk : Color.ink2)
                 .padding(.horizontal, 12)
                 .frame(height: 34)
-                .background(isSelected ? Color.ink : Color.tray, in: Capsule())
-                .softShadow()
+                .cardBackground(isSelected ? Color.ink : Color.tray, in: Capsule())
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
@@ -249,8 +248,7 @@ struct PackingSection: View {
                             .foregroundStyle(Color.ink)
                             .padding(.horizontal, 12)
                             .padding(.vertical, 8)
-                            .background(Color.tray, in: Capsule())
-                            .softShadow()
+                            .cardBackground(Color.tray, in: Capsule())
                     }
                     .buttonStyle(.plain)
                 }

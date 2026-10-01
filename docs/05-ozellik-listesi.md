@@ -90,3 +90,17 @@ Ana ekranın kaydırırken kasmasının olası nedenleri ve yapılanlar:
 | Yeni seyahat formunda 12 MP fotoğraf her tuş vuruşunda yeniden çiziliyordu | Önizleme küçültülüyor |
 | `softShadow` gölgeyi her alt görünüme ayrı uyguluyordu (22 yerde) | Önce tek katmana birleştiriliyor |
 | Her değişiklikte tüm seyahatler JSON olarak ana iş parçacığında diske yazılıyordu | 300 ms toplanıp arka planda, sırayla yazılıyor; arka plana geçerken bekleyen yazma bitiriliyor |
+
+## 6. Genel performans turu
+
+| Alan | Sorun | Düzeltme |
+|---|---|---|
+| Tüm kartlar (`tray`, `ModuleCard`, kutucuklar, hap düğmeler) | Gölge tüm içeriği tek katmana birleştirip hesaplıyordu; içinde kaydırma görünümü olan büyük kartlarda her değişiklikte büyük ekran dışı çizim | `cardBackground`: gölge yalnızca zemin şeklinden; içerik katmana birleştirilmiyor |
+| Plan haritası | Canlı harita gölge için katmana birleştiriliyordu | Gölge harita altındaki şekilden |
+| Plan | Seçili günün durakları, mesafe, açılış saati durumları ve önerileri gövde başına 5–10 kez yeniden hesaplanıyordu; açılış saatleri her seferinde metinden ayrıştırılıyordu | Gün planı gövde başına bir kez hesaplanıyor; açılış saati ayrıştırması önbellekli |
+| Plan · gün çipleri | Her çip kendi durak sayısını tüm duraklardan süzüyordu | Sayılar bir kez sözlükte |
+| Çevrimdışı harita | İnternet yokken görüntü ve kayıt tarihi her çizimde diskten okunuyordu | Bellek önbelleği |
+| Bütçe | Borç sadeleştirme bir çizimde 4–5 kez, para birimi dağılımı iki kez hesaplanıyordu | Birer kez |
+| Para birimi menüsü | Her satır için `NumberFormatter` kuruluyordu | Sembol önbelleği |
+| Masraf ekranı | Tuş takımında her basışta tam boy makbuz fotoğrafı 44 pt'ye ölçekleniyordu | Küçük kopya |
+| Bildirimler | Her düzenlemede tüm seyahat bildirimleri silinip yeniden ekleniyordu | Plan değişmediyse dokunulmuyor |
