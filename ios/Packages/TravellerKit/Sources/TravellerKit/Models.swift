@@ -333,7 +333,7 @@ public struct Trip: Codable, Hashable, Identifiable, Sendable {
 
     /// Durağın ziyaret gününe ve saatine göre açılış durumu; saat bilgisi yoksa nil.
     public func hoursStatus(of stop: Stop, calendar: Calendar = .current) -> OpeningHours.Status? {
-        guard let raw = stop.openingHours, let hours = OpeningHours(raw) else { return nil }
+        guard let raw = stop.openingHours, let hours = OpeningHours.cached(raw) else { return nil }
         let day = OpeningHours.dayIndex(calendarWeekday: calendar.component(.weekday, from: stop.day))
         return hours.status(day: day, startMinutes: stop.startMinutes, duration: stop.durationMinutes)
     }
@@ -348,7 +348,7 @@ public struct Trip: Codable, Hashable, Identifiable, Sendable {
 
     /// Önce aynı gün içinde saat kaydırmayı, olmazsa en yakın uygun günü önerir; çözüm yoksa nil.
     public func hoursFix(for stop: Stop, calendar: Calendar = .current) -> HoursFix? {
-        guard let raw = stop.openingHours, let hours = OpeningHours(raw),
+        guard let raw = stop.openingHours, let hours = OpeningHours.cached(raw),
               let status = hoursStatus(of: stop, calendar: calendar), status.isWarning else { return nil }
 
         let weekday = OpeningHours.dayIndex(calendarWeekday: calendar.component(.weekday, from: stop.day))

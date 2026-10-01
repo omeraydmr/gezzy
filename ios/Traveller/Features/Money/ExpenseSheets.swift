@@ -31,6 +31,8 @@ struct AddExpenseSheet: View {
 
     // Makbuz
     @State private var receiptImage: UIImage?
+    /// 44 pt düğme için küçük kopya; tuş takımında her basışta tam boy makbuz ölçeklenmesin.
+    @State private var receiptThumbnail: UIImage?
     @State private var receiptData: Data?
     @State private var isChoosingReceiptSource = false
     @State private var isShowingCamera = false
@@ -61,8 +63,7 @@ struct AddExpenseSheet: View {
                         .font(.system(.body, weight: .medium))
                         .padding(.horizontal, 16)
                         .frame(height: 44)
-                        .background(Color.tray, in: Capsule())
-                        .softShadow()
+                        .cardBackground(Color.tray, in: Capsule())
                     receiptButton
                 }
                 .padding(.horizontal, 16)
@@ -234,8 +235,7 @@ struct AddExpenseSheet: View {
                         .foregroundStyle(Color.ink)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
-                        .background(Color.tray, in: Capsule())
-                        .softShadow()
+                        .cardBackground(Color.tray, in: Capsule())
                 }
                 .buttonStyle(.plain)
             }
@@ -389,7 +389,7 @@ struct AddExpenseSheet: View {
         } label: {
             Group {
                 if let receiptImage {
-                    Image(uiImage: receiptImage)
+                    Image(uiImage: receiptThumbnail ?? receiptImage)
                         .resizable()
                         .scaledToFill()
                 } else {
@@ -401,10 +401,16 @@ struct AddExpenseSheet: View {
             .frame(width: 44, height: 44)
             .background(Color.tray)
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .softShadow()
+            .cardBackground(Color.tray, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(receiptImage == nil ? "Makbuz ekle" : "Makbuzu değiştir")
+        .onChange(of: receiptImage, initial: true) { _, image in
+            receiptThumbnail = image.flatMap { image in
+                let scale = 132 / max(1, min(image.size.width, image.size.height))
+                return image.preparingThumbnail(of: CGSize(width: image.size.width * scale, height: image.size.height * scale))
+            }
+        }
         .confirmationDialog("Makbuz", isPresented: $isChoosingReceiptSource, titleVisibility: .visible) {
             if UIImagePickerController.isSourceTypeAvailable(.camera) {
                 Button("Fotoğraf çek") { isShowingCamera = true }
@@ -608,8 +614,7 @@ struct Keypad: View {
                             label(for: key)
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 52)
-                                .background(Color.tray, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                                .softShadow()
+                                .cardBackground(Color.tray, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                         }
                         .buttonStyle(KeyPressStyle())
                     }

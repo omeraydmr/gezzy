@@ -16,12 +16,30 @@ enum AppFormat {
     }
 
     /// Para birimi sembolü: "EUR" → "€", "TRY" → "₺".
+    /// Sembol önbellekte tutulur; para birimi menüsünde her satır için biçimlendirici kurulmaz.
     static func currencySymbol(_ code: String) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.locale = locale
-        formatter.currencyCode = code
-        return formatter.currencySymbol ?? code
+        SymbolCache.shared.symbol(for: code) {
+            let formatter = NumberFormatter()
+            formatter.numberStyle = .currency
+            formatter.locale = locale
+            formatter.currencyCode = code
+            return formatter.currencySymbol ?? code
+        }
+    }
+
+    private final class SymbolCache: @unchecked Sendable {
+        static let shared = SymbolCache()
+        private let lock = NSLock()
+        private var symbols: [String: String] = [:]
+
+        func symbol(for code: String, make: () -> String) -> String {
+            lock.lock()
+            defer { lock.unlock() }
+            if let cached = symbols[code] { return cached }
+            let symbol = make()
+            symbols[code] = symbol
+            return symbol
+        }
     }
 
     /// Kullanıcının yazdığı tutarı ("1.600", "12,50") kuruşa çevirir.

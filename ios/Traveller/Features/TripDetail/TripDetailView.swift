@@ -211,11 +211,10 @@ struct TripStub: View {
         }
         .onAppear { isLiveActivityRunning = LiveActivityController.isRunning(for: trip) }
         .padding(18)
-        .background(Color.tray, in: RoundedRectangle(cornerRadius: Radius.tray, style: .continuous))
+        .cardBackground(Color.tray, in: RoundedRectangle(cornerRadius: Radius.tray, style: .continuous))
         .overlay(alignment: .top) {
             Capsule().fill(tint).frame(width: 36, height: 4).offset(y: -2)
         }
-        .softShadow()
     }
 
     /// Servisten gelen durum: "Rötarlı +40 dk", kapı/terminal, son kontrol zamanı ve yenileme.
