@@ -13,13 +13,12 @@ struct CrewSection: View {
         ModuleCard("Ekip", symbol: "person.2.fill") {
             StoryHeadline(text: "\(trip.members.count) kişi \(trip.destination.city) yolunda.")
 
-            VStack(spacing: 0) {
-                ForEach(Array(trip.members.enumerated()), id: \.element.id) { index, member in
-                    if index > 0 { Divider().overlay(Color.line) }
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
+                ForEach(trip.members) { member in
                     Button {
                         editing = member
                     } label: {
-                        CrewRow(member: member)
+                        MemberTile(member: member, trip: trip)
                     }
                     .buttonStyle(.plain)
                     .contextMenu {
@@ -30,25 +29,35 @@ struct CrewSection: View {
                         }
                     }
                 }
+                Button {
+                    isAdding = true
+                } label: {
+                    VStack(spacing: 8) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 18, weight: .semibold))
+                            .frame(width: 52, height: 52)
+                            .background(Color.track, in: Circle())
+                        Text("Kişi ekle").font(.system(.subheadline, weight: .semibold))
+                    }
+                    .foregroundStyle(Color.ink2)
+                    .frame(maxWidth: .infinity, minHeight: 168)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 22, style: .continuous)
+                            .strokeBorder(Color.ink3.opacity(0.6), style: StrokeStyle(lineWidth: 1.5, dash: [6, 5]))
+                    )
+                }
+                .buttonStyle(.plain)
             }
-            .tray(padding: 16)
 
             VStack(alignment: .leading, spacing: 8) {
                 Label("Davet linki ve QR kod", systemImage: "link")
                     .font(.tBodyStrong)
                     .foregroundStyle(Color.ink)
-                Text("Ekip arkadaşlarının kendi telefonlarından katılması için hesap ve senkronizasyon gerekiyor; bir sonraki adımda eklenecek. Şimdilik kişileri buradan elle ekleyebilirsin.")
+                Text("Yakında: arkadaşların kendi telefonlarından katılabilecek. Şimdilik kişileri buradan ekleyebilirsin.")
                     .font(.tBody)
                     .foregroundStyle(Color.ink2)
             }
             .tray()
-
-            Button {
-                isAdding = true
-            } label: {
-                Label("Kişi ekle", systemImage: "person.badge.plus")
-            }
-            .buttonStyle(.primary)
         }
         .sheet(item: $editing) { member in
             MemberEditor(member: member) { updated in
@@ -89,30 +98,45 @@ struct CrewSection: View {
     }
 }
 
-struct CrewRow: View {
+/// Ekip ızgarasındaki kişi kartı: büyük avatar, rol ve vize durumu.
+struct MemberTile: View {
     let member: Member
+    let trip: Trip
 
     var body: some View {
-        HStack(spacing: 14) {
-            AvatarView(member: member, size: 44)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(member.name).font(.tBodyStrong).foregroundStyle(Color.ink)
-                Text(passportText).font(.tBody).foregroundStyle(Color.ink2).lineLimit(1)
+        let result = VisaAdvisor.assess(countryCode: trip.destination.countryCode, passport: member.passport,
+                                        tripStart: trip.startDate, tripEnd: trip.endDate)
+        let tag = VisaText.tag(result)
+        VStack(spacing: 8) {
+            AvatarView(member: member, size: 56)
+                .overlay(alignment: .bottomTrailing) {
+                    if member.role == .owner {
+                        Image(systemName: "crown.fill")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(width: 20, height: 20)
+                            .background(Color.food, in: Circle())
+                            .overlay(Circle().strokeBorder(Color.tray, lineWidth: 2))
+                    }
+                }
+            VStack(spacing: 2) {
+                Text(member.name).font(.tBodyStrong).foregroundStyle(Color.ink).lineLimit(1)
+                Text(member.role.title).font(.caption).foregroundStyle(Color.ink3)
             }
-            Spacer(minLength: 8)
-            Tag(text: member.role.title, accent: member.role == .viewer ? .gray : .green)
+            HStack(spacing: 4) {
+                Image(systemName: "person.text.rectangle")
+                Text(tag.text)
+            }
+            .font(.system(.caption, weight: .semibold))
+            .foregroundStyle(tag.accent == .gray ? Color.ink2 : tag.accent.base)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
+            .background(tag.accent.tint, in: Capsule())
         }
-        .padding(.vertical, 12)
-        .contentShape(Rectangle())
-    }
-
-    private var passportText: String {
-        guard let passport = member.passport else { return "Pasaport bilgisi yok" }
-        var text = "Pasaport \(AppFormat.longDate(passport.expiresOn))"
-        if !passport.heldVisas.isEmpty {
-            text += " · " + passport.heldVisas.map { VisaText.zoneName($0.zone) }.joined(separator: ", ")
-        }
-        return text
+        .frame(maxWidth: .infinity, minHeight: 168)
+        .background(Color.tray, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .softShadow()
+        .accessibilityElement(children: .combine)
     }
 }
 

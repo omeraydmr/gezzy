@@ -5,10 +5,16 @@ struct VisaSection: View {
     let trip: Trip
     @State private var selected: Member?
 
-    private var assessments: [(member: Member, result: VisaAssessment)] {
+    private struct Row {
+        let member: Member
+        let result: VisaAssessment
+    }
+
+    private var assessments: [Row] {
         trip.members.map { member in
-            (member, VisaAdvisor.assess(countryCode: trip.destination.countryCode, passport: member.passport,
-                                        tripStart: trip.startDate, tripEnd: trip.endDate))
+            Row(member: member,
+                result: VisaAdvisor.assess(countryCode: trip.destination.countryCode, passport: member.passport,
+                                           tripStart: trip.startDate, tripEnd: trip.endDate))
         }
     }
 
@@ -18,18 +24,23 @@ struct VisaSection: View {
         ModuleCard("Vize", symbol: "person.text.rectangle.fill") {
             StoryHeadline(text: headline(ready: readyCount, total: rows.count))
 
-            VStack(spacing: 0) {
-                ForEach(Array(rows.enumerated()), id: \.element.member.id) { index, row in
-                    if index > 0 { Divider().overlay(Color.line) }
-                    Button {
-                        selected = row.member
-                    } label: {
-                        VisaMemberRow(member: row.member, result: row.result)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(rows, id: \.member.id) { row in
+                        Button {
+                            selected = row.member
+                        } label: {
+                            PassportCard(member: row.member, result: row.result,
+                                         countryCode: trip.destination.countryCode)
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
                 }
+                .scrollTargetLayout()
+                .padding(.vertical, 6)
             }
-            .tray(padding: 16)
+            .scrollTargetBehavior(.viewAligned)
+            .scrollClipDisabled()
 
             VStack(alignment: .leading, spacing: 8) {
                 Text("\(Countries.flag(trip.destination.countryCode)) \(Countries.name(trip.destination.countryCode))")
@@ -55,24 +66,96 @@ struct VisaSection: View {
     }
 }
 
-struct VisaMemberRow: View {
+/// Bordo T.C. pasaportu görünümünde kart; üzerinde seyahatin vize durumu damga olarak basılı.
+struct PassportCard: View {
     let member: Member
     let result: VisaAssessment
+    let countryCode: String
+
+    private static let burgundy = [Color(hex: 0x8A2433), Color(hex: 0x5A1420)]
+    private static let gold = Color(hex: 0xE2C27A)
 
     var body: some View {
-        HStack(spacing: 14) {
-            AvatarView(member: member, size: 44)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(member.name).font(.tBodyStrong).foregroundStyle(Color.ink)
-                Text(VisaText.subtitle(result)).font(.tBody).foregroundStyle(Color.ink2).lineLimit(2)
+        let tag = VisaText.tag(result)
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("TÜRKİYE CUMHURİYETİ")
+                        .font(.system(size: 9, weight: .semibold))
+                        .tracking(1.2)
+                    Text("PASAPORT")
+                        .font(.system(size: 13, weight: .bold))
+                        .tracking(2.5)
+                }
+                .foregroundStyle(Self.gold)
+                Spacer()
+                Image(systemName: "moon.stars.fill")
+                    .font(.system(size: 18))
+                    .foregroundStyle(Self.gold.opacity(0.85))
             }
-            Spacer(minLength: 8)
-            let tag = VisaText.tag(result)
-            Tag(text: tag.text, accent: tag.accent)
+            Spacer(minLength: 10)
+            HStack(spacing: 10) {
+                AvatarView(member: member, size: 40)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(member.name)
+                        .font(.system(.headline, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                    Text(passportLine)
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.75))
+                        .lineLimit(1)
+                }
+            }
         }
-        .padding(.vertical, 12)
-        .contentShape(Rectangle())
-        .accessibilityElement(children: .combine)
+        .padding(16)
+        .frame(width: 250, height: 156)
+        .background(
+            LinearGradient(colors: Self.burgundy, startPoint: .topLeading, endPoint: .bottomTrailing)
+                .overlay(Hatch(spacing: 7).stroke(Color.white.opacity(0.04), lineWidth: 1))
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(alignment: .topTrailing) {
+            VisaStamp(text: tag.text, countryCode: countryCode, accent: tag.accent)
+                .rotationEffect(.degrees(-12))
+                .offset(x: -14, y: 46)
+        }
+        .shadow(color: Color(hex: 0x5A1420).opacity(0.3), radius: 12, y: 8)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("\(member.name), \(VisaText.subtitle(result))"))
+        .accessibilityAddTraits(.isButton)
+    }
+
+    private var passportLine: String {
+        guard let passport = member.passport else { return "Pasaport bilgisi yok" }
+        return "Geçerlilik \(AppFormat.longDate(passport.expiresOn))"
+    }
+}
+
+/// Mürekkep damgası görünümünde durum etiketi.
+struct VisaStamp: View {
+    let text: String
+    let countryCode: String
+    let accent: Accent
+
+    var body: some View {
+        let color = accent == .gray ? Color.white.opacity(0.8) : accent.base
+        VStack(spacing: 1) {
+            Text(Countries.flag(countryCode)).font(.system(size: 14))
+            Text(text.uppercased(with: AppFormat.locale))
+                .font(.system(size: 11, weight: .heavy))
+                .tracking(0.8)
+                .lineLimit(1)
+        }
+        .foregroundStyle(color)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 5)
+        .background(Color.white.opacity(0.92), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .strokeBorder(color, style: StrokeStyle(lineWidth: 2, dash: [5, 2]))
+                .padding(2)
+        )
     }
 }
 

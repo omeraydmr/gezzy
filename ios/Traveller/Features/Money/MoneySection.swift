@@ -36,39 +36,69 @@ struct MoneySection: View {
     // MARK: Budget
 
     private var budgetCard: some View {
-        ModuleCard("Bütçe", symbol: "chart.pie.fill", accessory: {
+        let summary = self.summary
+        return ModuleCard("Bütçe", symbol: "chart.pie.fill", accessory: {
             Button("Düzenle") { isEditingBudget = true }
                 .font(.system(.subheadline, weight: .medium))
                 .foregroundStyle(Color.ink2)
         }) {
-            VStack(alignment: .leading, spacing: 4) {
-                (Text(money(summary.spent)).foregroundStyle(Color.ink)
-                    + Text(summary.limit > 0 ? " / \(money(summary.limit))" : "").foregroundStyle(Color.ink3))
-                    .font(.tAmount)
-                Text(paceText).font(.tBody).foregroundStyle(Color.ink2)
+            HStack(spacing: 18) {
+                DonutChart(slices: summary.categories.map {
+                    DonutSlice(id: $0.category.rawValue, value: Double($0.spent), color: $0.category.accent.base)
+                }, total: Double(summary.limit), lineWidth: 14) {
+                    VStack(spacing: 0) {
+                        Text(summary.limit > 0 ? "%\(percent(summary))" : "—")
+                            .font(.system(.title3, weight: .semibold))
+                            .foregroundStyle(Color.ink)
+                        Text("harcandı")
+                            .font(.caption2)
+                            .foregroundStyle(Color.ink3)
+                    }
+                }
+                .frame(width: 112, height: 112)
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(money(summary.spent))
+                        .font(.tAmount)
+                        .foregroundStyle(Color.ink)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                    if summary.limit > 0 {
+                        Text("/ \(money(summary.limit)) · kalan \(money(max(0, summary.limit - summary.spent)))")
+                            .font(.tBody)
+                            .foregroundStyle(Color.ink3)
+                    }
+                    let pace = paceChip(summary.pace)
+                    StatChip(symbol: pace.symbol, text: pace.text, accent: pace.accent)
+                }
+                Spacer(minLength: 0)
             }
 
             if summary.categories.isEmpty {
                 EmptyHint(symbol: "chart.bar", text: "Kategori limitleri belirle, harcamalar burada dolsun.")
                     .tray()
             } else {
-                VStack(spacing: 20) {
+                LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
                     ForEach(summary.categories, id: \.category) { item in
-                        CategoryBudgetRow(item: item, currency: trip.currency)
+                        CategoryTile(item: item, currency: trip.currency)
                     }
                 }
-                .tray()
             }
         }
     }
 
-    private var paceText: String {
-        switch summary.pace {
-        case .notStarted: "Seyahat başlamadı · ön harcamalar"
-        case let .under(day, total): "\(total) günün \(day). günü · tempo gerisinde"
-        case let .onTrack(day, total): "\(total) günün \(day). günü · tam temposunda"
-        case let .ahead(day, total): "\(total) günün \(day). günü · tempo biraz önde"
-        case .finished: "Seyahat tamamlandı"
+    private func percent(_ summary: BudgetSummary) -> Int {
+        guard summary.limit > 0 else { return 0 }
+        return Int((Double(summary.spent) / Double(summary.limit) * 100).rounded())
+    }
+
+    private func paceChip(_ pace: BudgetPace) -> (text: String, symbol: String, accent: Accent) {
+        switch pace {
+        case .notStarted: ("Ön harcamalar", "clock", .gray)
+        case let .under(day, total): ("Gün \(day)/\(total) · tempo gerisinde", "tortoise.fill", .green)
+        case let .onTrack(day, total): ("Gün \(day)/\(total) · tam temposunda", "checkmark", .blue)
+        case let .ahead(day, total): ("Gün \(day)/\(total) · biraz önde", "hare.fill", .orange)
+        case .finished: ("Seyahat tamamlandı", "flag.checkered", .gray)
         }
     }
 
@@ -77,26 +107,26 @@ struct MoneySection: View {
     private var balancesCard: some View {
         ModuleCard("Bakiyeler", symbol: "wallet.pass.fill") {
             StoryHeadline(text: balancesHeadline)
-            VStack(spacing: 0) {
-                ForEach(Array(transfers.enumerated()), id: \.offset) { index, transfer in
-                    if index > 0 { Divider().overlay(Color.line) }
-                    TransferRow(trip: trip, transfer: transfer) { pendingTransfer = transfer }
-                }
-                ForEach(Array(settledMembers.enumerated()), id: \.element.id) { index, member in
-                    if index > 0 || !transfers.isEmpty { Divider().overlay(Color.line) }
-                    HStack(spacing: 14) {
-                        AvatarView(member: member, size: 44)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(member.name).font(.tBodyStrong).foregroundStyle(Color.ink)
-                            Text("hesap kapalı").font(.tBody).foregroundStyle(Color.ink2)
-                        }
-                        Spacer()
-                        Image(systemName: "checkmark").font(.headline).foregroundStyle(Color.success)
+
+            if !transfers.isEmpty {
+                VStack(spacing: 10) {
+                    ForEach(Array(transfers.enumerated()), id: \.offset) { _, transfer in
+                        TransferTicket(trip: trip, transfer: transfer) { pendingTransfer = transfer }
                     }
-                    .padding(.vertical, 12)
                 }
             }
-            .tray(padding: 16)
+
+            if !settledMembers.isEmpty {
+                HStack(spacing: 10) {
+                    AvatarStack(members: settledMembers, size: 28, limit: 5)
+                    Text(transfers.isEmpty ? "Herkesin hesabı kapalı" : "Hesabı kapalı")
+                        .font(.tBody)
+                        .foregroundStyle(Color.ink2)
+                    Spacer()
+                    Image(systemName: "checkmark.circle.fill").foregroundStyle(Color.success)
+                }
+                .tray(padding: 14)
+            }
 
             Button {
                 isAddingExpense = true
@@ -128,25 +158,50 @@ struct MoneySection: View {
     // MARK: Expenses
 
     private var expensesCard: some View {
-        let expenses = trip.expenses.sorted { $0.date > $1.date }
+        let calendar = Calendar.current
+        let groups = Dictionary(grouping: trip.expenses) { calendar.startOfDay(for: $0.date) }
+            .map { ExpenseDay(date: $0.key, items: $0.value.sorted { $0.date > $1.date }) }
+            .sorted { $0.date > $1.date }
         return ModuleCard("Harcamalar", symbol: "list.bullet.rectangle.fill") {
-            if expenses.isEmpty {
+            if groups.isEmpty {
                 EmptyHint(symbol: "creditcard", text: "Henüz harcama yok.").tray()
             } else {
-                VStack(spacing: 0) {
-                    ForEach(Array(expenses.enumerated()), id: \.element.id) { index, expense in
-                        if index > 0 { Divider().overlay(Color.line) }
-                        ExpenseRow(trip: trip, expense: expense)
-                            .contextMenu {
-                                Button("Sil", systemImage: "trash", role: .destructive) {
-                                    store.update(trip.id) { $0.expenses.removeAll { $0.id == expense.id } }
+                VStack(alignment: .leading, spacing: 14) {
+                    ForEach(groups) { group in
+                        let items = group.items
+                        let dayTotal = items.filter { !$0.isTransfer }.reduce(0) { $0 + $1.amount }
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack {
+                                Text(AppFormat.shortDate(group.date)).font(.tCaption).foregroundStyle(Color.ink3)
+                                Spacer()
+                                if dayTotal > 0 {
+                                    Text(money(dayTotal)).font(.tCaption).foregroundStyle(Color.ink3)
                                 }
                             }
+                            .padding(.horizontal, 4)
+                            VStack(spacing: 0) {
+                                ForEach(Array(items.enumerated()), id: \.element.id) { index, expense in
+                                    if index > 0 { Divider().overlay(Color.line) }
+                                    ExpenseRow(trip: trip, expense: expense)
+                                        .contextMenu {
+                                            Button("Sil", systemImage: "trash", role: .destructive) {
+                                                store.update(trip.id) { $0.expenses.removeAll { $0.id == expense.id } }
+                                            }
+                                        }
+                                }
+                            }
+                            .tray(padding: 14)
+                        }
                     }
                 }
-                .tray(padding: 16)
             }
         }
+    }
+
+    private struct ExpenseDay: Identifiable {
+        let date: Date
+        let items: [Expense]
+        var id: Date { date }
     }
 
     // MARK: Helpers
@@ -163,69 +218,118 @@ struct MoneySection: View {
 
 // MARK: - Rows
 
-struct CategoryBudgetRow: View {
+/// 2x2 ızgaradaki kategori kutucuğu.
+struct CategoryTile: View {
     let item: CategorySpend
     let currency: String
 
     var body: some View {
         let accent = item.category.accent
-        VStack(spacing: 10) {
-            HStack(spacing: 12) {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
                 Image(systemName: item.category.symbol)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(accent.base)
-                    .frame(width: 36, height: 36)
-                    .background(accent.tint, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                Text(item.category.title).font(.tBodyStrong).foregroundStyle(Color.ink)
-                Spacer(minLength: 8)
+                    .frame(width: 26, height: 26)
+                    .background(accent.tint, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                Text(item.category.title)
+                    .font(.system(.subheadline, weight: .medium))
+                    .foregroundStyle(Color.ink)
+                    .lineLimit(1)
+            }
+            VStack(alignment: .leading, spacing: 1) {
                 Text(AppFormat.money(item.spent, currency))
-                    .font(.tBodyStrong)
+                    .font(.system(.headline, weight: .semibold))
                     .foregroundStyle(item.isOver ? Color.food : accent.base)
-                if item.limit > 0 {
-                    Text("/ \(AppFormat.money(item.limit, currency))")
-                        .font(.tBody)
-                        .foregroundStyle(Color.ink3)
-                }
+                Text(item.limit > 0 ? "/ \(AppFormat.money(item.limit, currency))" : "limit yok")
+                    .font(.caption)
+                    .foregroundStyle(Color.ink3)
             }
             .lineLimit(1)
             .minimumScaleFactor(0.8)
-            HatchedBar(progress: item.progress, color: accent.base)
+            HatchedBar(progress: item.progress, color: accent.base, height: 8)
         }
+        .padding(14)
+        .background(Color.tray, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .softShadow()
         .accessibilityElement(children: .combine)
     }
 }
 
-struct TransferRow: View {
+/// Bir borç transferi, yanlarında çentik olan küçük bir bilet olarak.
+struct TransferTicket: View {
     let trip: Trip
     let transfer: Transfer
     let onSettle: () -> Void
 
+    private static let height: CGFloat = 96
+
     var body: some View {
-        HStack(spacing: 14) {
-            if let from = trip.member(transfer.from) {
-                AvatarView(member: from, size: 44)
-            }
-            VStack(alignment: .leading, spacing: 2) {
-                Text(trip.member(transfer.from)?.name ?? "?").font(.tBodyStrong).foregroundStyle(Color.ink)
-                HStack(spacing: 6) {
-                    Text("öder").foregroundStyle(Color.ink2)
-                    if let to = trip.member(transfer.to) {
-                        AvatarView(member: to, size: 20)
-                        Text(to.name).foregroundStyle(Color.ink2)
-                    }
+        Button(action: onSettle) {
+            HStack(spacing: 10) {
+                person(transfer.from, caption: "öder")
+                ZStack {
+                    TransferArc()
+                        .stroke(Color.ink3, style: StrokeStyle(lineWidth: 1.5, lineCap: .round, dash: [2, 4]))
+                        .frame(height: 30)
+                        .offset(y: -10)
+                    Text(AppFormat.money(transfer.amount, trip.currency))
+                        .font(.system(.headline, weight: .semibold))
+                        .foregroundStyle(Color.food)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.foodTint, in: Capsule())
+                        .offset(y: 10)
                 }
-                .font(.tBody)
+                .frame(maxWidth: .infinity)
+                person(transfer.to, caption: "alır", trailing: true)
             }
-            Spacer()
-            Button(action: onSettle) {
-                Text(AppFormat.money(transfer.amount, trip.currency))
-                    .font(.system(.title3, weight: .semibold))
-                    .foregroundStyle(Color.food)
-            }
-            .buttonStyle(.plain)
-            .accessibilityHint("Ödendi olarak işaretle")
+            .padding(.horizontal, 22)
+            .frame(height: Self.height)
+            .background(Color.tray)
+            .clipShape(SideNotchedShape())
+            .softShadow()
         }
-        .padding(.vertical, 12)
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityHint("Ödendi olarak işaretle")
+    }
+
+    private func person(_ id: UUID, caption: String, trailing: Bool = false) -> some View {
+        VStack(spacing: 4) {
+            if let member = trip.member(id) {
+                AvatarView(member: member, size: 38)
+                Text(member.name).font(.system(.subheadline, weight: .semibold)).foregroundStyle(Color.ink).lineLimit(1)
+            }
+            Text(caption).font(.caption2).foregroundStyle(Color.ink3)
+        }
+        .frame(width: 64)
+    }
+}
+
+/// Soldan sağa uçan kesikli yay.
+struct TransferArc: Shape {
+    func path(in rect: CGRect) -> Path {
+        Path { path in
+            path.move(to: CGPoint(x: rect.minX, y: rect.maxY))
+            path.addQuadCurve(to: CGPoint(x: rect.maxX, y: rect.maxY), control: CGPoint(x: rect.midX, y: rect.minY - rect.height * 0.4))
+        }
+    }
+}
+
+/// Yan kenarlarının ortasında çentik olan kart.
+struct SideNotchedShape: Shape {
+    var notchRadius: CGFloat = 10
+    var cornerRadius: CGFloat = 22
+
+    func path(in rect: CGRect) -> Path {
+        let body = Path(roundedRect: rect, cornerRadius: cornerRadius, style: .continuous)
+        var notches = Path()
+        for x in [rect.minX, rect.maxX] {
+            notches.addEllipse(in: CGRect(x: x - notchRadius, y: rect.midY - notchRadius,
+                                          width: notchRadius * 2, height: notchRadius * 2))
+        }
+        return body.subtracting(notches)
     }
 }
 

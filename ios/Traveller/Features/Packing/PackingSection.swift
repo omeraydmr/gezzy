@@ -9,13 +9,40 @@ struct PackingSection: View {
     @State private var newAssignee: UUID?
     @FocusState private var isAddFieldFocused: Bool
     @State private var suggestions: [String] = []
+    @State private var filter: Filter = .everyone
+    @Environment(\.tripTint) private var tint
+
+    enum Filter: Hashable {
+        case everyone, unassigned
+        case member(UUID)
+    }
 
     private var items: [PackingItem] { trip.packing }
+    private var visibleItems: [PackingItem] {
+        switch filter {
+        case .everyone: items
+        case .unassigned: items.filter { trip.member($0.assignee) == nil }
+        case let .member(id): items.filter { $0.assignee == id }
+        }
+    }
     private var packedCount: Int { items.filter(\.isPacked).count }
 
     var body: some View {
         ModuleCard("Valiz", symbol: "bag.fill") {
-            StoryHeadline(text: headline)
+            HStack(spacing: 16) {
+                ProgressRing(progress: items.isEmpty ? 0 : Double(packedCount) / Double(items.count), color: tint,
+                             lineWidth: 7) {
+                    Text(items.isEmpty ? "—" : "%\(Int((Double(packedCount) / Double(items.count) * 100).rounded()))")
+                        .font(.system(.subheadline, weight: .semibold))
+                        .foregroundStyle(Color.ink)
+                }
+                .frame(width: 64, height: 64)
+                StoryHeadline(text: headline)
+            }
+
+            if !items.isEmpty {
+                filterChips
+            }
 
             VStack(alignment: .leading, spacing: 0) {
                 if !items.isEmpty {
@@ -24,7 +51,11 @@ struct PackingSection: View {
                     Divider().overlay(Color.line)
                 }
 
-                ForEach(items) { item in
+                if visibleItems.isEmpty && !items.isEmpty {
+                    EmptyHint(symbol: "line.3.horizontal.decrease", text: "Bu filtrede madde yok.")
+                }
+
+                ForEach(visibleItems) { item in
                     PackingRow(trip: trip, item: item) {
                         store.update(trip.id) { trip in
                             if let index = trip.packing.firstIndex(where: { $0.id == item.id }) {
@@ -63,6 +94,49 @@ struct PackingSection: View {
         }
         if remaining == 0 { return "Her şey hazır ✓" }
         return "\(items.count) maddenin \(TurkishGrammar.withPossessive(packedCount)) hazır.\(when)"
+    }
+
+    // MARK: Filter
+
+    private var filterChips: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                chip(.everyone) { Text("Herkes · \(items.count)") }
+                ForEach(trip.members) { member in
+                    let count = items.filter { $0.assignee == member.id }.count
+                    if count > 0 {
+                        chip(.member(member.id)) {
+                            HStack(spacing: 6) {
+                                AvatarView(member: member, size: 22)
+                                Text("\(member.name) · \(count)")
+                            }
+                        }
+                    }
+                }
+                let unassigned = items.filter { trip.member($0.assignee) == nil }.count
+                if unassigned > 0 {
+                    chip(.unassigned) { Text("Atanmadı · \(unassigned)") }
+                }
+            }
+            .padding(.vertical, 2)
+        }
+    }
+
+    private func chip<ChipLabel: View>(_ value: Filter, @ViewBuilder label: () -> ChipLabel) -> some View {
+        let isSelected = filter == value
+        return Button {
+            withAnimation(.spring(duration: 0.25)) { filter = isSelected ? .everyone : value }
+        } label: {
+            label()
+                .font(.system(.footnote, weight: .semibold))
+                .foregroundStyle(isSelected ? Color.onInk : Color.ink2)
+                .padding(.horizontal, 12)
+                .frame(height: 34)
+                .background(isSelected ? Color.ink : Color.tray, in: Capsule())
+                .softShadow()
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
     // MARK: Progress

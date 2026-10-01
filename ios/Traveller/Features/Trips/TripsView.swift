@@ -121,16 +121,8 @@ struct TripsView: View {
 
     /// Odaktaki seyahatin renginden gelen yumuşak ışık.
     private var background: some View {
-        ZStack {
-            Color.canvas
-            Circle()
-                .fill((focused?.tint ?? Color.ink3).opacity(0.3))
-                .frame(width: 440, height: 440)
-                .blur(radius: 100)
-                .offset(y: -140)
-        }
-        .ignoresSafeArea()
-        .animation(.easeInOut(duration: 0.6), value: focusedIndex)
+        TintGlow(tint: focused?.tint ?? Color.ink3)
+            .animation(.easeInOut(duration: 0.6), value: focusedIndex)
     }
 }
 
