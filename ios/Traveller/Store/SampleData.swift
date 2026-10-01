@@ -43,7 +43,7 @@ enum SampleData {
                                day: (Int) -> Date, at: (Int, Int, Int, String) -> Date) -> Trip {
         let all = [owner.id, elif.id, can.id, deniz.id]
         let start = 11
-        return Trip(
+        var trip = Trip(
             name: "Lizbon Kaçamağı",
             destination: Destination(countryCode: "PT", city: "Lizbon",
                                      coordinate: Coordinate(latitude: 38.7223, longitude: -9.1393)),
@@ -97,5 +97,18 @@ enum SampleData {
                 PackingItem(title: "Güneş kremi"),
             ]
         )
+        trip.lodgings = [
+            Lodging(name: "Alfama'daki ev", address: "Rua dos Remédios, Lizbon",
+                    coordinate: Coordinate(latitude: 38.7118, longitude: -9.1300),
+                    checkIn: at(start, 15, 0, "Europe/Lisbon"), checkOut: at(start + 6, 11, 0, "Europe/Lisbon"),
+                    confirmation: "4583920175", note: "Anahtar kutusu kapıda"),
+        ]
+        trip.ideas = [
+            Stop(day: day(start), order: 0, name: "LX Factory", kind: .sight,
+                 coordinate: Coordinate(latitude: 38.7036, longitude: -9.1786), note: "Pazar günü bit pazarı"),
+            Stop(day: day(start), order: 1, name: "Time Out Market", kind: .food,
+                 coordinate: Coordinate(latitude: 38.7069, longitude: -9.1459)),
+        ]
+        return trip
     }
 }
