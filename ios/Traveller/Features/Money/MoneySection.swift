@@ -15,10 +15,11 @@ struct MoneySection: View {
     private var transfers: [Transfer] { Settlement.transfers(for: trip) }
 
     var body: some View {
+        let breakdown = Budget.currencyBreakdown(for: trip)
         VStack(spacing: 16) {
             budgetCard
-            if Budget.currencyBreakdown(for: trip).count > 1 {
-                CurrencyBreakdownCard(trip: trip)
+            if breakdown.count > 1 {
+                CurrencyBreakdownCard(trip: trip, totals: breakdown)
             }
             balancesCard
             expensesCard
@@ -116,8 +117,11 @@ struct MoneySection: View {
     // MARK: Balances
 
     private var balancesCard: some View {
-        ModuleCard("Bakiyeler", symbol: "wallet.pass.fill") {
-            StoryHeadline(text: balancesHeadline)
+        // Borç sadeleştirme bir kez hesaplanır; başlık, liste ve "hesabı kapalı" satırı aynı sonucu kullanır.
+        let transfers = self.transfers
+        let settled = settledMembers(transfers)
+        return ModuleCard("Bakiyeler", symbol: "wallet.pass.fill") {
+            StoryHeadline(text: balancesHeadline(transfers))
 
             if !transfers.isEmpty {
                 VStack(spacing: 10) {
@@ -127,9 +131,9 @@ struct MoneySection: View {
                 }
             }
 
-            if !settledMembers.isEmpty {
+            if !settled.isEmpty {
                 HStack(spacing: 10) {
-                    AvatarStack(members: settledMembers, size: 28, limit: 5)
+                    AvatarStack(members: settled, size: 28, limit: 5)
                     Text(transfers.isEmpty ? "Herkesin hesabı kapalı" : "Hesabı kapalı")
                         .font(.tBody)
                         .foregroundStyle(Color.ink2)
@@ -148,12 +152,12 @@ struct MoneySection: View {
         }
     }
 
-    private var settledMembers: [Member] {
+    private func settledMembers(_ transfers: [Transfer]) -> [Member] {
         let involved = Set(transfers.flatMap { [$0.from, $0.to] })
         return trip.members.filter { !involved.contains($0.id) }
     }
 
-    private var balancesHeadline: String {
+    private func balancesHeadline(_ transfers: [Transfer]) -> String {
         switch transfers.count {
         case 0: "Herkes dengede."
         case 1: "Tek transfer tüm seyahati kapatıyor."
@@ -276,8 +280,7 @@ struct CategoryTile: View {
             HatchedBar(progress: item.progress, color: accent.base, height: 8)
         }
         .padding(14)
-        .background(Color.tray, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .softShadow()
+        .cardBackground(Color.tray, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         .accessibilityElement(children: .combine)
     }
 }
@@ -314,7 +317,7 @@ struct TransferTicket: View {
             .frame(height: Self.height)
             .background(Color.tray)
             .clipShape(SideNotchedShape())
-            .softShadow()
+            .background { SideNotchedShape().fill(Color.tray).softShadow() }
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
@@ -456,9 +459,10 @@ struct ReceiptViewer: View {
 /// Harcamaların para birimine göre dağılımı: hangi parayla ne kadar harcandı, seyahat parasında karşılığı.
 struct CurrencyBreakdownCard: View {
     let trip: Trip
+    /// Üst görünümde zaten hesaplanmış dağılım.
+    let totals: [CurrencyTotal]
 
     var body: some View {
-        let totals = Budget.currencyBreakdown(for: trip)
         let sum = max(totals.reduce(0) { $0 + $1.convertedTotal }, 1)
         ModuleCard("Para birimleri", symbol: "dollarsign.arrow.circlepath") {
             StoryHeadline(text: headline(totals, sum: sum))

@@ -33,6 +33,27 @@ public struct OpeningHours: Hashable, Sendable {
         guard parsedAny else { return nil }
     }
 
+    /// Önbellekli çözümleme: aynı metin her çizimde yeniden ayrıştırılmaz.
+    public static func cached(_ raw: String) -> OpeningHours? {
+        ParseCache.shared.value(for: raw)
+    }
+
+    private final class ParseCache: @unchecked Sendable {
+        static let shared = ParseCache()
+        private let lock = NSLock()
+        private var storage: [String: OpeningHours?] = [:]
+
+        func value(for raw: String) -> OpeningHours? {
+            lock.lock()
+            defer { lock.unlock() }
+            if let hit = storage[raw] { return hit }
+            let parsed = OpeningHours(raw)
+            if storage.count > 512 { storage.removeAll() }
+            storage[raw] = .some(parsed)
+            return parsed
+        }
+    }
+
     /// Bir kuralı (günler, aralıklar) olarak çözer; desteklenmeyen kurallar nil döner.
     static func parseRule(_ rule: String) -> ([Int], [Interval])? {
         let parts = rule.trimmingCharacters(in: .whitespaces).split(separator: " ", maxSplits: 1).map(String.init)

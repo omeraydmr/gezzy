@@ -205,8 +205,7 @@ struct TripGlance: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(12)
-            .background(Color.tray, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .softShadow()
+            .cardBackground(Color.tray, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text("\(caption): \(value)"))

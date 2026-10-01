@@ -21,6 +21,8 @@ final class NotificationScheduler {
     private(set) var authorizationDenied = false
     private var latestTrips: [Trip] = []
     private var task: Task<Void, Never>?
+    /// Son kurulan plan; değişmediyse bildirimler silinip yeniden eklenmez.
+    @ObservationIgnored private var lastScheduled: [PlannedNotification]?
 
     /// Kullanıcı açınca izin ister; reddedilirse kapalı kalır.
     func setEnabled(_ enabled: Bool) async {
@@ -59,15 +61,21 @@ final class NotificationScheduler {
     }
 
     private func reschedule() async {
+        let planned = isEnabled
+            ? Array(latestTrips
+                .flatMap { NotificationPlanner.plan(for: $0) }
+                .sorted { $0.date < $1.date }
+                .prefix(Self.globalLimit))
+            : []
+        // Her düzenlemede (valiz işaretleme, harcama) aynı plan çıkıyorsa iOS'a dokunma.
+        guard planned != lastScheduled else { return }
+        lastScheduled = planned
+
         let center = UNUserNotificationCenter.current()
         let existing = await center.pendingNotificationRequests().map(\.identifier).filter { $0.hasPrefix("trip-") }
         center.removePendingNotificationRequests(withIdentifiers: existing)
         guard isEnabled else { return }
 
-        let planned = latestTrips
-            .flatMap { NotificationPlanner.plan(for: $0) }
-            .sorted { $0.date < $1.date }
-            .prefix(Self.globalLimit)
         for item in planned {
             let content = UNMutableNotificationContent()
             content.title = item.title
@@ -117,6 +125,9 @@ final class OfflineMapStore {
     }
 
     private(set) var states: [UUID: State] = [:]
+    /// Diskten okunan görüntüler ve kayıt tarihleri; her çizimde dosya sistemine gidilmesin.
+    private let images = NSCache<NSString, UIImage>()
+    @ObservationIgnored private var savedDates: [UUID: Date?] = [:]
     private let directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         .appendingPathComponent("OfflineMaps", isDirectory: true)
 
@@ -127,7 +138,11 @@ final class OfflineMapStore {
     }
 
     func image(tripID: UUID, day: Date) -> UIImage? {
-        UIImage(contentsOfFile: fileURL(tripID: tripID, day: day).path)
+        let url = fileURL(tripID: tripID, day: day)
+        if let cached = images.object(forKey: url.path as NSString) { return cached }
+        guard let image = UIImage(contentsOfFile: url.path) else { return nil }
+        images.setObject(image, forKey: url.path as NSString)
+        return image
     }
 
     /// Tüm günlerin haritalarını oluşturur (durak konumu olan günler).
@@ -138,6 +153,8 @@ final class OfflineMapStore {
             return
         }
         let folder = directory.appendingPathComponent(trip.id.uuidString, isDirectory: true)
+        images.removeAllObjects()
+        savedDates[trip.id] = nil
         try? FileManager.default.removeItem(at: folder)
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
 
@@ -156,13 +173,18 @@ final class OfflineMapStore {
 
     func remove(_ tripID: UUID) {
         try? FileManager.default.removeItem(at: directory.appendingPathComponent(tripID.uuidString))
+        images.removeAllObjects()
+        savedDates[tripID] = nil
         states[tripID] = .idle
     }
 
     private func savedDate(for tripID: UUID) -> Date? {
+        if let cached = savedDates[tripID] { return cached }
         let folder = directory.appendingPathComponent(tripID.uuidString)
         let attributes = try? FileManager.default.attributesOfItem(atPath: folder.path)
-        return attributes?[.modificationDate] as? Date
+        let date = attributes?[.modificationDate] as? Date
+        savedDates[tripID] = .some(date)
+        return date
     }
 
     private func fileURL(tripID: UUID, day: Date) -> URL {

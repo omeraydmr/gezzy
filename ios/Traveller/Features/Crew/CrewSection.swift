@@ -147,8 +147,7 @@ struct MemberTile: View {
             .background(tag.accent.tint, in: Capsule())
         }
         .frame(maxWidth: .infinity, minHeight: 168)
-        .background(Color.tray, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .softShadow()
+        .cardBackground(Color.tray, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
         .accessibilityElement(children: .combine)
     }
 }
