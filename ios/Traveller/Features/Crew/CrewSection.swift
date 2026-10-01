@@ -183,6 +183,26 @@ struct MemberEditor: View {
                     Text("Pasaport (T.C.)")
                 }
 
+                Section {
+                    TextField("TR00 0000 0000 0000 0000 0000 00", text: Binding(
+                        get: { member.iban ?? "" },
+                        set: { member.iban = $0.isEmpty ? nil : IBAN.formatted($0) }
+                    ))
+                    .font(.system(.body, design: .monospaced))
+                    .textInputAutocapitalization(.characters)
+                    .autocorrectionDisabled()
+                    .keyboardType(.asciiCapable)
+                    if let iban = member.iban, !iban.isEmpty, !IBAN.isValid(iban) {
+                        Label("IBAN geçersiz görünüyor", systemImage: "exclamationmark.triangle.fill")
+                            .font(.footnote)
+                            .foregroundStyle(Color.food)
+                    }
+                } header: {
+                    Text("IBAN")
+                } footer: {
+                    Text("Hesaplaşmada bu kişiye borcu olanlar IBAN'ı tek dokunuşla kopyalayabilir.")
+                }
+
                 if member.passport != nil {
                     Section {
                         ForEach(VisaZone.allCases, id: \.self) { zone in

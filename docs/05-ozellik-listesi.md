@@ -40,12 +40,12 @@ Hiçbir özellik henüz gerçek cihazda denenmedi.
 | Duraklar arası ulaşım satırı (yürüme/tram/taksi süreleri) | ✅ | Apple Haritalar'dan yürüme ve toplu taşıma süresi; otelden ilk durağa da |
 | Rota optimizasyonu | 🟡 | En kısa yürüyüş sırası, sabah oteli başlangıç; açılış saatlerini henüz dikkate almıyor |
 | "Fikirler" havuzu (güne atanmamış yerler) | ✅ | Plan sekmesinde; "Güne ekle", duraktan "Fikirlere taşı" |
-| Vize başvuru takibi: randevu, belge listesi, durum | 🟡 | Uyarılar var, takip yok |
-| Belge kasası (pasaport, sigorta, bilet PDF'leri) | ⬜ | |
-| Settle up: IBAN kopyala, "ödendi" işaretle, özet paylaş | 🟡 | Transferler var, IBAN/paylaşım yok |
+| Vize başvuru takibi: randevu, belge listesi, durum | ✅ | Durum hapları, randevu tarihi ve yeri, kalıcı belge listesi; randevu öncesi bildirim; ekiple eşitlenir |
+| Belge kasası (pasaport, sigorta, bilet PDF'leri) | ✅ | Vize sekmesinde; dosya/fotoğraf/kamera, önizleme, kişiye bağlama, "yalnızca bu cihazda"; diğerleri iCloud ile eşitlenir |
+| Settle up: IBAN kopyala, "ödendi" işaretle, özet paylaş | ✅ | Kişi kartında IBAN (doğrulamalı), ödeme sorusunda "IBAN'ı kopyala", metin özeti paylaşma |
 | Roller (düzenleyebilir / yalnızca görüntüler) | ⬜ | iCloud paylaşımı izin veriyor ama arayüz yok |
 | Aktivite akışı ("Elif durak ekledi") | 🟡 | Bildirim olarak var, uygulama içi liste yok |
-| Profil: gezilen ülkeler | ⬜ | |
+| Profil: gezilen ülkeler | ✅ | Ana sayfada avatar → profil: kendi bilgilerin, IBAN, gezilen ülkeler (otomatik + elle), dünya yüzdesi; Hakkında buraya taşındı |
 
 ## 3. Yeni adaylar
 

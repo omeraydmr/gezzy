@@ -259,23 +259,34 @@ final class CloudSync {
             record["coverName"] = nil
         }
 
-        // Makbuzlar seyahat kaydına bağlı ayrı kayıtlar; paylaşımla birlikte katılanlara da gider.
-        let receipts = trip.expenses.compactMap(\.receiptPhoto).filter { !uploadedPhotos.contains("receipt-\($0)") }
-        let photoRecords: [CKRecord] = receipts.compactMap { name in
+        // Makbuzlar ve belgeler seyahat kaydına bağlı ayrı kayıtlar; paylaşımla birlikte katılanlara da gider.
+        // "Yalnızca bu cihazda" işaretli belgeler yüklenmez.
+        let receiptFiles: [UploadFile] = trip.expenses.compactMap(\.receiptPhoto).compactMap { name -> UploadFile? in
             guard let url = CoverImageStore.receipts.fileURL(named: name) else { return nil }
-            let photo = CKRecord(recordType: Self.photoType, recordID: CKRecord.ID(recordName: "receipt-\(name)", zoneID: id.zoneID))
-            photo["name"] = name as CKRecordValue
-            photo["kind"] = "receipt" as CKRecordValue
-            photo["asset"] = CKAsset(fileURL: url)
-            photo.setParent(id)
-            return photo
+            return UploadFile(kind: "receipt", name: name, url: url)
         }
+        let documentFiles: [UploadFile] = trip.documentList.filter { !$0.isPrivate }.compactMap { document -> UploadFile? in
+            guard let url = CoverImageStore.documents.fileURL(named: document.fileName) else { return nil }
+            return UploadFile(kind: "document", name: document.fileName, url: url)
+        }
+        let files = receiptFiles + documentFiles
+        let photoRecords: [CKRecord] = files
+            .filter { !uploadedPhotos.contains("\($0.kind)-\($0.name)") }
+            .map { file in
+                let photo = CKRecord(recordType: Self.photoType,
+                                     recordID: CKRecord.ID(recordName: "\(file.kind)-\(file.name)", zoneID: id.zoneID))
+                photo["name"] = file.name as CKRecordValue
+                photo["kind"] = file.kind as CKRecordValue
+                photo["asset"] = CKAsset(fileURL: file.url)
+                photo.setParent(id)
+                return photo
+            }
 
         let (results, _) = try await database.modifyRecords(saving: [record] + photoRecords, deleting: [],
                                                             savePolicy: .ifServerRecordUnchanged, atomically: false)
         for photo in photoRecords {
-            if case .success? = results[photo.recordID], let name = photo["name"] as? String {
-                uploadedPhotos.insert("receipt-\(name)")
+            if case .success? = results[photo.recordID] {
+                uploadedPhotos.insert(photo.recordID.recordName)
             }
         }
         if case let .failure(error)? = results[id] {
@@ -324,6 +335,12 @@ final class CloudSync {
     // MARK: Photos
 
     private static let photoType = "Photo"
+
+    private struct UploadFile {
+        let kind: String
+        let name: String
+        let url: URL
+    }
     private static let uploadedKey = "traveller.cloud.uploadedPhotos"
 
     /// Buluta yüklenmiş (ya da buluttan gelmiş) fotoğraf anahtarları; tekrar yüklenmez.
@@ -334,8 +351,10 @@ final class CloudSync {
 
     private func importPhoto(_ record: CKRecord) {
         guard let name = record["name"] as? String, let asset = record["asset"] as? CKAsset, let url = asset.fileURL else { return }
-        CoverImageStore.receipts.importFile(at: url, named: name)
-        uploadedPhotos.insert("receipt-\(name)")
+        let kind = record["kind"] as? String ?? "receipt"
+        let store = kind == "document" ? CoverImageStore.documents : CoverImageStore.receipts
+        store.importFile(at: url, named: name)
+        uploadedPhotos.insert("\(kind)-\(name)")
     }
 
     // MARK: Helpers

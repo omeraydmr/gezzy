@@ -15,7 +15,7 @@ struct TripsView: View {
     @State private var path: [TripRoute] = []
     @State private var coverTarget: Trip.ID?
     @State private var pendingDelete: Trip?
-    @State private var isShowingAbout = false
+    @State private var isShowingProfile = false
     @State private var arrivingID: Trip.ID?
 
     enum Scope: Hashable { case upcoming, past }
@@ -92,7 +92,7 @@ struct TripsView: View {
                 }
             }
             .coverPhotoPicker(for: $coverTarget)
-            .sheet(isPresented: $isShowingAbout) { AboutView() }
+            .sheet(isPresented: $isShowingProfile) { ProfileView() }
             .confirmationDialog("Seyahat silinsin mi?", isPresented: Binding(
                 get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } }
             ), titleVisibility: .visible, presenting: pendingDelete) { trip in
@@ -119,7 +119,7 @@ struct TripsView: View {
         AppRouter.shared.pending = nil
         guard let trip = store.trip(link.tripID) else { return }
         isCreating = false
-        isShowingAbout = false
+        isShowingProfile = false
         let target: Scope = trip.isPast() ? .past : .upcoming
         let list = target == .past ? store.past : store.upcoming
         scope = target
@@ -138,12 +138,12 @@ struct TripsView: View {
             Spacer()
             PillPicker(selection: $scope, options: [.upcoming, .past]) { $0 == .upcoming ? "Yaklaşan" : "Geçmiş" }
             Button {
-                isShowingAbout = true
+                isShowingProfile = true
             } label: {
-                Image(systemName: "info")
+                AvatarView(member: store.me, size: 34)
             }
-            .buttonStyle(.circleIcon(size: 40))
-            .accessibilityLabel("Hakkında")
+            .buttonStyle(.plain)
+            .accessibilityLabel("Profil ve ayarlar")
         }
     }
 

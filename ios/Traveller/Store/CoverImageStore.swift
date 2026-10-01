@@ -14,6 +14,11 @@ final class CoverImageStore {
         .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         .appendingPathComponent("Receipts", isDirectory: true))
 
+    /// Belge kasası dosyaları (PDF, fotoğraf) için ayrı klasör; olduğu gibi saklanır.
+    static let documents = CoverImageStore(directory: FileManager.default
+        .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        .appendingPathComponent("TripDocuments", isDirectory: true))
+
     private let directory: URL
     private let images = NSCache<NSString, UIImage>()
     /// Kartlar için küçültülmüş ve önceden çözülmüş görüntüler ("ad@piksel").
@@ -99,6 +104,14 @@ final class CoverImageStore {
         let name = UUID().uuidString + ".jpg"
         try jpeg.write(to: directory.appendingPathComponent(name), options: [.atomic, .completeFileProtection])
         images.setObject(resized, forKey: name as NSString)
+        return name
+    }
+
+    /// Veriyi değiştirmeden kaydeder (PDF gibi); dosya adını döndürür.
+    func saveRaw(_ data: Data, fileExtension: String) throws -> String {
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let name = UUID().uuidString + "." + fileExtension.lowercased()
+        try data.write(to: directory.appendingPathComponent(name), options: [.atomic, .completeFileProtection])
         return name
     }
 

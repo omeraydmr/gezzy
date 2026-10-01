@@ -16,6 +16,11 @@ final class TripStore {
     private let fileURL: URL
     private static let meKey = "traveller.me"
     private static let manualStaysKey = "traveller.schengen.manualStays"
+    private static let visitedKey = "traveller.profile.visitedCountries"
+
+    /// Uygulamada seyahati olmayan, elle eklenen gezilmiş ülkeler.
+    private(set) var extraVisitedCountries: Set<String> =
+        Set(UserDefaults.standard.stringArray(forKey: TripStore.visitedKey) ?? [])
 
     init(fileURL: URL = TripStore.defaultFileURL, seedIfEmpty: Bool = true) {
         self.fileURL = fileURL
@@ -165,6 +170,28 @@ final class TripStore {
         if let data = try? JSONEncoder().encode(manualStays) {
             UserDefaults.standard.set(data, forKey: Self.manualStaysKey)
         }
+    }
+
+    /// Profil kaydedilince ad, pasaport ve IBAN, kendi kopyanın bulunduğu tüm seyahatlere de yansır.
+    func saveProfile(_ profile: Member) {
+        updateMe { me in
+            me.name = profile.name
+            me.passport = profile.passport
+            me.iban = profile.iban
+        }
+        for trip in trips where trip.members.contains(where: { $0.id == profile.id }) {
+            update(trip.id) { trip in
+                guard let index = trip.members.firstIndex(where: { $0.id == profile.id }) else { return }
+                trip.members[index].name = profile.name
+                trip.members[index].passport = profile.passport
+                trip.members[index].iban = profile.iban
+            }
+        }
+    }
+
+    func setVisited(_ code: String, _ visited: Bool) {
+        if visited { extraVisitedCountries.insert(code.uppercased()) } else { extraVisitedCountries.remove(code.uppercased()) }
+        UserDefaults.standard.set(Array(extraVisitedCountries), forKey: Self.visitedKey)
     }
 
     func updateMe(_ change: (inout Member) -> Void) {

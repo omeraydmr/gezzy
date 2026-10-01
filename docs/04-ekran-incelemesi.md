@@ -40,6 +40,10 @@ Görsel maket: [`design/screens.html`](../design/screens.html)
 | Fikirler | — | Güne atanmamış yerler havuzu; "Sal 14 ekle" ile seçili günün sonuna taşınır; duraktan "Fikirlere taşı" |
 | Rezervasyon içe aktarma | — | PDF ya da ekran görüntüsünden (cihazda okunur) uçuş numarası, rota, tarih, saat, koltuk ve otel adı, giriş/çıkış, rezervasyon no bulunur; seçilenler seyahate eklenir |
 | Duraklar arası süre | Kuş uçuşu tahmin | Apple Haritalar'dan yürüme ve (uzun mesafede) toplu taşıma süresi; ağ yoksa tahmin |
+| Vize başvurusu | Oturumluk belge işaretleri | Durum (hazırlanıyor → onaylandı), randevu tarihi ve yeri, kalıcı belge listesi; randevudan önceki akşam ve 2 saat önce bildirim; randevu seyahate çok yakınsa uyarı |
+| Belgeler | — | Vize sekmesinde belge kasası: PDF, fotoğraf ya da kamera; tür ve kişi; önizleme ve paylaşma; pasaport/vize varsayılan olarak yalnızca cihazda |
+| Hesaplaşma | Yalnızca "ödendi" | Kişi kartında IBAN; ödeme sorusunda "IBAN'ı kopyala"; hesaplaşma özetini mesajla paylaş |
+| Profil | — | Ana sayfa başlığındaki avatar: ad, pasaport, vizeler, IBAN (tüm seyahatlerdeki kendi kopyana yansır), gezilen ülkeler ve dünya yüzdesi; Hakkında buraya taşındı |
 | Uçuş durumu | Elle girilen kapı | AeroDataBox'tan rötar, kapı, terminal ve aşama; bilet koçanında "Rötarlı +40 dk" ve üstü çizili eski saat; kapı değişince, rötar olunca, biniş başlayınca bildirim; uygulama açılınca ve arka planda yenilenir |
 | Ana ekran widget'ı | — | Küçük: sıradaki seyahate kalan gün; seyahatteyken "3. gün / 7" ve günün sıradaki durağı. Orta: ek olarak uçuş ve tarihler. Dokununca ilgili seyahat açılır |
 | Bildirimden geçiş | Ana ekran açılır | Bildirime dokununca ilgili seyahatin ilgili sekmesi: harcama → Bütçe, valiz → Valiz, durak/uçuş → Plan, katılım → Ekip; widget ve canlı kart da aynı bağlantıyı kullanır |

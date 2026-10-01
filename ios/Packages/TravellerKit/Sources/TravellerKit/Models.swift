@@ -67,13 +67,17 @@ public struct Member: Codable, Hashable, Identifiable, Sendable {
     /// Avatar ve kişi bazlı grafiklerde kullanılan palet sırası.
     public var colorIndex: Int
     public var passport: Passport?
+    /// Hesaplaşmada para gönderilecek IBAN (isteğe bağlı).
+    public var iban: String?
 
-    public init(id: UUID = UUID(), name: String, role: MemberRole = .editor, colorIndex: Int = 0, passport: Passport? = nil) {
+    public init(id: UUID = UUID(), name: String, role: MemberRole = .editor, colorIndex: Int = 0, passport: Passport? = nil,
+                iban: String? = nil) {
         self.id = id
         self.name = name
         self.role = role
         self.colorIndex = colorIndex
         self.passport = passport
+        self.iban = iban
     }
 
     public var initial: String {
@@ -244,6 +248,68 @@ public struct PackingItem: Codable, Hashable, Identifiable, Sendable {
     }
 }
 
+// MARK: - Visa application
+
+/// Vize gereken bir yolcu için başvuru takibi.
+public struct VisaApplication: Codable, Hashable, Identifiable, Sendable {
+    public enum Status: String, Codable, CaseIterable, Hashable, Sendable {
+        case preparing, appointmentBooked, submitted, approved, rejected
+    }
+
+    public var id: UUID
+    public var memberID: UUID
+    public var status: Status
+    /// Randevu (aracı kurum / konsolosluk) tarihi ve saati.
+    public var appointment: Date?
+    /// Randevu yeri, ör. "VFS Global İstanbul Gayrettepe".
+    public var center: String
+    /// Tamamlanan belge listesi maddeleri.
+    public var checkedDocuments: [String]
+    public var note: String
+
+    public init(id: UUID = UUID(), memberID: UUID, status: Status = .preparing, appointment: Date? = nil,
+                center: String = "", checkedDocuments: [String] = [], note: String = "") {
+        self.id = id
+        self.memberID = memberID
+        self.status = status
+        self.appointment = appointment
+        self.center = center
+        self.checkedDocuments = checkedDocuments
+        self.note = note
+    }
+}
+
+// MARK: - Documents
+
+/// Belge kasasındaki bir dosya (pasaport, sigorta, bilet…). Dosya uygulama klasöründe, kayıt seyahatte.
+public struct TravelDocument: Codable, Hashable, Identifiable, Sendable {
+    public enum Kind: String, Codable, CaseIterable, Hashable, Sendable {
+        case passport, visa, insurance, ticket, reservation, other
+    }
+
+    public var id: UUID
+    public var title: String
+    public var kind: Kind
+    /// Uygulama klasöründeki dosya adı (uzantısıyla).
+    public var fileName: String
+    /// Kime ait (yoksa herkes için).
+    public var memberID: UUID?
+    /// true ise dosya iCloud'a yüklenmez; yalnızca ekleyen cihazda kalır.
+    public var isPrivate: Bool
+    public var addedAt: Date
+
+    public init(id: UUID = UUID(), title: String, kind: Kind, fileName: String, memberID: UUID? = nil,
+                isPrivate: Bool = false, addedAt: Date = Date()) {
+        self.id = id
+        self.title = title
+        self.kind = kind
+        self.fileName = fileName
+        self.memberID = memberID
+        self.isPrivate = isPrivate
+        self.addedAt = addedAt
+    }
+}
+
 // MARK: - Lodging
 
 /// Otel, ev ya da hostel kaydı.
@@ -305,6 +371,10 @@ public struct Trip: Codable, Hashable, Identifiable, Sendable {
     public var lodgings: [Lodging]?
     /// Henüz bir güne atanmamış yerler ("Fikirler" havuzu); `day` alanı anlamsızdır.
     public var ideas: [Stop]?
+    /// Vize başvuru takipleri (kişi başına).
+    public var visaApplications: [VisaApplication]?
+    /// Belge kasası.
+    public var documents: [TravelDocument]?
 
     public init(id: UUID = UUID(), name: String, destination: Destination, startDate: Date, endDate: Date,
                 status: TripStatus = .planned, currency: String = "EUR", coverSeed: Int = 0, coverPhoto: String? = nil,
@@ -360,6 +430,11 @@ public struct Trip: Codable, Hashable, Identifiable, Sendable {
 
     public var lodgingList: [Lodging] { (lodgings ?? []).sorted { $0.checkIn < $1.checkIn } }
     public var ideaList: [Stop] { ideas ?? [] }
+    public var documentList: [TravelDocument] { (documents ?? []).sorted { $0.addedAt > $1.addedAt } }
+
+    public func visaApplication(for memberID: UUID) -> VisaApplication? {
+        visaApplications?.first { $0.memberID == memberID }
+    }
 
     /// Günün başladığı konaklama: önceki gece kalınan yer, yoksa o gün girilen yer.
     public func lodging(forMorningOf day: Date, calendar: Calendar = .current) -> Lodging? {
@@ -475,7 +550,8 @@ public struct Trip: Codable, Hashable, Identifiable, Sendable {
     /// Bu seyahatteki tüm alt öğelerin kimlikleri.
     public var itemIDs: Set<UUID> {
         Set(members.map(\.id) + stops.map(\.id) + expenses.map(\.id) + packing.map(\.id)
-            + (lodgings ?? []).map(\.id) + (ideas ?? []).map(\.id))
+            + (lodgings ?? []).map(\.id) + (ideas ?? []).map(\.id)
+            + (visaApplications ?? []).map(\.id) + (documents ?? []).map(\.id))
     }
 
     /// Önceki halde olup bu halde olmayan öğeleri silindi olarak işaretler.
@@ -506,6 +582,13 @@ public struct Trip: Codable, Hashable, Identifiable, Sendable {
         result.lodgings = lodgings.isEmpty ? nil : lodgings
         let ideas = union(result.ideas ?? [], older.ideas ?? [])
         result.ideas = ideas.isEmpty ? nil : ideas
+        // Aynı kişi için iki cihazda ayrı başvuru açıldıysa yenisi kalır.
+        var seenMembers: Set<UUID> = []
+        let applications = union(result.visaApplications ?? [], older.visaApplications ?? [])
+            .filter { seenMembers.insert($0.memberID).inserted }
+        result.visaApplications = applications.isEmpty ? nil : applications
+        let documents = union(result.documents ?? [], older.documents ?? [])
+        result.documents = documents.isEmpty ? nil : documents
         result.tombstones = deleted.isEmpty ? nil : deleted
         return result
     }
