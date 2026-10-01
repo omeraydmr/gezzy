@@ -35,6 +35,8 @@ targets:
             CFBundleURLSchemes:
               - traveller
         FlightStatusAPIKey: $(FLIGHT_STATUS_API_KEY)
+        LiveActivityServerHost: $(LIVE_ACTIVITY_SERVER_HOST)
+        LiveActivityServerKey: $(LIVE_ACTIVITY_SERVER_KEY)
         # Wallet biniş kartları (.pkpass) içe aktarılabilsin; Wallet'ı olmayan ortamda da tür tanınsın.
         UTImportedTypeDeclarations:
           - UTTypeIdentifier: com.apple.pkpass

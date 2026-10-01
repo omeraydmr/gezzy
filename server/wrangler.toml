@@ -1,0 +1,22 @@
+name = "traveller-live"
+main = "src/index.ts"
+compatibility_date = "2026-09-01"
+
+# Kayıtlı canlı kartlar (push token → uçuş). Oluştur: npx wrangler kv namespace create ACTIVITIES
+[[kv_namespaces]]
+binding = "ACTIVITIES"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+
+# Uçuşlar 5 dakikada bir kontrol edilir.
+[triggers]
+crons = ["*/5 * * * *"]
+
+[vars]
+APNS_BUNDLE_ID = "app.traveller.ios"
+
+# Gizli değerler (npx wrangler secret put <AD>):
+#   CLIENT_KEY        uygulamanın X-Traveller-Key başlığı (LIVE_ACTIVITY_SERVER_KEY ile aynı)
+#   RAPIDAPI_KEY      AeroDataBox (RapidAPI) anahtarı
+#   APNS_KEY_ID       Apple Developer > Keys'teki APNs anahtarının kimliği
+#   APNS_TEAM_ID      Takım kimliği (4BAD86T55H)
+#   APNS_PRIVATE_KEY  .p8 dosyasının içeriği (BEGIN/END satırlarıyla)

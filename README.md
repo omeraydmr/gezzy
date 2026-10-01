@@ -10,6 +10,9 @@ Seyahatin öncesi, sırası ve sonrası — ekibinle, tek yerde: rota ve harita,
 ## iOS uygulaması
 Kurulum ve yapı için: [`ios/README.md`](ios/README.md)
 
+## Canlı uçuş kartı sunucusu
+Uygulama kapalıyken kilit ekranı kartını güncelleyen isteğe bağlı sunucu: [`server/README.md`](server/README.md)
+
 ## Tasarım
 - `design/tokens.json` — renk, tipografi, köşe, boşluk, gölge token'ları (açık/koyu)
 - `design/preview.html` — bileşen önizlemesi (tarayıcıda açın)

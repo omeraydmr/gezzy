@@ -27,14 +27,32 @@ enum LiveActivityController {
             tripID: trip.id.uuidString, tripName: trip.name, flightNumber: flight.flightNumber,
             fromCode: flight.fromCode, fromCity: flight.fromCity, toCode: flight.toCode, toCity: flight.toCity,
             scheduledDeparture: flight.departure, tint: trip.tint.rgbHex)
-        _ = try? Activity.request(attributes: attributes,
-                                  content: ActivityContent(state: state(for: flight), staleDate: flight.effectiveArrival),
-                                  pushType: nil)
+        // Sunucu tanımlıysa kart push token'la başlar; sunucu uçuşu izleyip uygulama kapalıyken de günceller.
+        let activity = try? Activity.request(attributes: attributes,
+                                             content: ActivityContent(state: state(for: flight), staleDate: flight.effectiveArrival),
+                                             pushType: LiveActivityPushClient.isConfigured ? .token : nil)
+        if let activity { observePushToken(activity, flight: flight) }
     }
+
+    /// Token ilk verildiğinde ve iOS yenilediğinde sunucuya kaydeder.
+    private static func observePushToken(_ activity: Activity<FlightActivityAttributes>, flight: FlightSegment) {
+        guard LiveActivityPushClient.isConfigured, !observed.contains(activity.id) else { return }
+        observed.insert(activity.id)
+        Task {
+            for await token in activity.pushTokenUpdates {
+                await LiveActivityPushClient.register(token: token, flight: flight)
+            }
+        }
+    }
+
+    private static var observed: Set<String> = []
 
     static func stop(for trip: Trip) {
         for activity in activities(for: trip) {
-            Task { await activity.end(nil, dismissalPolicy: .immediate) }
+            Task {
+                if let token = activity.pushToken { await LiveActivityPushClient.unregister(token: token) }
+                await activity.end(nil, dismissalPolicy: .immediate)
+            }
         }
     }
 
@@ -44,6 +62,8 @@ enum LiveActivityController {
         for trip in trips {
             guard let flight = trip.primaryFlight else { continue }
             let running = activities(for: trip)
+            // Uygulama yeniden açıldığında süren kartların token'ını yeniden dinle.
+            running.forEach { observePushToken($0, flight: flight) }
             if flight.effectiveArrival < now || flight.live?.phase == .arrived {
                 running.forEach { activity in Task { await activity.end(nil, dismissalPolicy: .default) } }
                 continue

@@ -51,22 +51,18 @@ Hiçbir özellik henüz gerçek cihazda denenmedi.
 
 ## 3. Yeni adaylar
 
-| # | Özellik | Değer | Efor | Not |
-|---|---|---|---|---|
-| A | Cihazda test turu + TestFlight | Çok yüksek | Orta | İlk açılış, izin akışları, ikon, gizlilik etiketleri |
-| B | Anılar (fotoğraf öbekleme + kartpostal özet) | Yüksek | Büyük | PhotoKit, cihazda öbekleme |
-| C | Biletten otomatik doldurma (PDF/ekran görüntüsü/.pkpass) | Yüksek | Orta | Vision ile cihazda okuma |
-| D | Schengen 90/180 gün hesaplayıcı | Yüksek (TR) | Küçük | ✅ Vize sekmesinde; seyahatler + elle eklenen ziyaretler |
-| E | Vize randevu ve belge takibi | Yüksek (TR) | Orta | |
-| F | Tax-free iade takibi | Orta | Küçük | |
-| G | Gidiş öncesi kontrol listesi (harç, roaming/eSIM, sigorta, kart) | Orta | Küçük | Valize benzer |
-| H | Hesaplaşma: IBAN, "ödendi", özet paylaş | Orta | Küçük | |
-| I | Konaklama kayıtları + giriş/çıkış bildirimleri | Orta | Orta | |
-| J | Duraklar arası toplu taşıma süreleri | Orta | Orta | MapKit ETA |
-| K | Acil durum kartı (konsolosluk, acil numaralar, alerji kartı) | Orta | Küçük | İnternetsiz |
-| L | Seyahat özeti (harcama, adım, yerler) paylaşılabilir kart | Orta | Orta | HealthKit isteğe bağlı |
-| M | Canlı kartı sunucu push'u ile güncelleme | Düşük-orta | Büyük | Sunucu gerekir |
-| N | İngilizce yerelleştirme | Orta | Orta | Global kitle için |
+Listedeki tüm adaylar yapıldı:
+
+| # | Özellik | Not |
+|---|---|---|
+| F | Tax-free iade takibi | Bütçe sekmesinde; ülkenin KDV oranından tahmini iade, durum takibi, dönüş günü gümrük hatırlatması |
+| G | Gidiş öncesi kontrol listesi | Valiz sekmesinde; harç pulu, eSIM, kartlar, sigorta, vize, check-in… son günü gelince sabah bildirimi |
+| K | Acil durum kartı | Vize sekmesinde; ülkenin acil numaraları, konsolosluk çağrı merkezi, cihazda kalan sağlık bilgileri, yerel dilde alerji kartı |
+| L | Paylaşılabilir seyahat özeti | Anılar sekmesinde; gün, durak, rota, harcama ve öne çıkanlar görsel olarak paylaşılır (HealthKit adım sayısı yok) |
+| M | Canlı kartı sunucu push'u ile güncelleme | `server/` Cloudflare Worker + APNs; kurulum ve anahtarlar gerekli, henüz canlıya alınmadı |
+| N | İngilizce yerelleştirme | Arayüz String Catalog ile İngilizce; TravellerKit'in ürettiği metinler (vize notları, öneriler, bildirimler) henüz Türkçe |
+
+Daha önce yapılanlar: B, C, D, E, H, I, J. A (cihazda test + TestFlight) iPhone 15'te sürüyor.
 
 ## 4. Teknik borç / kalite
 
