@@ -83,6 +83,8 @@ struct PackingSection: View {
                 Label("Madde öner", systemImage: "sparkles")
             }
             .buttonStyle(.primary)
+
+            DepartureChecklistCard(trip: trip)
         }
         .task(id: "\(trip.id)-\(trip.startDate)-\(trip.endDate)") { await loadWeather() }
     }

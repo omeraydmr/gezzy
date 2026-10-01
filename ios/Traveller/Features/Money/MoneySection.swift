@@ -23,6 +23,7 @@ struct MoneySection: View {
             }
             balancesCard
             expensesCard
+            TaxFreeCard(trip: trip)
         }
         .sheet(isPresented: $isAddingExpense) {
             AddExpenseSheet(trip: trip)

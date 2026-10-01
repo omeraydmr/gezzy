@@ -224,6 +224,22 @@ final class TripStore {
         }
     }
 
+    // MARK: Emergency
+
+    private static let emergencyKey = "traveller.emergency"
+
+    /// Kan grubu, alerjiler, ilaçlar ve acil kişi. Yalnızca bu cihazda; ekiple paylaşılmaz.
+    private(set) var emergency: EmergencyInfo = {
+        guard let data = UserDefaults.standard.data(forKey: TripStore.emergencyKey),
+              let decoded = try? JSONDecoder().decode(EmergencyInfo.self, from: data) else { return EmergencyInfo() }
+        return decoded
+    }()
+
+    func saveEmergency(_ info: EmergencyInfo) {
+        emergency = info
+        if let data = try? JSONEncoder().encode(info) { UserDefaults.standard.set(data, forKey: Self.emergencyKey) }
+    }
+
     // MARK: Onboarding
 
     private static let preferencesKey = "traveller.preferences"

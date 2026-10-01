@@ -19,6 +19,7 @@ struct MemoriesSection: View {
 
     var body: some View {
         ModuleCard("Anılar", symbol: "photo.on.rectangle.angled") {
+            TripSummaryCard(trip: trip)
             if !library.canRead {
                 permissionPrompt
             } else if let moments {

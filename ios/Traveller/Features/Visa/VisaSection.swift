@@ -85,6 +85,7 @@ struct VisaSection: View {
             }
 
             DocumentsCard(trip: trip)
+            EmergencyCard(trip: trip)
         }
     }
 
