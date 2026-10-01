@@ -8,6 +8,7 @@ struct MoneySection: View {
     @State private var isAddingExpense = false
     @State private var isEditingBudget = false
     @State private var pendingTransfer: Transfer?
+    @State private var viewingReceipt: Expense?
 
     private var summary: BudgetSummary { Budget.summary(for: trip) }
     private var transfers: [Transfer] { Settlement.transfers(for: trip) }
@@ -23,6 +24,9 @@ struct MoneySection: View {
         }
         .sheet(isPresented: $isEditingBudget) {
             EditBudgetSheet(trip: trip)
+        }
+        .sheet(item: $viewingReceipt) { expense in
+            ReceiptViewer(trip: trip, expense: expense)
         }
         .confirmationDialog("Ödeme yapıldı mı?", isPresented: Binding(
             get: { pendingTransfer != nil }, set: { if !$0 { pendingTransfer = nil } }
@@ -183,8 +187,20 @@ struct MoneySection: View {
                                 ForEach(Array(items.enumerated()), id: \.element.id) { index, expense in
                                     if index > 0 { Divider().overlay(Color.line) }
                                     ExpenseRow(trip: trip, expense: expense)
+                                        .contentShape(Rectangle())
+                                        .onTapGesture {
+                                            if expense.receiptPhoto != nil { viewingReceipt = expense }
+                                        }
                                         .contextMenu {
+                                            if expense.receiptPhoto != nil {
+                                                Button("Makbuzu göster", systemImage: "doc.text.image") {
+                                                    viewingReceipt = expense
+                                                }
+                                            }
                                             Button("Sil", systemImage: "trash", role: .destructive) {
+                                                if let receipt = expense.receiptPhoto {
+                                                    CoverImageStore.receipts.delete(named: receipt)
+                                                }
                                                 store.update(trip.id) { $0.expenses.removeAll { $0.id == expense.id } }
                                             }
                                         }
@@ -350,9 +366,23 @@ struct ExpenseRow: View {
                 Text(subtitle).font(.tBody).foregroundStyle(Color.ink2).lineLimit(1)
             }
             Spacer(minLength: 8)
-            Text(AppFormat.money(expense.amount, trip.currency))
-                .font(.tBodyStrong)
-                .foregroundStyle(expense.isTransfer ? Color.ink2 : Color.ink)
+            VStack(alignment: .trailing, spacing: 2) {
+                HStack(spacing: 4) {
+                    if expense.receiptPhoto != nil {
+                        Image(systemName: "paperclip")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(Color.ink3)
+                    }
+                    Text(AppFormat.money(expense.amount, trip.currency))
+                        .font(.tBodyStrong)
+                        .foregroundStyle(expense.isTransfer ? Color.ink2 : Color.ink)
+                }
+                if let original = expense.originalAmount, let code = expense.originalCurrency {
+                    Text(AppFormat.money(original, code))
+                        .font(.caption)
+                        .foregroundStyle(Color.ink3)
+                }
+            }
         }
         .padding(.vertical, 10)
         .accessibilityElement(children: .combine)
@@ -368,5 +398,46 @@ struct ExpenseRow: View {
         let payer = trip.member(expense.paidBy)?.name ?? "?"
         if expense.isTransfer { return "Hesaplaşma · \(AppFormat.shortDate(expense.date))" }
         return "\(payer) ödedi · \(expense.splitAmong.count) kişi · \(AppFormat.shortDate(expense.date))"
+    }
+}
+
+/// Makbuz fotoğrafını tam ekran gösterir; iki parmakla yakınlaştırılabilir.
+struct ReceiptViewer: View {
+    @Environment(\.dismiss) private var dismiss
+    let trip: Trip
+    let expense: Expense
+    @State private var scale: CGFloat = 1
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if let name = expense.receiptPhoto, let image = CoverImageStore.receipts.image(named: name) {
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFit()
+                        .scaleEffect(scale)
+                        .gesture(MagnifyGesture().onChanged { scale = max(1, min(4, $0.magnification)) }
+                            .onEnded { _ in withAnimation(.spring(duration: 0.3)) { scale = 1 } })
+                        .padding()
+                } else {
+                    ContentUnavailableView("Makbuz bulunamadı", systemImage: "doc.text.image")
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color.canvas)
+            .navigationTitle(expense.title)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    VStack(spacing: 0) {
+                        Text(expense.title).font(.headline)
+                        Text(AppFormat.money(expense.amount, trip.currency)).font(.caption).foregroundStyle(Color.ink2)
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Tamam") { dismiss() }
+                }
+            }
+        }
     }
 }

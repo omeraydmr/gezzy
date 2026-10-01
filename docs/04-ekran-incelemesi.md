@@ -20,10 +20,18 @@ Görsel maket: [`design/screens.html`](../design/screens.html)
 | Valiz | Başlık + liste | Seyahat renginde ilerleme halkası, kişiye göre filtre hapları |
 | Ekip | Satır listesi | 2 sütunlu kişi kartları (rol, sahip tacı, vize durumu), kesikli "Kişi ekle" kartı |
 | Masraf ekle | Form, klavyeyle tutar | Büyük tutar göstergesi + hesap makinesi tuşları (Türkçe "1.250,5" yazımı, haptik), renkli kategori hapları (zemin ışığı kategori renginde), ödeyen/bölünecek avatar seçimi, canlı kişi başı tutar |
+| Plan · sıralama | Bağlam menüsünden yukarı/aşağı | Durağı basılı tutup sürükle-bırak; gün çipine bırakınca o güne taşınır |
+| Döviz ve makbuz | Yalnızca seyahat para birimi | Para birimi menüsü; ECB kuruyla (Frankfurter) anında çevrim, kur yoksa elle; orijinal tutar listede; kamera/galeriden makbuz, dokununca tam ekran |
+| Valiz · hava | Aya göre tahmin | Open-Meteo: 16 gün içindeyse tahmin, değilse geçen yılın aynı tarihleri; öneriler sıcaklık ve yağışa göre |
 | Durak ekle | Yalnızca metin sonuç listesi | Numaralı sonuçlar ve aynı numaralarla harita önizlemesi; seçilen yer yeşil işaretle |
 | Yeni seyahat | Düz form | Yazdıkça güncellenen canlı bilet kartı + fotoğraf ekleme |
 
+## Dış servisler
+- **Frankfurter** (api.frankfurter.app): Avrupa Merkez Bankası referans kurları, anahtarsız. ECB'nin yayınlamadığı para birimleri (AMD, GEL, AZN, RSD, MAD…) için kur elle girilir.
+- **Open-Meteo**: hava tahmini ve arşiv, anahtarsız; ticari kullanımda lisans koşulları kontrol edilmeli.
+- **Apple CLGeocoder**: koordinatı olmayan seyahatlerin şehri bir kez konuma çevrilip kaydedilir.
+
 ## Sonraki adaylar
-- Durakları sürükle-bırakla sıralama (şu an bağlam menüsüyle).
-- Harcamada makbuz fotoğrafı ve çoklu para birimi (anlık kur).
-- Valiz önerilerinin hava durumuna göre zenginleştirilmesi.
+- Makbuzdan tutarı otomatik okuma (cihazda Vision ile metin tanıma).
+- Seyahat sırasında harcamaların para birimine göre özetlenmesi.
+- Durakların açılış saatlerine göre uyarı.

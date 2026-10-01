@@ -10,6 +10,8 @@ struct PlanSection: View {
     @State private var cameraPosition: MapCameraPosition = .automatic
     @State private var isAddingStop = false
     @State private var lastOrderBeforeOptimize: [Stop.ID: Int]?
+    @State private var dropTarget: Stop.ID?
+    @Environment(\.tripTint) private var tint
 
     private var days: [Date] { trip.days() }
     private var day: Date {
@@ -24,7 +26,8 @@ struct PlanSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             DayChips(days: days, selection: Binding(get: { day }, set: { selectedDay = $0 }),
-                     stopCount: { trip.stops(on: $0).count })
+                     stopCount: { trip.stops(on: $0).count },
+                     onDropStop: { id, target in moveStop(id, before: nil, on: target) })
 
             if !coordinates.isEmpty {
                 map
@@ -96,10 +99,45 @@ struct PlanSection: View {
                     HopRow(from: stops[index - 1], to: stop)
                 }
                 StopRow(stop: stop, number: index + 1)
+                    .overlay(alignment: .top) {
+                        Capsule()
+                            .fill(tint)
+                            .frame(height: 3)
+                            .offset(y: -4)
+                            .opacity(dropTarget == stop.id ? 1 : 0)
+                    }
+                    .contentShape(Rectangle())
+                    .draggable(stop.id.uuidString) {
+                        Label(stop.name, systemImage: stop.kind.symbol)
+                            .font(.system(.subheadline, weight: .semibold))
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 10)
+                            .background(Color.tray, in: Capsule())
+                    }
+                    .dropDestination(for: String.self) { items, _ in
+                        guard let first = items.first, let id = UUID(uuidString: first) else { return false }
+                        moveStop(id, before: stop.id, on: day)
+                        return true
+                    } isTargeted: { targeted in
+                        if targeted { dropTarget = stop.id } else if dropTarget == stop.id { dropTarget = nil }
+                    }
                     .contextMenu { menu(for: stop, index: index) }
+            }
+
+            if stops.count > 1 {
+                Text("Sıralamak için durağı basılı tutup sürükle; başka güne taşımak için üstteki güne bırak.")
+                    .font(.caption)
+                    .foregroundStyle(Color.ink3)
+                    .padding(.top, 10)
             }
         }
         .tray()
+        .dropDestination(for: String.self) { items, _ in
+            guard let first = items.first, let id = UUID(uuidString: first) else { return false }
+            moveStop(id, before: nil, on: day)
+            return true
+        }
+        .animation(.spring(duration: 0.3), value: stops.map(\.id))
     }
 
     private var dayTitle: String {
@@ -164,6 +202,14 @@ struct PlanSection: View {
         guard ordered.indices.contains(target) else { return }
         ordered.swapAt(index, target)
         applyOrder(ordered.map(\.id))
+    }
+
+    private func moveStop(_ id: Stop.ID, before target: Stop.ID?, on targetDay: Date) {
+        dropTarget = nil
+        lastOrderBeforeOptimize = nil
+        withAnimation(.spring(duration: 0.3)) {
+            store.update(trip.id) { $0.moveStop(id, before: target, on: targetDay) }
+        }
     }
 
     private func moveToDay(_ stop: Stop, _ target: Date) {

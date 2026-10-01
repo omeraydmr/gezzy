@@ -113,7 +113,10 @@ struct DayChips: View {
     let days: [Date]
     @Binding var selection: Date
     let stopCount: (Date) -> Int
+    /// Sürüklenen bir durak bu güne bırakıldığında çağrılır.
+    var onDropStop: ((UUID, Date) -> Void)?
     @Environment(\.tripTint) private var tint
+    @State private var dropTarget: Date?
 
     var body: some View {
         ScrollViewReader { reader in
@@ -153,9 +156,22 @@ struct DayChips: View {
             }
             .frame(width: 52, height: 72)
             .background(isSelected ? Color.ink : Color.tray, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .strokeBorder(tint, lineWidth: dropTarget == day ? 3 : 0)
+            )
+            .scaleEffect(dropTarget == day ? 1.08 : 1)
+            .animation(.spring(duration: 0.2), value: dropTarget)
             .softShadow()
         }
         .buttonStyle(.plain)
+        .dropDestination(for: String.self) { items, _ in
+            guard let onDropStop, let first = items.first, let id = UUID(uuidString: first) else { return false }
+            onDropStop(id, day)
+            return true
+        } isTargeted: { targeted in
+            if targeted { dropTarget = day } else if dropTarget == day { dropTarget = nil }
+        }
         .accessibilityLabel(Text("\(number). gün, \(AppFormat.dayPill(day)), \(count) durak"))
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
