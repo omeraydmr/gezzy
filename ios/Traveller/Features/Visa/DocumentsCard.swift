@@ -25,7 +25,7 @@ struct DocumentsCard: View {
 
     var body: some View {
         let documents = trip.documentList
-        ModuleCard("Belgeler", symbol: "doc.on.doc.fill", accessory: {
+        ModuleCard(String(localized: "Belgeler"), symbol: "doc.on.doc.fill", accessory: {
             Menu {
                 Button("Dosya seç (PDF, görsel)", systemImage: "folder") { isPickingFile = true }
                 PhotosPicker(selection: $photoItem, matching: .images) {
@@ -42,7 +42,7 @@ struct DocumentsCard: View {
         }) {
             if documents.isEmpty {
                 EmptyHint(symbol: "doc.badge.plus",
-                          text: "Pasaport, sigorta poliçesi, bilet ve rezervasyonları burada sakla; internetsiz de açılır.")
+                          text: String(localized: "Pasaport, sigorta poliçesi, bilet ve rezervasyonları burada sakla; internetsiz de açılır."))
                     .tray()
             } else {
                 VStack(spacing: 0) {
@@ -109,7 +109,7 @@ struct DocumentsCard: View {
                     .font(.caption)
                     .foregroundStyle(Color.ink3)
                     if url == nil {
-                        Text(document.isPrivate ? "Yalnızca ekleyen cihazda" : "Henüz indirilmedi")
+                        Text(document.isPrivate ? String(localized: "Yalnızca ekleyen cihazda") : String(localized: "Henüz indirilmedi"))
                             .font(.caption2)
                             .foregroundStyle(Color.food)
                     }
@@ -176,8 +176,8 @@ private struct DocumentDetailsSheet: View {
                     Toggle("Yalnızca bu cihazda", isOn: $isPrivate)
                 } footer: {
                     Text(isPrivate
-                         ? "Dosya iCloud'a yüklenmez; ekip yalnızca belgenin adını görür."
-                         : "Seyahat paylaşılıyorsa dosya ekipteki herkese iCloud üzerinden gider.")
+                         ? String(localized: "Dosya iCloud'a yüklenmez; ekip yalnızca belgenin adını görür.")
+                         : String(localized: "Seyahat paylaşılıyorsa dosya ekipteki herkese iCloud üzerinden gider."))
                 }
                 if let errorText {
                     Section { Text(errorText).foregroundStyle(Color.food) }
@@ -218,12 +218,12 @@ private struct DocumentDetailsSheet: View {
 enum DocumentText {
     static func title(_ kind: TravelDocument.Kind) -> String {
         switch kind {
-        case .passport: "Pasaport"
-        case .visa: "Vize"
-        case .insurance: "Sigorta"
-        case .ticket: "Bilet"
-        case .reservation: "Rezervasyon"
-        case .other: "Diğer"
+        case .passport: String(localized: "Pasaport")
+        case .visa: String(localized: "Vize")
+        case .insurance: String(localized: "Sigorta")
+        case .ticket: String(localized: "Bilet")
+        case .reservation: String(localized: "Rezervasyon")
+        case .other: String(localized: "Diğer")
         }
     }
 

@@ -60,7 +60,7 @@ final class CloudSync {
         do {
             let account = try await container.accountStatus()
             guard account == .available else {
-                status = .unavailable("iCloud'a giriş yapılmamış. Ayarlar'dan giriş yapınca seyahatler eşitlenir.")
+                status = .unavailable(String(localized: "iCloud'a giriş yapılmamış. Ayarlar'dan giriş yapınca seyahatler eşitlenir."))
                 return
             }
             _ = try await container.privateCloudDatabase.modifyRecordZones(saving: [CKRecordZone(zoneID: zoneID)], deleting: [])
@@ -71,7 +71,7 @@ final class CloudSync {
             pending.formUnion(store.trips.map(\.id))
             schedulePush(after: .milliseconds(200))
         } catch {
-            status = .unavailable("iCloud'a ulaşılamadı: \(error.localizedDescription)")
+            status = .unavailable(String(localized: "iCloud'a ulaşılamadı: \(error.localizedDescription)"))
         }
     }
 
@@ -262,7 +262,7 @@ final class CloudSync {
             } catch let error as CKError where error.code == .permissionFailure {
                 // Sahip yetkimizi "sadece görür" yaptı: değişiklik sunucuya yazılamaz, tekrar denenmez.
                 myAccess[id] = .readOnly
-                status = .failed("Bu seyahatte yalnızca görüntüleme yetkin var; değişiklik kaydedilmedi.")
+                status = .failed(String(localized: "Bu seyahatte yalnızca görüntüleme yetkin var; değişiklik kaydedilmedi."))
                 await pull()
                 return
             } catch {
@@ -392,7 +392,7 @@ final class CloudSync {
             do {
                 _ = try await database.modifyRecords(saving: [share], deleting: [])
             } catch {
-                status = .failed("Paylaşım yetkileri güncellenemedi: \(error.localizedDescription)")
+                status = .failed(String(localized: "Paylaşım yetkileri güncellenemedi: \(error.localizedDescription)"))
                 return
             }
         }

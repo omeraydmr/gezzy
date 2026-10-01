@@ -71,8 +71,8 @@ struct AddExpenseSheet: View {
                 categoryChips
 
                 VStack(spacing: 10) {
-                    peopleRow("Ödeyen", selected: { paidBy == $0 }) { paidBy = $0 }
-                    peopleRow("Bölünecek", selected: { splitAmong.contains($0) }) { id in
+                    peopleRow(String(localized: "Ödeyen"), selected: { paidBy == $0 }) { paidBy = $0 }
+                    peopleRow(String(localized: "Bölünecek"), selected: { splitAmong.contains($0) }) { id in
                         keptShares = nil
                         if splitAmong.contains(id) {
                             if splitAmong.count > 1 { splitAmong.remove(id) }
@@ -102,7 +102,7 @@ struct AddExpenseSheet: View {
             }
             .animation(.spring(duration: 0.3), value: isTitleFocused)
             .background(TintGlow(tint: category.accent.base, offsetY: -260))
-            .navigationTitle(editing == nil ? "Masraf ekle" : "Masrafı düzenle")
+            .navigationTitle(editing == nil ? String(localized: "Masraf ekle") : String(localized: "Masrafı düzenle"))
             .confirmationDialog("Harcama silinsin mi?", isPresented: $isConfirmingDelete, titleVisibility: .visible) {
                 Button("Sil", role: .destructive) { deleteEditing() }
             }
@@ -229,7 +229,7 @@ struct AddExpenseSheet: View {
                 Button {
                     isSplittingItems = true
                 } label: {
-                    Label(itemAssignments == nil ? "Kalem kalem böl · \(receiptItems.count) kalem" : "Kalem dağılımını düzenle",
+                    Label(itemAssignments == nil ? String(localized: "Kalem kalem böl · \(receiptItems.count) kalem") : String(localized: "Kalem dağılımını düzenle"),
                           systemImage: "list.bullet.rectangle.portrait")
                         .font(.system(.footnote, weight: .semibold))
                         .foregroundStyle(Color.ink)
@@ -267,12 +267,12 @@ struct AddExpenseSheet: View {
             let text = AppFormat.money(result.amount, result.currency ?? currency)
             HStack(spacing: 8) {
                 Image(systemName: "doc.text.viewfinder")
-                Text(applied ? "Makbuzdan okundu: \(text)" : "Makbuzdaki tutar: \(text)")
+                Text(applied ? String(localized: "Makbuzdan okundu: \(text)") : String(localized: "Makbuzdaki tutar: \(text)"))
                     .lineLimit(1)
                 if !result.isConfident {
                     Text("· kontrol et").foregroundStyle(Color.food)
                 }
-                Button(applied ? "Geri al" : "Kullan") {
+                Button(applied ? String(localized: "Geri al") : String(localized: "Kullan")) {
                     if applied {
                         entry = previous
                         let target = previousCurrency ?? trip.currency
@@ -361,7 +361,7 @@ struct AddExpenseSheet: View {
         if let quote, manualRate.isEmpty {
             return "1 \(currency) = \(formatted) \(trip.currency) · ECB \(quote.date)"
         }
-        return "1 \(currency) = \(formatted) \(trip.currency) · elle girildi"
+        return String(localized: "1 \(currency) = \(formatted) \(trip.currency) · elle girildi")
     }
 
     private func selectCurrency(_ code: String) {
@@ -404,7 +404,7 @@ struct AddExpenseSheet: View {
             .cardBackground(Color.tray, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(receiptImage == nil ? "Makbuz ekle" : "Makbuzu değiştir")
+        .accessibilityLabel(receiptImage == nil ? String(localized: "Makbuz ekle") : String(localized: "Makbuzu değiştir"))
         .onChange(of: receiptImage, initial: true) { _, image in
             receiptThumbnail = image.flatMap { image in
                 let scale = 132 / max(1, min(image.size.width, image.size.height))
@@ -450,16 +450,16 @@ struct AddExpenseSheet: View {
 
     private var shareText: String {
         if itemAssignments == nil, let keptShares {
-            return "Özel paylar korunuyor · \(keptShares.filter { $0.value > 0 }.count) kişi"
+            return String(localized: "Özel paylar korunuyor · \(keptShares.filter { $0.value > 0 }.count) kişi")
         }
         if let itemAssignments {
             let people = Set(itemAssignments.values.flatMap { $0 }).count
-            return "Kalem kalem bölündü · \(people) kişi"
+            return String(localized: "Kalem kalem bölündü · \(people) kişi")
         }
         let count = splitAmong.count
-        guard let amount = tripAmount, amount > 0, count > 0 else { return "\(count) kişi arasında bölünecek" }
+        guard let amount = tripAmount, amount > 0, count > 0 else { return String(localized: "\(count) kişi arasında bölünecek") }
         let share = Settlement.split(amount, into: count).first ?? 0
-        return count == 1 ? "Tek kişiye ait" : "Kişi başı \(AppFormat.money(share, trip.currency)) · \(count) kişi"
+        return count == 1 ? String(localized: "Tek kişiye ait") : String(localized: "Kişi başı \(AppFormat.money(share, trip.currency)) · \(count) kişi")
     }
 
     private var categoryChips: some View {
@@ -765,7 +765,7 @@ struct ItemSplitSheet: View {
                                 }
                                 Spacer()
                                 if assignments[item.id, default: []].isEmpty {
-                                    Tag(text: "Kimse yok", accent: .orange)
+                                    Tag(text: String(localized: "Kimse yok"), accent: .orange)
                                 }
                             }
                         }

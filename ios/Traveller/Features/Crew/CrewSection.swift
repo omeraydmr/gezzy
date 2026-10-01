@@ -10,8 +10,8 @@ struct CrewSection: View {
     @State private var blockedRemoval: Member?
 
     var body: some View {
-        ModuleCard("Ekip", symbol: "person.2.fill") {
-            StoryHeadline(text: "\(trip.members.count) kişi \(trip.destination.city) yolunda.")
+        ModuleCard(String(localized: "Ekip"), symbol: "person.2.fill") {
+            StoryHeadline(text: String(localized: "\(trip.members.count) kişi \(trip.destination.city) yolunda."))
 
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
                 ForEach(trip.members) { member in
@@ -59,8 +59,8 @@ struct CrewSection: View {
                     AvatarView(member: store.me, size: 40)
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Bu seyahate katıldın").font(.tBodyStrong).foregroundStyle(Color.ink)
-                        Text(canJoin ? "Harcama ve valizde görünmek için kendini ekle."
-                                     : "Seyahatin sahibi seni yalnızca görüntüleyici olarak davet etti.")
+                        Text(canJoin ? String(localized: "Harcama ve valizde görünmek için kendini ekle.")
+                                     : String(localized: "Seyahatin sahibi seni yalnızca görüntüleyici olarak davet etti."))
                             .font(.caption).foregroundStyle(Color.ink2)
                     }
                     Spacer()
@@ -183,8 +183,8 @@ struct MemberEditor: View {
                 } footer: {
                     if member.role != .owner && canChangeRole && !isNew {
                         Text(member.cloudUserID == nil
-                             ? "Bu kişi iCloud davetiyle katılıp kendini eklemediği için yetki yalnızca uygulamada uygulanır."
-                             : "Yetki iCloud paylaşımına da uygulanır: \"Sadece görür\" kişi seyahati hiçbir cihazdan değiştiremez.")
+                             ? String(localized: "Bu kişi iCloud davetiyle katılıp kendini eklemediği için yetki yalnızca uygulamada uygulanır.")
+                             : String(localized: "Yetki iCloud paylaşımına da uygulanır: \"Sadece görür\" kişi seyahati hiçbir cihazdan değiştiremez."))
                     }
                 }
 
@@ -232,7 +232,7 @@ struct MemberEditor: View {
                     }
                 }
             }
-            .navigationTitle(isNew ? "Kişi ekle" : member.name)
+            .navigationTitle(isNew ? String(localized: "Kişi ekle") : member.name)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -303,7 +303,7 @@ struct InviteCard: View {
             if sync.isAvailable {
                 ShareLink(item: TripShareItem(tripID: trip.id, title: trip.name),
                           preview: SharePreview("\(trip.name) · Traveller")) {
-                    Label(sync.sharedByMe.contains(trip.id) ? "Paylaşımı yönet / yeni kişi davet et" : "Davet bağlantısı gönder",
+                    Label(sync.sharedByMe.contains(trip.id) ? String(localized: "Paylaşımı yönet / yeni kişi davet et") : String(localized: "Davet bağlantısı gönder"),
                           systemImage: "square.and.arrow.up")
                 }
                 .buttonStyle(.primary)
@@ -313,18 +313,18 @@ struct InviteCard: View {
     }
 
     private var title: String {
-        if sync.sharedWithMe.contains(trip.id) { return "Bu seyahat seninle paylaşıldı" }
-        if sync.sharedByMe.contains(trip.id) { return "Ekip iCloud ile bağlı" }
-        return "Ekibi davet et"
+        if sync.sharedWithMe.contains(trip.id) { return String(localized: "Bu seyahat seninle paylaşıldı") }
+        if sync.sharedByMe.contains(trip.id) { return String(localized: "Ekip iCloud ile bağlı") }
+        return String(localized: "Ekibi davet et")
     }
 
     private var subtitle: String {
         switch sync.status {
         case let .unavailable(reason): return reason
-        case .unknown: return "iCloud durumu kontrol ediliyor…"
-        case .syncing: return "Eşitleniyor…"
-        case let .synced(date): return "Değişiklikler herkesin telefonunda görünür · son eşitleme \(AppFormat.time(date))"
-        case let .failed(message): return "Eşitleme sorunu: \(message)"
+        case .unknown: return String(localized: "iCloud durumu kontrol ediliyor…")
+        case .syncing: return String(localized: "Eşitleniyor…")
+        case let .synced(date): return String(localized: "Değişiklikler herkesin telefonunda görünür · son eşitleme \(AppFormat.time(date))")
+        case let .failed(message): return String(localized: "Eşitleme sorunu: \(message)")
         }
     }
 }
@@ -358,7 +358,7 @@ struct ActivityFeed: View {
                 }
             }
             if entries.count > 4 {
-                Button(isExpanded ? "Daha az göster" : "Tümünü göster (\(entries.count))") {
+                Button(isExpanded ? String(localized: "Daha az göster") : String(localized: "Tümünü göster (\(entries.count))")) {
                     withAnimation { isExpanded.toggle() }
                 }
                 .font(.system(.footnote, weight: .semibold))

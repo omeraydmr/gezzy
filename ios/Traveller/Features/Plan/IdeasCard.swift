@@ -29,7 +29,7 @@ struct IdeasCard: View {
             }
 
             if ideas.isEmpty {
-                EmptyHint(symbol: "lightbulb", text: "Gitmek istediğin ama gününü bilmediğin yerleri buraya at.")
+                EmptyHint(symbol: "lightbulb", text: String(localized: "Gitmek istediğin ama gününü bilmediğin yerleri buraya at."))
             }
 
             ForEach(ideas) { idea in

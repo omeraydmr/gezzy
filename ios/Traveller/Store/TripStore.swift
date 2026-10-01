@@ -178,7 +178,7 @@ final class TripStore {
             }
             .map { Schengen.Stay(id: $0.id, start: $0.startDate, end: $0.endDate, label: $0.name) }
         let manual = (manualStays[memberID] ?? []).map {
-            Schengen.Stay(id: $0.id, start: $0.start, end: $0.end, label: $0.note.isEmpty ? "Önceki ziyaret" : $0.note)
+            Schengen.Stay(id: $0.id, start: $0.start, end: $0.end, label: $0.note.isEmpty ? String(localized: "Önceki ziyaret") : $0.note)
         }
         return fromTrips + manual
     }

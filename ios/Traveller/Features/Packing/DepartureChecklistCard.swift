@@ -28,7 +28,7 @@ struct DepartureChecklistCard: View {
             }
 
             if items.isEmpty {
-                EmptyHint(symbol: "checklist", text: "Harç pulu, internet paketi, kartlar… Aşağıdaki önerilerden ekle.")
+                EmptyHint(symbol: "checklist", text: String(localized: "Harç pulu, internet paketi, kartlar… Aşağıdaki önerilerden ekle."))
             }
 
             ForEach(items) { item in
@@ -111,7 +111,7 @@ struct DepartureChecklistCard: View {
                 }
                 Spacer(minLength: 8)
                 if let due = DepartureChecklist.dueDate(of: item, in: trip), !item.isDone {
-                    Tag(text: overdue ? "Gecikti" : dueText(due), accent: overdue ? .orange : .gray)
+                    Tag(text: overdue ? String(localized: "Gecikti") : dueText(due), accent: overdue ? .orange : .gray)
                 }
             }
             .contentShape(Rectangle())
@@ -123,8 +123,8 @@ struct DepartureChecklistCard: View {
     private func dueText(_ due: Date) -> String {
         let days = Calendar.current.dateComponents([.day], from: Calendar.current.startOfDay(for: .now), to: due).day ?? 0
         switch days {
-        case 0: return "Bugün"
-        case 1: return "Yarın"
+        case 0: return String(localized: "Bugün")
+        case 1: return String(localized: "Yarın")
         default: return AppFormat.dayPill(due)
         }
     }
@@ -171,7 +171,7 @@ struct ChecklistItemEditor: View {
                 Toggle("Son gün", isOn: Binding(get: { item.daysBefore != nil },
                                                 set: { item.daysBefore = $0 ? (item.daysBefore ?? 3) : nil }))
                 if let days = item.daysBefore {
-                    Stepper(days == 0 ? "Gidiş günü" : "Gidişten \(days) gün önce",
+                    Stepper(days == 0 ? String(localized: "Gidiş günü") : String(localized: "Gidişten \(days) gün önce"),
                             value: Binding(get: { days }, set: { item.daysBefore = $0 }), in: 0...90)
                 }
             }

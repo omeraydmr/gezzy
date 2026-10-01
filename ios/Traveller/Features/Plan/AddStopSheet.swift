@@ -55,7 +55,7 @@ struct AddStopSheet: View {
                                     .frame(width: 22, height: 22)
                                     .background(Accent.cycle(index).base, in: Circle())
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text(item.name ?? "Adsız yer").foregroundStyle(Color.ink)
+                                    Text(item.name ?? String(localized: "Adsız yer")).foregroundStyle(Color.ink)
                                     if let address = item.placemark.title {
                                         Text(address).font(.footnote).foregroundStyle(Color.ink2).lineLimit(1)
                                     }
@@ -88,7 +88,7 @@ struct AddStopSheet: View {
                     Stepper("Süre: \(AppFormat.duration(minutes: duration))", value: $duration, in: 15...600, step: 15)
                     TextField("Not (ör. Rezervasyon gerekli)", text: $note)
                 } header: {
-                    Text(asIdea ? "Fikir" : "\(AppFormat.dayPill(day)) için durak")
+                    Text(asIdea ? String(localized: "Fikir") : String(localized: "\(AppFormat.dayPill(day)) için durak"))
                 }
             }
             .navigationTitle("Durak ekle")

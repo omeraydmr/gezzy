@@ -94,7 +94,7 @@ struct BookingImportSheet: View {
                 Task {
                     guard let data = try? await item.loadTransferable(type: Data.self),
                           let image = CoverImageStore.downsample(data: data, maxPixelSize: 2400) else {
-                        errorText = "Görüntü açılamadı."
+                        errorText = String(localized: "Görüntü açılamadı.")
                         return
                     }
                     await read(lines: TextReader.lines(in: image))
@@ -158,7 +158,7 @@ struct BookingImportSheet: View {
 
         if url.pathExtension.lowercased() == "pkpass" {
             guard let data = try? Data(contentsOf: url), let parsed = PassParser.parse(pkpass: data) else {
-                errorText = "Wallet kartı okunamadı."
+                errorText = String(localized: "Wallet kartı okunamadı.")
                 return
             }
             apply(parsed)
@@ -182,7 +182,7 @@ struct BookingImportSheet: View {
                   let image = CoverImageStore.downsample(data: data, maxPixelSize: 2400) {
             await read(lines: TextReader.lines(in: image))
         } else {
-            errorText = "Dosya okunamadı."
+            errorText = String(localized: "Dosya okunamadı.")
         }
     }
 

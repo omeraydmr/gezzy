@@ -18,12 +18,12 @@ struct TripDetailView: View {
 
         var title: String {
             switch self {
-            case .plan: "Plan"
-            case .money: "Bütçe"
-            case .packing: "Valiz"
-            case .visa: "Vize"
-            case .crew: "Ekip"
-            case .memories: "Anılar"
+            case .plan: String(localized: "Plan")
+            case .money: String(localized: "Bütçe")
+            case .packing: String(localized: "Valiz")
+            case .visa: String(localized: "Vize")
+            case .crew: String(localized: "Ekip")
+            case .memories: String(localized: "Anılar")
             }
         }
 
@@ -198,12 +198,12 @@ struct TripStub: View {
                 Divider().overlay(Color.line)
             }
             HStack(alignment: .top) {
-                meta("Tarih", AppFormat.dateRange(trip.startDate, trip.endDate))
+                meta(String(localized: "Tarih"), AppFormat.dateRange(trip.startDate, trip.endDate))
                 Spacer()
-                meta("Konaklama", "\(trip.nights()) gece")
+                meta(String(localized: "Konaklama"), String(localized: "\(trip.nights()) gece"))
                 Spacer()
                 if let flight = trip.primaryFlight, let seat = flight.seat {
-                    meta("Koltuk", seat)
+                    meta(String(localized: "Koltuk"), seat)
                     Spacer()
                 }
                 AvatarStack(members: trip.members, size: 30, limit: 3)
@@ -214,7 +214,7 @@ struct TripStub: View {
                     if running { LiveActivityController.stop(for: trip) } else { LiveActivityController.start(for: trip) }
                     isLiveActivityRunning.toggle()
                 } label: {
-                    Label(running ? "Kilit ekranından kaldır" : "Kilit ekranında göster",
+                    Label(running ? String(localized: "Kilit ekranından kaldır") : String(localized: "Kilit ekranında göster"),
                           systemImage: running ? "lock.slash" : "lock.iphone")
                         .font(.system(.subheadline, weight: .semibold))
                         .frame(maxWidth: .infinity)
@@ -239,7 +239,7 @@ struct TripStub: View {
         let checked = flightStatus.lastChecked[flight.id] ?? flight.live?.fetchedAt
         let isChecking = flightStatus.checking.contains(flight.id)
         return HStack(spacing: 8) {
-            Text(flight.statusText ?? "Durum bekleniyor")
+            Text(flight.statusText ?? String(localized: "Durum bekleniyor"))
                 .font(.system(.footnote, weight: .bold))
                 .foregroundStyle(flight.live == nil ? Color.ink2 : accent)
                 .padding(.horizontal, 10)

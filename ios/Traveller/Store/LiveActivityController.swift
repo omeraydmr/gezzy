@@ -71,9 +71,9 @@ enum LiveActivityController {
     static func status(for flight: FlightSegment, now: Date = .now) -> String {
         if let text = flight.statusText { return text }
         let minutes = flight.effectiveDeparture.timeIntervalSince(now) / 60
-        if minutes <= 0 { return "Havada" }
-        if minutes <= 40 { return "Biniş" }
-        return "Zamanında"
+        if minutes <= 0 { return String(localized: "Havada") }
+        if minutes <= 40 { return String(localized: "Biniş") }
+        return String(localized: "Zamanında")
     }
 
     private static func activities(for trip: Trip) -> [Activity<FlightActivityAttributes>] {

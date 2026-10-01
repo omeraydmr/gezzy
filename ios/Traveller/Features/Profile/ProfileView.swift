@@ -114,13 +114,13 @@ struct ProfileView: View {
                     .foregroundStyle(Color.ink)
                 Text("ülke gezildi").font(.tBodyStrong).foregroundStyle(Color.ink2)
                 Spacer()
-                Tag(text: "Dünyanın %\(Int((share * 100).rounded()))", accent: .blue)
+                Tag(text: String(localized: "Dünyanın %\(Int((share * 100).rounded()))"), accent: .blue)
             }
             ProgressView(value: min(share, 1))
                 .tint(Accent.blue.base)
 
             if visited.isEmpty {
-                EmptyHint(symbol: "globe.europe.africa", text: "Geçmiş seyahatlerin burada birikir; eskileri de ekleyebilirsin.")
+                EmptyHint(symbol: "globe.europe.africa", text: String(localized: "Geçmiş seyahatlerin burada birikir; eskileri de ekleyebilirsin."))
             } else {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 92), spacing: 8)], spacing: 8) {
                     ForEach(visited, id: \.self) { code in
@@ -180,7 +180,7 @@ struct CountryPickerSheet: View {
                     }
                 }
             }
-            .searchable(text: $query, prompt: "Ülke ara")
+            .searchable(text: $query, prompt: String(localized: "Ülke ara"))
             .navigationTitle("Gezilen ülkeler")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

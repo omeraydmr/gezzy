@@ -88,11 +88,11 @@ extension SpendCategory {
 
     var title: String {
         switch self {
-        case .stays: "Konaklama"
-        case .transport: "Ulaşım"
-        case .food: "Yemek"
-        case .activities: "Aktivite"
-        case .other: "Diğer"
+        case .stays: String(localized: "Konaklama")
+        case .transport: String(localized: "Ulaşım")
+        case .food: String(localized: "Yemek")
+        case .activities: String(localized: "Aktivite")
+        case .other: String(localized: "Diğer")
         }
     }
 
@@ -110,11 +110,11 @@ extension SpendCategory {
 extension StopKind {
     var title: String {
         switch self {
-        case .sight: "Manzara"
-        case .food: "Yemek"
-        case .activity: "Aktivite"
-        case .transport: "Ulaşım"
-        case .stay: "Konaklama"
+        case .sight: String(localized: "Manzara")
+        case .food: String(localized: "Yemek")
+        case .activity: String(localized: "Aktivite")
+        case .transport: String(localized: "Ulaşım")
+        case .stay: String(localized: "Konaklama")
         }
     }
 
@@ -132,9 +132,9 @@ extension StopKind {
 extension MemberRole {
     var title: String {
         switch self {
-        case .owner: "Sahip"
-        case .editor: "Düzenleyebilir"
-        case .viewer: "Sadece görür"
+        case .owner: String(localized: "Sahip")
+        case .editor: String(localized: "Düzenleyebilir")
+        case .viewer: String(localized: "Sadece görür")
         }
     }
 }

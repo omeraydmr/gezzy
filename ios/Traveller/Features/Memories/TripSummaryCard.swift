@@ -49,18 +49,18 @@ struct TripSummaryPoster: View {
             }
             Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 12) {
                 GridRow {
-                    tile("\(summary.days)", "gün")
-                    tile("\(summary.stops)", "durak")
-                    tile("\((summary.routeMeters / 1000).formatted(.number.precision(.fractionLength(1)).locale(AppFormat.locale))) km", "rota")
+                    tile("\(summary.days)", String(localized: "gün"))
+                    tile("\(summary.stops)", String(localized: "durak"))
+                    tile("\((summary.routeMeters / 1000).formatted(.number.precision(.fractionLength(1)).locale(AppFormat.locale))) km", String(localized: "rota"))
                 }
                 GridRow {
-                    tile("\(summary.travellers)", "kişi")
-                    tile(AppFormat.money(summary.totalSpent, trip.currency), "harcama")
-                    tile(AppFormat.money(summary.perPerson, trip.currency), "kişi başı")
+                    tile("\(summary.travellers)", String(localized: "kişi"))
+                    tile(AppFormat.money(summary.totalSpent, trip.currency), String(localized: "harcama"))
+                    tile(AppFormat.money(summary.perPerson, trip.currency), String(localized: "kişi başı"))
                 }
             }
             if !summary.highlights.isEmpty {
-                Text("Öne çıkanlar: " + summary.highlights.joined(separator: " · "))
+                Text(String(localized: "Öne çıkanlar: ") + summary.highlights.joined(separator: " · "))
                     .font(.footnote).foregroundStyle(.white.opacity(0.9))
             }
             Text("Traveller").font(.caption2.weight(.semibold)).foregroundStyle(.white.opacity(0.6))

@@ -82,6 +82,8 @@ targets:
         INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "Seyahat tarihlerindeki fotoğraflarını anlara ayırıp haritada göstermek için fotoğraf arşivini okur; fotoğraflar cihazdan çıkmaz."
         DEVELOPMENT_LANGUAGE: tr
         ENABLE_PREVIEWS: YES
+        SWIFT_EMIT_LOC_STRINGS: YES
+        LOCALIZATION_PREFERS_STRING_CATALOGS: YES
 
   TravellerWidgets:
     type: app-extension
@@ -108,6 +110,8 @@ targets:
         DEVELOPMENT_TEAM: 4BAD86T55H
         CODE_SIGN_STYLE: Automatic
         PRODUCT_NAME: TravellerWidgets
+        SWIFT_EMIT_LOC_STRINGS: YES
+        LOCALIZATION_PREFERS_STRING_CATALOGS: YES
         MARKETING_VERSION: "0.1.0"
         CURRENT_PROJECT_VERSION: "1"
         SWIFT_VERSION: "5.0"

@@ -11,23 +11,23 @@ struct Attribution: Identifiable, Hashable {
     let url: URL
 
     static let openStreetMap = Attribution(
-        id: "osm", name: "OpenStreetMap", usage: "Durakların açılış saatleri (Overpass API)",
-        notice: "© OpenStreetMap katkıcıları", license: "Open Database License (ODbL)",
+        id: "osm", name: "OpenStreetMap", usage: String(localized: "Durakların açılış saatleri (Overpass API)"),
+        notice: String(localized: "© OpenStreetMap katkıcıları"), license: String(localized: "Open Database License (ODbL)"),
         url: URL(string: "https://www.openstreetmap.org/copyright")!)
 
     static let openMeteo = Attribution(
-        id: "open-meteo", name: "Open-Meteo", usage: "Valiz önerileri için hava tahmini ve geçmiş hava verisi",
+        id: "open-meteo", name: "Open-Meteo", usage: String(localized: "Valiz önerileri için hava tahmini ve geçmiş hava verisi"),
         notice: "Weather data by Open-Meteo.com", license: "CC BY 4.0",
         url: URL(string: "https://open-meteo.com/")!)
 
     static let frankfurter = Attribution(
-        id: "frankfurter", name: "Frankfurter · Avrupa Merkez Bankası", usage: "Döviz çevrimi için günlük referans kurlar",
-        notice: "ECB euro foreign exchange reference rates", license: "Kaynak gösterilerek serbest kullanım",
+        id: "frankfurter", name: String(localized: "Frankfurter · Avrupa Merkez Bankası"), usage: String(localized: "Döviz çevrimi için günlük referans kurlar"),
+        notice: String(localized: "ECB euro foreign exchange reference rates"), license: String(localized: "Kaynak gösterilerek serbest kullanım"),
         url: URL(string: "https://www.frankfurter.app/")!)
 
     static let appleMaps = Attribution(
-        id: "apple-maps", name: "Apple Haritalar", usage: "Harita, yer arama ve şehir konumu",
-        notice: "Harita verisi: Apple ve veri sağlayıcıları", license: "Apple MapKit koşulları",
+        id: "apple-maps", name: String(localized: "Apple Haritalar"), usage: String(localized: "Harita, yer arama ve şehir konumu"),
+        notice: String(localized: "Harita verisi: Apple ve veri sağlayıcıları"), license: String(localized: "Apple MapKit koşulları"),
         url: URL(string: "https://www.apple.com/legal/internet-services/maps/")!)
 
     static let all = [openStreetMap, openMeteo, frankfurter, appleMaps]
@@ -49,11 +49,11 @@ struct AboutView: View {
 
     private var syncText: String {
         switch sync.status {
-        case .unknown: "Kontrol ediliyor"
-        case .unavailable: "Kapalı (iCloud girişi yok)"
-        case .syncing: "Eşitleniyor…"
-        case let .synced(date): "Açık · \(AppFormat.time(date))"
-        case .failed: "Sorun var"
+        case .unknown: String(localized: "Kontrol ediliyor")
+        case .unavailable: String(localized: "Kapalı (iCloud girişi yok)")
+        case .syncing: String(localized: "Eşitleniyor…")
+        case let .synced(date): String(localized: "Açık · \(AppFormat.time(date))")
+        case .failed: String(localized: "Sorun var")
         }
     }
 

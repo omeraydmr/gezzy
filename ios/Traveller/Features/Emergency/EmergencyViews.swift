@@ -19,7 +19,7 @@ struct EmergencyCard: View {
                     .font(.tBodyStrong)
                     .foregroundStyle(Color.ink)
                 Spacer()
-                Button(info.isEmpty ? "Bilgilerimi ekle" : "Düzenle") { isEditing = true }
+                Button(info.isEmpty ? String(localized: "Bilgilerimi ekle") : String(localized: "Düzenle")) { isEditing = true }
                     .font(.system(.footnote, weight: .semibold))
                     .foregroundStyle(Color.ink)
             }
@@ -28,16 +28,16 @@ struct EmergencyCard: View {
                 Text("\(trip.destination.city) · acil numaralar").font(.tCaption).foregroundStyle(Color.ink2)
                 if let numbers {
                     FlowLayout(spacing: 8) {
-                        if let general = numbers.general { callChip("Acil", general, symbol: "sos") }
-                        if let police = numbers.police { callChip("Polis", police, symbol: "shield.fill") }
-                        if let ambulance = numbers.ambulance { callChip("Ambulans", ambulance, symbol: "cross.fill") }
-                        if let fire = numbers.fire, fire != numbers.ambulance { callChip("İtfaiye", fire, symbol: "flame.fill") }
+                        if let general = numbers.general { callChip(String(localized: "Acil"), general, symbol: "sos") }
+                        if let police = numbers.police { callChip(String(localized: "Polis"), police, symbol: "shield.fill") }
+                        if let ambulance = numbers.ambulance { callChip(String(localized: "Ambulans"), ambulance, symbol: "cross.fill") }
+                        if let fire = numbers.fire, fire != numbers.ambulance { callChip(String(localized: "İtfaiye"), fire, symbol: "flame.fill") }
                     }
                 } else {
                     Text("Bu ülkenin numarası listemizde yok. Birçok ülkede cep telefonundan 112 çalışır; varışta doğrula.")
                         .font(.caption).foregroundStyle(Color.ink2)
                 }
-                callChip("Konsolosluk çağrı merkezi (7/24)", EmergencyNumbers.consularCallCenter, symbol: "phone.fill")
+                callChip(String(localized: "Konsolosluk çağrı merkezi (7/24)"), EmergencyNumbers.consularCallCenter, symbol: "phone.fill")
                 Link(destination: EmergencyNumbers.representationsURL) {
                     Label("Büyükelçilik ve konsolosluk adresleri", systemImage: "building.columns")
                         .font(.system(.footnote, weight: .medium))
@@ -66,17 +66,17 @@ struct EmergencyCard: View {
     @ViewBuilder
     private func personal(_ info: EmergencyInfo) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            if !info.bloodType.isEmpty { line("drop.fill", "Kan grubu", info.bloodType) }
+            if !info.bloodType.isEmpty { line("drop.fill", String(localized: "Kan grubu"), info.bloodType) }
             let allergies = info.allergens.map(AllergyCard.turkishName) + (info.otherAllergies.isEmpty ? [] : [info.otherAllergies])
-            if !allergies.isEmpty { line("allergens", "Alerji", allergies.joined(separator: ", ")) }
-            if !info.medications.isEmpty { line("pills.fill", "İlaçlar", info.medications) }
+            if !allergies.isEmpty { line("allergens", String(localized: "Alerji"), allergies.joined(separator: ", ")) }
+            if !info.medications.isEmpty { line("pills.fill", String(localized: "İlaçlar"), info.medications) }
             if !info.contactName.isEmpty || !info.contactPhone.isEmpty {
-                line("person.fill", "Acil kişi", [info.contactName, info.contactPhone].filter { !$0.isEmpty }.joined(separator: " · "))
+                line("person.fill", String(localized: "Acil kişi"), [info.contactName, info.contactPhone].filter { !$0.isEmpty }.joined(separator: " · "))
             }
         }
         HStack(spacing: 8) {
-            if !info.contactPhone.isEmpty { callChip("Acil kişiyi ara", info.contactPhone, symbol: "phone.fill") }
-            if !info.insurancePhone.isEmpty { callChip("Sigorta yardım", info.insurancePhone, symbol: "cross.case") }
+            if !info.contactPhone.isEmpty { callChip(String(localized: "Acil kişiyi ara"), info.contactPhone, symbol: "phone.fill") }
+            if !info.insurancePhone.isEmpty { callChip(String(localized: "Sigorta yardım"), info.insurancePhone, symbol: "cross.case") }
         }
         if !info.allergens.isEmpty {
             Button {
@@ -127,7 +127,7 @@ struct EmergencyEditor: View {
             Form {
                 Section {
                     Picker("Kan grubu", selection: $info.bloodType) {
-                        ForEach(Self.bloodTypes, id: \.self) { Text($0.isEmpty ? "Belirtilmedi" : $0).tag($0) }
+                        ForEach(Self.bloodTypes, id: \.self) { Text($0.isEmpty ? String(localized: "Belirtilmedi") : $0).tag($0) }
                     }
                 }
                 Section {
@@ -192,7 +192,7 @@ struct AllergyCardView: View {
                         .environment(\.locale, Locale(identifier: language))
                     }
                 }
-                Text("Türkçe: " + info.allergens.map(AllergyCard.turkishName).joined(separator: ", "))
+                Text(String(localized: "Türkçe: ") + info.allergens.map(AllergyCard.turkishName).joined(separator: ", "))
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }

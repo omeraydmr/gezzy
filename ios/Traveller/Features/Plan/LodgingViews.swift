@@ -14,7 +14,7 @@ struct LodgingCard: View {
         let uncovered = trip.nightsWithoutLodging()
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Label("Konaklama", systemImage: "bed.double.fill")
+                Label(String(localized: "Konaklama"), systemImage: "bed.double.fill")
                     .font(.tBodyStrong)
                     .foregroundStyle(Color.ink)
                 Spacer()
@@ -24,11 +24,11 @@ struct LodgingCard: View {
                     Image(systemName: "plus")
                 }
                 .buttonStyle(.circleIcon(size: 32))
-                .accessibilityLabel("Konaklama ekle")
+                .accessibilityLabel(String(localized: "Konaklama ekle"))
             }
 
             if lodgings.isEmpty {
-                EmptyHint(symbol: "building.2", text: "Otel ya da ev ekle; günlerin planı oradan başlasın.")
+                EmptyHint(symbol: "building.2", text: String(localized: "Otel ya da ev ekle; günlerin planı oradan başlasın."))
             }
 
             ForEach(lodgings) { lodging in
@@ -92,7 +92,7 @@ struct LodgingRow: View {
                 }
             }
             Spacer(minLength: 8)
-            Tag(text: "\(lodging.nights()) gece", accent: .green)
+            Tag(text: String(localized: "\(lodging.nights()) gece"), accent: .green)
         }
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
@@ -144,7 +144,7 @@ struct LodgingSheet: View {
                             select(item)
                         } label: {
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(item.name ?? "Adsız yer").foregroundStyle(Color.ink)
+                                Text(item.name ?? String(localized: "Adsız yer")).foregroundStyle(Color.ink)
                                 if let title = item.placemark.title {
                                     Text(title).font(.footnote).foregroundStyle(Color.ink2).lineLimit(1)
                                 }
@@ -177,14 +177,14 @@ struct LodgingSheet: View {
                     }
                 }
             }
-            .navigationTitle(editing == nil ? "Konaklama ekle" : "Konaklama")
+            .navigationTitle(editing == nil ? String(localized: "Konaklama ekle") : String(localized: "Konaklama"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Vazgeç") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(editing == nil ? "Ekle" : "Kaydet", action: save)
+                    Button(editing == nil ? String(localized: "Ekle") : String(localized: "Kaydet"), action: save)
                         .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }

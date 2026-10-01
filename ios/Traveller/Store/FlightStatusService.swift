@@ -73,14 +73,14 @@ final class FlightStatusService {
         do {
             guard let status = try await fetch(flight, apiKey: apiKey) else {
                 lastChecked[flightID] = .now
-                lastError = "Uçuş bulunamadı: \(flight.flightNumber)"
+                lastError = String(localized: "Uçuş bulunamadı: \(flight.flightNumber)")
                 return false
             }
             lastChecked[flightID] = .now
             lastError = nil
             return apply(status, to: flightID, in: tripID)
         } catch {
-            lastError = "Uçuş durumu alınamadı."
+            lastError = String(localized: "Uçuş durumu alınamadı.")
             return false
         }
     }

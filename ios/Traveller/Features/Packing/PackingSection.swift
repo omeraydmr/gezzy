@@ -30,7 +30,7 @@ struct PackingSection: View {
     private var packedCount: Int { items.filter(\.isPacked).count }
 
     var body: some View {
-        ModuleCard("Valiz", symbol: "bag.fill") {
+        ModuleCard(String(localized: "Valiz"), symbol: "bag.fill") {
             HStack(spacing: 16) {
                 ProgressRing(progress: items.isEmpty ? 0 : Double(packedCount) / Double(items.count), color: tint,
                              lineWidth: 7) {
@@ -56,7 +56,7 @@ struct PackingSection: View {
                 }
 
                 if visibleItems.isEmpty && !items.isEmpty {
-                    EmptyHint(symbol: "line.3.horizontal.decrease", text: "Bu filtrede madde yok.")
+                    EmptyHint(symbol: "line.3.horizontal.decrease", text: String(localized: "Bu filtrede madde yok."))
                 }
 
                 ForEach(visibleItems) { item in
@@ -90,17 +90,17 @@ struct PackingSection: View {
     }
 
     private var headline: String {
-        guard !items.isEmpty else { return "Valiz listesi boş. Önerilerle başla." }
+        guard !items.isEmpty else { return String(localized: "Valiz listesi boş. Önerilerle başla.") }
         let remaining = items.count - packedCount
         let countdown = Countdown.make(start: trip.startDate, end: trip.endDate)
         let when: String = switch countdown {
-        case let .days(n) where n == 1: " Yarın yola çıkıyorsunuz."
-        case let .days(n): " \(n) gün kaldı."
-        case .today: " Bugün yola çıkıyorsunuz."
+        case let .days(n) where n == 1: String(localized: " Yarın yola çıkıyorsunuz.")
+        case let .days(n): String(localized: " \(n) gün kaldı.")
+        case .today: String(localized: " Bugün yola çıkıyorsunuz.")
         default: ""
         }
-        if remaining == 0 { return "Her şey hazır ✓" }
-        return "\(items.count) maddenin \(TurkishGrammar.withPossessive(packedCount)) hazır.\(when)"
+        if remaining == 0 { return String(localized: "Her şey hazır ✓") }
+        return String(localized: "\(packedCount)/\(items.count) madde hazır.\(when)")
     }
 
     // MARK: Filter
@@ -333,7 +333,7 @@ struct PackingRow: View {
                 .animation(.spring(duration: 0.25, bounce: 0.4), value: item.isPacked)
             }
             .buttonStyle(.plain)
-            .accessibilityLabel(item.isPacked ? "Paketlendi" : "Paketlenmedi")
+            .accessibilityLabel(item.isPacked ? String(localized: "Paketlendi") : String(localized: "Paketlenmedi"))
 
             Text(item.title)
                 .font(.body)
@@ -343,7 +343,7 @@ struct PackingRow: View {
             if let member = trip.member(item.assignee) {
                 AvatarView(member: member, size: 28)
             } else {
-                Tag(text: "Atanmadı", accent: .orange)
+                Tag(text: String(localized: "Atanmadı"), accent: .orange)
             }
         }
         .padding(.vertical, 8)
@@ -437,8 +437,8 @@ struct WeatherStrip: View {
     }
 
     private func detail(_ weather: WeatherSummary) -> String {
-        let rain = weather.rainyDays == 0 ? "yağış beklenmiyor" : "\(weather.rainyDays) yağışlı gün"
-        let source = weather.source == .forecast ? "tahmin" : "geçen yıl bu tarihlerde"
+        let rain = weather.rainyDays == 0 ? String(localized: "yağış beklenmiyor") : String(localized: "\(weather.rainyDays) yağışlı gün")
+        let source = weather.source == .forecast ? String(localized: "tahmin") : String(localized: "geçen yıl bu tarihlerde")
         return "\(rain) · \(source) · Open-Meteo"
     }
 }

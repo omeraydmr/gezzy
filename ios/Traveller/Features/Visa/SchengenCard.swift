@@ -24,9 +24,9 @@ struct SchengenCard: View {
                     .foregroundStyle(Color.ink)
                 Spacer()
                 if evaluation.isWithinLimit {
-                    Tag(text: "\(evaluation.remainingAfterExit) gün kalır", accent: evaluation.remainingAfterExit < 10 ? .orange : .green)
+                    Tag(text: String(localized: "\(evaluation.remainingAfterExit) gün kalır"), accent: evaluation.remainingAfterExit < 10 ? .orange : .green)
                 } else {
-                    Tag(text: "Sınır aşılıyor", accent: .orange)
+                    Tag(text: String(localized: "Sınır aşılıyor"), accent: .orange)
                 }
             }
 
@@ -51,7 +51,7 @@ struct SchengenCard: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("Sayılan ziyaretler").font(.tCaption).foregroundStyle(Color.ink3)
-                stayRow(label: "Bu seyahat", stay: current, color: tint, removable: false)
+                stayRow(label: String(localized: "Bu seyahat"), stay: current, color: tint, removable: false)
                 ForEach(window) { stay in
                     stayRow(label: stay.label, stay: stay, color: Color.ink2, removable: manualIDs.contains(stay.id))
                 }

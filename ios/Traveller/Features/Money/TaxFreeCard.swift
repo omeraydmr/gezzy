@@ -29,12 +29,12 @@ struct TaxFreeCard: View {
 
             if refunds.isEmpty {
                 EmptyHint(symbol: "bag", text: available
-                          ? "Mağazadan tax-free formu aldığın alışverişleri ekle; dönüşte gümrükte onaylatmayı hatırlatalım."
-                          : "Bu ülkede turistlere KDV iadesi yapılmıyor ya da oranı listemizde yok; yine de elle ekleyebilirsin.")
+                          ? String(localized: "Mağazadan tax-free formu aldığın alışverişleri ekle; dönüşte gümrükte onaylatmayı hatırlatalım.")
+                          : String(localized: "Bu ülkede turistlere KDV iadesi yapılmıyor ya da oranı listemizde yok; yine de elle ekleyebilirsin."))
             } else {
                 HStack(spacing: 10) {
-                    stat("Beklenen", AppFormat.money(summary.expected, trip.currency), .orange)
-                    stat("Gelen", AppFormat.money(summary.refunded, trip.currency), .green)
+                    stat(String(localized: "Beklenen"), AppFormat.money(summary.expected, trip.currency), .orange)
+                    stat(String(localized: "Gelen"), AppFormat.money(summary.refunded, trip.currency), .green)
                 }
                 if summary.toValidate > 0 {
                     Label("\(summary.toValidate) form gümrükte onaylatılmayı bekliyor. Havalimanında check-in'den önce uğra.",
@@ -90,9 +90,9 @@ struct TaxFreeCard: View {
 
     static func statusTitle(_ status: TaxRefund.Status) -> String {
         switch status {
-        case .formReceived: "Form alındı"
-        case .validated: "Onaylatıldı"
-        case .refunded: "İade geldi"
+        case .formReceived: String(localized: "Form alındı")
+        case .validated: String(localized: "Onaylatıldı")
+        case .refunded: String(localized: "İade geldi")
         }
     }
 
@@ -177,12 +177,12 @@ struct TaxRefundSheet: View {
                     }
                 }
             }
-            .navigationTitle(editing == nil ? "Tax-free ekle" : "Tax-free")
+            .navigationTitle(editing == nil ? String(localized: "Tax-free ekle") : "Tax-free")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Vazgeç") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(editing == nil ? "Ekle" : "Kaydet", action: save)
+                    Button(editing == nil ? String(localized: "Ekle") : String(localized: "Kaydet"), action: save)
                         .disabled(shop.trimmingCharacters(in: .whitespaces).isEmpty || amount == nil)
                 }
             }
