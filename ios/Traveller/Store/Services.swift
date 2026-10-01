@@ -1,6 +1,7 @@
 import CoreLocation
 import Foundation
 import ImageIO
+import MapKit
 import TravellerKit
 import UIKit
 import Vision
@@ -160,5 +161,68 @@ final class OpeningHoursService {
         guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw ServiceError.badResponse }
         let candidates = try OpeningHoursLookup.decodeCandidates(data)
         return OpeningHoursLookup.bestMatch(for: name, in: candidates)?.openingHours
+    }
+}
+
+// MARK: - Metin okuma
+
+/// Görüntüdeki metni cihaz üzerinde satır satır okur (rezervasyon ekran görüntüleri, taranmış PDF sayfaları).
+enum TextReader {
+    static func lines(in image: UIImage) async -> [String] {
+        guard let cgImage = image.cgImage else { return [] }
+        let orientation = CGImagePropertyOrientation(image.imageOrientation)
+        return await Task.detached(priority: .userInitiated) { () -> [String] in
+            let request = VNRecognizeTextRequest()
+            request.recognitionLevel = .accurate
+            request.recognitionLanguages = ["tr-TR", "en-US", "de-DE", "fr-FR", "it-IT", "es-ES", "pt-PT"]
+            request.usesLanguageCorrection = true
+            let handler = VNImageRequestHandler(cgImage: cgImage, orientation: orientation)
+            guard (try? handler.perform([request])) != nil else { return [] }
+            return ReceiptReader.rows(from: request.results ?? [])
+        }.value
+    }
+}
+
+// MARK: - Yol süreleri
+
+/// İki durak arası yürüme ve toplu taşıma süresi (Apple Haritalar tahmini). Sonuçlar bellekte tutulur.
+@MainActor
+final class TravelTimeService {
+    static let shared = TravelTimeService()
+
+    struct Times: Equatable {
+        var walkingMinutes: Int?
+        var transitMinutes: Int?
+    }
+
+    private var cache: [String: Times] = [:]
+    private var inFlight: [String: Task<Times, Never>] = [:]
+
+    func times(from: Coordinate, to: Coordinate) async -> Times {
+        let key = String(format: "%.5f,%.5f>%.5f,%.5f", from.latitude, from.longitude, to.latitude, to.longitude)
+        if let cached = cache[key] { return cached }
+        if let running = inFlight[key] { return await running.value }
+        let task = Task { () -> Times in
+            async let walking = Self.eta(from: from, to: to, type: .walking)
+            async let transit = Self.eta(from: from, to: to, type: .transit)
+            return Times(walkingMinutes: await walking, transitMinutes: await transit)
+        }
+        inFlight[key] = task
+        let result = await task.value
+        inFlight[key] = nil
+        // Hiçbiri gelmediyse (ağ yok) önbelleğe alma; sonra yeniden denensin.
+        if result.walkingMinutes != nil || result.transitMinutes != nil { cache[key] = result }
+        return result
+    }
+
+    private static func eta(from: Coordinate, to: Coordinate, type: MKDirectionsTransportType) async -> Int? {
+        let request = MKDirections.Request()
+        request.source = MKMapItem(placemark: MKPlacemark(coordinate: CLLocationCoordinate2D(latitude: from.latitude,
+                                                                                            longitude: from.longitude)))
+        request.destination = MKMapItem(placemark: MKPlacemark(coordinate: CLLocationCoordinate2D(latitude: to.latitude,
+                                                                                                 longitude: to.longitude)))
+        request.transportType = type
+        guard let response = try? await MKDirections(request: request).calculateETA() else { return nil }
+        return max(1, Int((response.expectedTravelTime / 60).rounded()))
     }
 }

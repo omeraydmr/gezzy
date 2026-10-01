@@ -35,11 +35,11 @@ Hiçbir özellik henüz gerçek cihazda denenmedi.
 | Özellik | Durum | Not |
 |---|---|---|
 | Anılar: fotoğrafları tarih/konuma göre toplama, öbekleme, haritada gösterme | ⬜ | İlk hedeflerden biriydi |
-| Konaklama (otel) kayıtları | ⬜ | Günün planı otelden başlayabilir |
-| Rezervasyon içe aktarma (PDF, ekran görüntüsü, Wallet biniş kartı) | ⬜ | Uçuş şu an elle giriliyor |
-| Duraklar arası ulaşım satırı (yürüme/tram/taksi süreleri) | 🟡 | Yalnızca toplam mesafe/yürüme var |
-| Rota optimizasyonu | ⬜ | Açılış saatleri verisi hazır |
-| "Fikirler" havuzu (güne atanmamış yerler) | ⬜ | |
+| Konaklama (otel) kayıtları | ✅ | Plan sekmesinde kart; gün planı ve harita otelden başlar; giriş/çıkış bildirimi; konaklamasız gece uyarısı |
+| Rezervasyon içe aktarma (PDF, ekran görüntüsü, Wallet biniş kartı) | 🟡 | PDF ve ekran görüntüsünden uçuş + otel (cihazda); Wallet .pkpass yok |
+| Duraklar arası ulaşım satırı (yürüme/tram/taksi süreleri) | ✅ | Apple Haritalar'dan yürüme ve toplu taşıma süresi; otelden ilk durağa da |
+| Rota optimizasyonu | 🟡 | En kısa yürüyüş sırası, sabah oteli başlangıç; açılış saatlerini henüz dikkate almıyor |
+| "Fikirler" havuzu (güne atanmamış yerler) | ✅ | Plan sekmesinde; "Güne ekle", duraktan "Fikirlere taşı" |
 | Vize başvuru takibi: randevu, belge listesi, durum | 🟡 | Uyarılar var, takip yok |
 | Belge kasası (pasaport, sigorta, bilet PDF'leri) | ⬜ | |
 | Settle up: IBAN kopyala, "ödendi" işaretle, özet paylaş | 🟡 | Transferler var, IBAN/paylaşım yok |
