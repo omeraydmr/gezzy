@@ -10,6 +10,8 @@ struct PackingSection: View {
     @FocusState private var isAddFieldFocused: Bool
     @State private var suggestions: [String] = []
     @State private var filter: Filter = .everyone
+    @State private var weather: WeatherSummary?
+    @State private var weatherFailed = false
     @Environment(\.tripTint) private var tint
 
     enum Filter: Hashable {
@@ -39,6 +41,8 @@ struct PackingSection: View {
                 .frame(width: 64, height: 64)
                 StoryHeadline(text: headline)
             }
+
+            WeatherStrip(city: trip.destination.city, weather: weather, failed: weatherFailed)
 
             if !items.isEmpty {
                 filterChips
@@ -80,6 +84,7 @@ struct PackingSection: View {
             }
             .buttonStyle(.primary)
         }
+        .task(id: "\(trip.id)-\(trip.startDate)-\(trip.endDate)") { await loadWeather() }
     }
 
     private var headline: String {
@@ -255,7 +260,22 @@ struct PackingSection: View {
 
     private func suggest() {
         withAnimation(.spring(duration: 0.3)) {
-            suggestions = PackingAdvisor.suggestions(for: trip)
+            suggestions = PackingAdvisor.suggestions(for: trip, weather: weather)
+        }
+    }
+
+    private func loadWeather() async {
+        weatherFailed = false
+        guard !trip.isPast(), let coordinate = await store.ensureCoordinate(for: trip.id) else {
+            weatherFailed = !trip.isPast()
+            return
+        }
+        do {
+            let summary = try await WeatherFetcher.shared.summary(latitude: coordinate.latitude, longitude: coordinate.longitude,
+                                                                  start: trip.startDate, end: trip.endDate)
+            withAnimation(.easeInOut(duration: 0.3)) { weather = summary }
+        } catch {
+            weatherFailed = true
         }
     }
 
@@ -370,5 +390,55 @@ struct FlowLayout: Layout {
             x += size.width + spacing
             rowHeight = max(rowHeight, size.height)
         }
+    }
+}
+
+/// Seyahat tarihleri için kısa hava özeti; öneriler bu bilgiyi kullanır.
+struct WeatherStrip: View {
+    let city: String
+    let weather: WeatherSummary?
+    let failed: Bool
+
+    var body: some View {
+        HStack(spacing: 14) {
+            Image(systemName: symbol)
+                .symbolRenderingMode(.multicolor)
+                .font(.system(size: 26))
+                .frame(width: 44, height: 44)
+                .background(Color.transportTint, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            VStack(alignment: .leading, spacing: 2) {
+                if let weather {
+                    Text("\(city) · \(Int(weather.minTemperature.rounded()))° – \(Int(weather.maxTemperature.rounded()))°")
+                        .font(.tBodyStrong)
+                        .foregroundStyle(Color.ink)
+                    Text(detail(weather))
+                        .font(.caption)
+                        .foregroundStyle(Color.ink2)
+                } else if failed {
+                    Text("Hava durumu alınamadı").font(.tBodyStrong).foregroundStyle(Color.ink)
+                    Text("Öneriler mevsime göre yapılacak.").font(.caption).foregroundStyle(Color.ink2)
+                } else {
+                    Text("\(city) için hava durumu").font(.tBodyStrong).foregroundStyle(Color.ink)
+                    ProgressView().controlSize(.small)
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .tray(padding: 12)
+        .accessibilityElement(children: .combine)
+    }
+
+    private var symbol: String {
+        guard let weather else { return failed ? "cloud.sun" : "cloud.sun.fill" }
+        if weather.maxTemperature <= 3 { return "snowflake" }
+        if weather.rainyDays * 3 >= max(weather.dayCount, 1) { return "cloud.rain.fill" }
+        if weather.rainyDays > 0 { return "cloud.sun.rain.fill" }
+        return weather.maxTemperature >= 24 ? "sun.max.fill" : "cloud.sun.fill"
+    }
+
+    private func detail(_ weather: WeatherSummary) -> String {
+        let rain = weather.rainyDays == 0 ? "yağış beklenmiyor" : "\(weather.rainyDays) yağışlı gün"
+        let source = weather.source == .forecast ? "tahmin" : "geçen yıl bu tarihlerde"
+        return "\(rain) · \(source)"
     }
 }

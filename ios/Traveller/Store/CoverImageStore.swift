@@ -8,6 +8,10 @@ import UIKit
 @MainActor
 final class CoverImageStore {
     static let shared = CoverImageStore()
+    /// Harcama makbuzları için ayrı klasör.
+    static let receipts = CoverImageStore(directory: FileManager.default
+        .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        .appendingPathComponent("Receipts", isDirectory: true))
 
     private let directory: URL
     private let images = NSCache<NSString, UIImage>()

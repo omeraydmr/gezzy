@@ -1,3 +1,4 @@
+import PhotosUI
 import SwiftUI
 import TravellerKit
 
@@ -14,22 +15,40 @@ struct AddExpenseSheet: View {
     @State private var date = Date.now
     @FocusState private var isTitleFocused: Bool
 
+    // Döviz
+    @State private var inputCurrency: String?
+    @State private var quote: CurrencyConverter.Quote?
+    @State private var manualRate = ""
+    @State private var isFetchingRate = false
+    @State private var rateError: String?
+
+    // Makbuz
+    @State private var receiptImage: UIImage?
+    @State private var receiptData: Data?
+    @State private var isChoosingReceiptSource = false
+    @State private var isShowingCamera = false
+    @State private var isShowingLibrary = false
+    @State private var libraryItem: PhotosPickerItem?
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 16) {
                 amountDisplay
                     .padding(.top, 4)
 
-                TextField("Ne için? (ör. Akşam yemeği)", text: $title)
-                    .focused($isTitleFocused)
-                    .submitLabel(.done)
-                    .multilineTextAlignment(.center)
-                    .font(.system(.body, weight: .medium))
-                    .padding(.horizontal, 16)
-                    .frame(height: 44)
-                    .background(Color.tray, in: Capsule())
-                    .softShadow()
-                    .padding(.horizontal, 16)
+                HStack(spacing: 10) {
+                    TextField("Ne için? (ör. Akşam yemeği)", text: $title)
+                        .focused($isTitleFocused)
+                        .submitLabel(.done)
+                        .multilineTextAlignment(.center)
+                        .font(.system(.body, weight: .medium))
+                        .padding(.horizontal, 16)
+                        .frame(height: 44)
+                        .background(Color.tray, in: Capsule())
+                        .softShadow()
+                    receiptButton
+                }
+                .padding(.horizontal, 16)
 
                 categoryChips
 
@@ -84,12 +103,59 @@ struct AddExpenseSheet: View {
 
     // MARK: Parts
 
+    private var currency: String { inputCurrency ?? trip.currency }
+    private var isForeign: Bool { currency != trip.currency }
+
+    /// Girilen tutarın seyahat para birimindeki karşılığı (kur yoksa nil).
+    private var tripAmount: Int? {
+        guard isForeign else { return entry.minorUnits }
+        guard let rate = effectiveRate else { return nil }
+        return CurrencyConverter.convert(minorUnits: entry.minorUnits, rate: rate)
+    }
+
+    private var effectiveRate: Decimal? {
+        let typed = manualRate.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: ",", with: ".")
+        if !typed.isEmpty, let value = Decimal(string: typed, locale: Locale(identifier: "en_US_POSIX")), value > 0 {
+            return value
+        }
+        return quote?.rate
+    }
+
+    private var currencyOptions: [String] {
+        var options = [trip.currency, "TRY", "EUR", "USD", "GBP"]
+        if let local = Locale(identifier: "tr_\(trip.destination.countryCode)").currency?.identifier {
+            options.insert(local, at: 1)
+        }
+        var seen = Set<String>()
+        return options.filter { seen.insert($0).inserted }
+    }
+
     private var amountDisplay: some View {
-        VStack(spacing: 4) {
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text(AppFormat.currencySymbol(trip.currency))
-                    .font(.system(size: 30, weight: .semibold))
-                    .foregroundStyle(Color.ink3)
+        VStack(spacing: 6) {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Menu {
+                    ForEach(currencyOptions, id: \.self) { code in
+                        Button {
+                            selectCurrency(code)
+                        } label: {
+                            if code == currency {
+                                Label("\(code) · \(AppFormat.currencySymbol(code))", systemImage: "checkmark")
+                            } else {
+                                Text("\(code) · \(AppFormat.currencySymbol(code))")
+                            }
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 2) {
+                        Text(AppFormat.currencySymbol(currency))
+                            .font(.system(size: 30, weight: .semibold))
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 11, weight: .bold))
+                    }
+                    .foregroundStyle(isForeign ? Color.food : Color.ink3)
+                }
+                .accessibilityLabel(Text("Para birimi \(currency)"))
+
                 Text(entry.display)
                     .font(.system(size: 56, weight: .semibold))
                     .foregroundStyle(entry.isEmpty ? Color.ink3 : Color.ink)
@@ -100,7 +166,11 @@ struct AddExpenseSheet: View {
             .minimumScaleFactor(0.4)
             .padding(.horizontal, 24)
             .accessibilityElement(children: .combine)
-            .accessibilityLabel(Text("Tutar \(AppFormat.money(entry.minorUnits, trip.currency))"))
+            .accessibilityLabel(Text("Tutar \(AppFormat.money(entry.minorUnits, currency))"))
+
+            if isForeign {
+                conversionLine
+            }
 
             Text(shareText)
                 .font(.system(.footnote, weight: .medium))
@@ -108,10 +178,125 @@ struct AddExpenseSheet: View {
         }
     }
 
+    @ViewBuilder
+    private var conversionLine: some View {
+        if isFetchingRate {
+            ProgressView().controlSize(.small)
+        } else if let tripAmount {
+            VStack(spacing: 2) {
+                Text("≈ \(AppFormat.money(tripAmount, trip.currency))")
+                    .font(.system(.headline, weight: .semibold))
+                    .foregroundStyle(Color.food)
+                if let rate = effectiveRate {
+                    Text(rateCaption(rate))
+                        .font(.caption)
+                        .foregroundStyle(Color.ink3)
+                }
+            }
+        } else {
+            HStack(spacing: 8) {
+                Text("1 \(currency) =")
+                TextField("kur", text: $manualRate)
+                    .keyboardType(.decimalPad)
+                    .multilineTextAlignment(.center)
+                    .frame(width: 80, height: 30)
+                    .background(Color.tray, in: Capsule())
+                Text(trip.currency)
+            }
+            .font(.system(.subheadline, weight: .medium))
+            .foregroundStyle(Color.ink2)
+            if let rateError {
+                Text(rateError).font(.caption).foregroundStyle(Color.food).multilineTextAlignment(.center)
+            }
+        }
+    }
+
+    private func rateCaption(_ rate: Decimal) -> String {
+        let formatted = NSDecimalNumber(decimal: rate).doubleValue
+            .formatted(.number.precision(.significantDigits(1...5)).locale(AppFormat.locale))
+        if let quote, manualRate.isEmpty {
+            return "1 \(currency) = \(formatted) \(trip.currency) · ECB \(quote.date)"
+        }
+        return "1 \(currency) = \(formatted) \(trip.currency) · elle girildi"
+    }
+
+    private func selectCurrency(_ code: String) {
+        inputCurrency = code
+        quote = nil
+        manualRate = ""
+        rateError = nil
+        guard code != trip.currency else { return }
+        isFetchingRate = true
+        Task {
+            defer { isFetchingRate = false }
+            do {
+                quote = try await RateService.shared.quote(from: code, to: trip.currency)
+            } catch {
+                rateError = error.localizedDescription
+            }
+        }
+    }
+
+    // MARK: Receipt
+
+    private var receiptButton: some View {
+        Button {
+            isChoosingReceiptSource = true
+        } label: {
+            Group {
+                if let receiptImage {
+                    Image(uiImage: receiptImage)
+                        .resizable()
+                        .scaledToFill()
+                } else {
+                    Image(systemName: "doc.text.viewfinder")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(Color.ink)
+                }
+            }
+            .frame(width: 44, height: 44)
+            .background(Color.tray)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .softShadow()
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(receiptImage == nil ? "Makbuz ekle" : "Makbuzu değiştir")
+        .confirmationDialog("Makbuz", isPresented: $isChoosingReceiptSource, titleVisibility: .visible) {
+            if UIImagePickerController.isSourceTypeAvailable(.camera) {
+                Button("Fotoğraf çek") { isShowingCamera = true }
+            }
+            Button("Galeriden seç") { isShowingLibrary = true }
+            if receiptImage != nil {
+                Button("Makbuzu kaldır", role: .destructive) {
+                    receiptImage = nil
+                    receiptData = nil
+                }
+            }
+        }
+        .photosPicker(isPresented: $isShowingLibrary, selection: $libraryItem, matching: .images)
+        .onChange(of: libraryItem) { _, item in
+            guard let item else { return }
+            Task {
+                if let data = try? await item.loadTransferable(type: Data.self), let image = UIImage(data: data) {
+                    receiptData = data
+                    receiptImage = image
+                }
+                libraryItem = nil
+            }
+        }
+        .fullScreenCover(isPresented: $isShowingCamera) {
+            CameraPicker(onCapture: { image in
+                receiptImage = image
+                receiptData = image.jpegData(compressionQuality: 0.85)
+            }, onClose: { isShowingCamera = false })
+            .ignoresSafeArea()
+        }
+    }
+
     private var shareText: String {
         let count = splitAmong.count
-        guard entry.minorUnits > 0, count > 0 else { return "\(count) kişi arasında bölünecek" }
-        let share = Settlement.split(entry.minorUnits, into: count).first ?? 0
+        guard let amount = tripAmount, amount > 0, count > 0 else { return "\(count) kişi arasında bölünecek" }
+        let share = Settlement.split(amount, into: count).first ?? 0
         return count == 1 ? "Tek kişiye ait" : "Kişi başı \(AppFormat.money(share, trip.currency)) · \(count) kişi"
     }
 
@@ -168,16 +353,20 @@ struct AddExpenseSheet: View {
     }
 
     private var isValid: Bool {
-        entry.minorUnits > 0 && paidBy != nil && !splitAmong.isEmpty
+        (tripAmount ?? 0) > 0 && paidBy != nil && !splitAmong.isEmpty
     }
 
     private func save() {
-        guard let paidBy, isValid else { return }
+        guard let paidBy, let amount = tripAmount, isValid else { return }
         let trimmed = title.trimmingCharacters(in: .whitespaces)
         // Üye sırasını koru ki artan kuruşların kime düştüğü tutarlı olsun.
         let split = trip.members.map(\.id).filter { splitAmong.contains($0) }
-        let expense = Expense(title: trimmed.isEmpty ? category.title : trimmed, amount: entry.minorUnits,
-                              category: category, paidBy: paidBy, splitAmong: split, date: date)
+        let receipt = receiptData.flatMap { try? CoverImageStore.receipts.save($0) }
+        let expense = Expense(title: trimmed.isEmpty ? category.title : trimmed, amount: amount,
+                              category: category, paidBy: paidBy, splitAmong: split, date: date,
+                              originalAmount: isForeign ? entry.minorUnits : nil,
+                              originalCurrency: isForeign ? currency : nil,
+                              receiptPhoto: receipt)
         store.update(trip.id) { $0.expenses.append(expense) }
         dismiss()
     }

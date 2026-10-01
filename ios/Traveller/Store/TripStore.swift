@@ -59,6 +59,9 @@ final class TripStore {
         if let photo = trip(id)?.coverPhoto {
             CoverImageStore.shared.delete(named: photo)
         }
+        for receipt in trip(id)?.expenses.compactMap(\.receiptPhoto) ?? [] {
+            CoverImageStore.receipts.delete(named: receipt)
+        }
         trips.removeAll { $0.id == id }
         save()
     }

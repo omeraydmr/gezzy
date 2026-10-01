@@ -184,9 +184,15 @@ public struct Expense: Codable, Hashable, Identifiable, Sendable {
     public var date: Date
     /// Hesaplaşma ödemesi; bütçeye sayılmaz, sadece bakiyeleri etkiler.
     public var isTransfer: Bool
+    /// Farklı para birimiyle girildiyse orijinal tutar (kuruş) ve para birimi; `amount` seyahat para birimindedir.
+    public var originalAmount: Int?
+    public var originalCurrency: String?
+    /// Makbuz fotoğrafının dosya adı.
+    public var receiptPhoto: String?
 
     public init(id: UUID = UUID(), title: String, amount: Int, category: SpendCategory, paidBy: UUID, splitAmong: [UUID],
-                date: Date, isTransfer: Bool = false) {
+                date: Date, isTransfer: Bool = false, originalAmount: Int? = nil, originalCurrency: String? = nil,
+                receiptPhoto: String? = nil) {
         self.id = id
         self.title = title
         self.amount = amount
@@ -195,6 +201,9 @@ public struct Expense: Codable, Hashable, Identifiable, Sendable {
         self.splitAmong = splitAmong
         self.date = date
         self.isTransfer = isTransfer
+        self.originalAmount = originalAmount
+        self.originalCurrency = originalCurrency
+        self.receiptPhoto = receiptPhoto
     }
 }
 
@@ -306,5 +315,38 @@ public struct Trip: Codable, Hashable, Identifiable, Sendable {
 
     public func isPast(now: Date = Date(), calendar: Calendar = .current) -> Bool {
         calendar.startOfDay(for: endDate) < calendar.startOfDay(for: now)
+    }
+
+    // MARK: Stop ordering
+
+    /// Bir durağı aynı ya da başka bir günde `target` durağının önüne taşır; `target` nil ise günün sonuna.
+    /// Etkilenen günlerin sıra numaraları 0'dan yeniden yazılır.
+    public mutating func moveStop(_ id: UUID, before target: UUID?, on day: Date, calendar: Calendar = .current) {
+        guard let moving = stops.first(where: { $0.id == id }), id != target else { return }
+        let sourceDay = moving.day
+        let destinationDay = calendar.startOfDay(for: day)
+
+        var destination = self.stops(on: destinationDay, calendar: calendar).map(\.id).filter { $0 != id }
+        if let target, let index = destination.firstIndex(of: target) {
+            destination.insert(id, at: index)
+        } else {
+            destination.append(id)
+        }
+
+        if let index = stops.firstIndex(where: { $0.id == id }) {
+            stops[index].day = destinationDay
+        }
+        renumber(destination)
+        if !calendar.isDate(sourceDay, inSameDayAs: destinationDay) {
+            renumber(self.stops(on: sourceDay, calendar: calendar).map(\.id))
+        }
+    }
+
+    private mutating func renumber(_ ids: [UUID]) {
+        for (order, id) in ids.enumerated() {
+            if let index = stops.firstIndex(where: { $0.id == id }) {
+                stops[index].order = order
+            }
+        }
     }
 }
