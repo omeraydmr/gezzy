@@ -44,6 +44,27 @@ public enum NotificationPlanner {
                                               link: TripLink(tripID: trip.id, section: "plan")))
         }
 
+        // Konaklama: giriş günü sabahı ve çıkış günü sabahı.
+        for lodging in trip.lodgingList {
+            let checkInClock = String(format: "%02d:%02d", calendar.component(.hour, from: lodging.checkIn),
+                                      calendar.component(.minute, from: lodging.checkIn))
+            let checkOutClock = String(format: "%02d:%02d", calendar.component(.hour, from: lodging.checkOut),
+                                       calendar.component(.minute, from: lodging.checkOut))
+            if let morning = at(hour: 9, minute: 0, on: calendar.startOfDay(for: lodging.checkIn), calendar) {
+                var body = "Giriş saati \(checkInClock)"
+                if !lodging.confirmation.isEmpty { body += " · rezervasyon \(lodging.confirmation)" }
+                result.append(PlannedNotification(id: "\(prefix)-checkin-\(lodging.id.uuidString)", date: morning,
+                                                  title: "Bugün otel girişi: \(lodging.name)", body: body,
+                                                  link: TripLink(tripID: trip.id, section: "plan")))
+            }
+            if let morning = at(hour: 8, minute: 0, on: calendar.startOfDay(for: lodging.checkOut), calendar) {
+                result.append(PlannedNotification(id: "\(prefix)-checkout-\(lodging.id.uuidString)", date: morning,
+                                                  title: "Bugün çıkış: \(lodging.name)",
+                                                  body: "Çıkış saati en geç \(checkOutClock).",
+                                                  link: TripLink(tripID: trip.id, section: "plan")))
+            }
+        }
+
         // Her sabah günün planı.
         for (index, day) in days.enumerated() {
             let stops = trip.stops(on: day, calendar: calendar)
