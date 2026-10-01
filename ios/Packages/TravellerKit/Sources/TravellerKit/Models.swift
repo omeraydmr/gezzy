@@ -474,8 +474,14 @@ public struct Trip: Codable, Hashable, Identifiable, Sendable {
 
     /// Bu seyahatteki tüm alt öğelerin kimlikleri.
     public var itemIDs: Set<UUID> {
-        Set(members.map(\.id) + stops.map(\.id) + expenses.map(\.id) + packing.map(\.id)
-            + (lodgings ?? []).map(\.id) + (ideas ?? []).map(\.id))
+        // Tek uzun "+" zinciri derleyicinin tür çıkarımını çok yavaşlatıyor; adım adım toplanır.
+        var ids: [UUID] = members.map(\.id)
+        ids += stops.map(\.id)
+        ids += expenses.map(\.id)
+        ids += packing.map(\.id)
+        ids += (lodgings ?? []).map(\.id)
+        ids += (ideas ?? []).map(\.id)
+        return Set(ids)
     }
 
     /// Önceki halde olup bu halde olmayan öğeleri silindi olarak işaretler.
