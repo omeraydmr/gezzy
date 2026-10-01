@@ -1,6 +1,9 @@
 import CoreLocation
 import Foundation
+import ImageIO
 import TravellerKit
+import UIKit
+import Vision
 
 /// Avrupa Merkez Bankası referans kurları (Frankfurter, anahtarsız). Kurlar gün içinde önbellekte tutulur.
 @MainActor
@@ -74,5 +77,67 @@ extension TripStore {
         guard let found = await DestinationGeocoder.coordinate(for: trip.destination) else { return nil }
         update(id) { $0.destination.coordinate = found }
         return found
+    }
+}
+
+/// Makbuz fotoğrafındaki metni cihaz üzerinde (Vision) okuyup toplamı çıkarır; görüntü cihazdan çıkmaz.
+enum ReceiptReader {
+    static func read(_ image: UIImage) async -> ReceiptParser.Result? {
+        guard let cgImage = image.cgImage else { return nil }
+        let orientation = CGImagePropertyOrientation(image.imageOrientation)
+        let lines: [String] = await Task.detached(priority: .userInitiated) { () -> [String] in
+            let request = VNRecognizeTextRequest()
+            request.recognitionLevel = .accurate
+            request.recognitionLanguages = ["tr-TR", "en-US", "de-DE", "fr-FR", "it-IT", "es-ES", "pt-PT"]
+            request.usesLanguageCorrection = false
+            let handler = VNImageRequestHandler(cgImage: cgImage, orientation: orientation)
+            do {
+                try handler.perform([request])
+            } catch {
+                return []
+            }
+            // Yukarıdan aşağıya sırala (Vision'da y ekseni aşağıdan yukarı artar).
+            return (request.results ?? [])
+                .sorted { $0.boundingBox.midY > $1.boundingBox.midY }
+                .compactMap { $0.topCandidates(1).first?.string }
+        }.value
+        return ReceiptParser.parse(lines: lines)
+    }
+}
+
+extension CGImagePropertyOrientation {
+    init(_ orientation: UIImage.Orientation) {
+        switch orientation {
+        case .up: self = .up
+        case .upMirrored: self = .upMirrored
+        case .down: self = .down
+        case .downMirrored: self = .downMirrored
+        case .left: self = .left
+        case .leftMirrored: self = .leftMirrored
+        case .right: self = .right
+        case .rightMirrored: self = .rightMirrored
+        @unknown default: self = .up
+        }
+    }
+}
+
+/// OpenStreetMap (Overpass API) üzerinden bir durağın açılış saatlerini bulur.
+@MainActor
+final class OpeningHoursService {
+    static let shared = OpeningHoursService()
+    private let endpoint = URL(string: "https://overpass-api.de/api/interpreter")!
+
+    func lookup(name: String, coordinate: Coordinate) async throws -> String? {
+        var request = URLRequest(url: endpoint)
+        request.httpMethod = "POST"
+        request.timeoutInterval = 15
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        let query = OpeningHoursLookup.query(latitude: coordinate.latitude, longitude: coordinate.longitude)
+        let encoded = query.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? query
+        request.httpBody = Data("data=\(encoded)".utf8)
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw ServiceError.badResponse }
+        let candidates = try OpeningHoursLookup.decodeCandidates(data)
+        return OpeningHoursLookup.bestMatch(for: name, in: candidates)?.openingHours
     }
 }

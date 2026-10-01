@@ -29,6 +29,13 @@ struct AddExpenseSheet: View {
     @State private var isShowingCamera = false
     @State private var isShowingLibrary = false
     @State private var libraryItem: PhotosPickerItem?
+    @State private var scan: ReceiptScan = .idle
+
+    enum ReceiptScan: Equatable {
+        case idle, reading, notFound
+        /// Okunan sonuç ve uygulanmadan önceki tutar (geri almak için); `applied` false ise kullanıcı onayı bekler.
+        case found(ReceiptParser.Result, previous: AmountEntry, previousCurrency: String?, applied: Bool)
+    }
 
     var body: some View {
         NavigationStack {
@@ -122,7 +129,7 @@ struct AddExpenseSheet: View {
     }
 
     private var currencyOptions: [String] {
-        var options = [trip.currency, "TRY", "EUR", "USD", "GBP"]
+        var options = [trip.currency, "TRY", "EUR", "USD", "GBP"] + (inputCurrency.map { [$0] } ?? [])
         if let local = Locale(identifier: "tr_\(trip.destination.countryCode)").currency?.identifier {
             options.insert(local, at: 1)
         }
@@ -175,7 +182,87 @@ struct AddExpenseSheet: View {
             Text(shareText)
                 .font(.system(.footnote, weight: .medium))
                 .foregroundStyle(Color.ink2)
+
+            scanBanner
+                .animation(.spring(duration: 0.3), value: scan)
         }
+    }
+
+    // MARK: Receipt scan
+
+    @ViewBuilder
+    private var scanBanner: some View {
+        switch scan {
+        case .idle:
+            EmptyView()
+        case .reading:
+            Label("Makbuz okunuyor…", systemImage: "text.viewfinder")
+                .font(.system(.footnote, weight: .semibold))
+                .foregroundStyle(Color.ink2)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(Color.track, in: Capsule())
+        case .notFound:
+            Label("Makbuzda tutar bulunamadı", systemImage: "exclamationmark.magnifyingglass")
+                .font(.system(.footnote, weight: .semibold))
+                .foregroundStyle(Color.ink2)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(Color.track, in: Capsule())
+        case let .found(result, previous, previousCurrency, applied):
+            let text = AppFormat.money(result.amount, result.currency ?? currency)
+            HStack(spacing: 8) {
+                Image(systemName: "doc.text.viewfinder")
+                Text(applied ? "Makbuzdan okundu: \(text)" : "Makbuzdaki tutar: \(text)")
+                    .lineLimit(1)
+                if !result.isConfident {
+                    Text("· kontrol et").foregroundStyle(Color.food)
+                }
+                Button(applied ? "Geri al" : "Kullan") {
+                    if applied {
+                        entry = previous
+                        let target = previousCurrency ?? trip.currency
+                        if target != currency { selectCurrency(target) }
+                        scan = .found(result, previous: previous, previousCurrency: previousCurrency, applied: false)
+                    } else {
+                        apply(result)
+                    }
+                }
+                .fontWeight(.bold)
+            }
+            .font(.system(.footnote, weight: .semibold))
+            .foregroundStyle(Color.success)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(Color.staysTint, in: Capsule())
+        }
+    }
+
+    private func scanReceipt(_ image: UIImage) {
+        scan = .reading
+        Task {
+            guard let result = await ReceiptReader.read(image) else {
+                scan = .notFound
+                return
+            }
+            if entry.isEmpty {
+                apply(result)
+            } else {
+                scan = .found(result, previous: entry, previousCurrency: inputCurrency, applied: false)
+            }
+        }
+    }
+
+    private func apply(_ result: ReceiptParser.Result) {
+        let previous = entry
+        let previousCurrency = inputCurrency
+        withAnimation(.spring(duration: 0.3)) {
+            entry = AmountEntry(minorUnits: result.amount)
+        }
+        if let code = result.currency, code != currency {
+            selectCurrency(code)
+        }
+        scan = .found(result, previous: previous, previousCurrency: previousCurrency, applied: true)
     }
 
     @ViewBuilder
@@ -270,6 +357,7 @@ struct AddExpenseSheet: View {
                 Button("Makbuzu kaldır", role: .destructive) {
                     receiptImage = nil
                     receiptData = nil
+                    scan = .idle
                 }
             }
         }
@@ -280,6 +368,7 @@ struct AddExpenseSheet: View {
                 if let data = try? await item.loadTransferable(type: Data.self), let image = UIImage(data: data) {
                     receiptData = data
                     receiptImage = image
+                    scanReceipt(image)
                 }
                 libraryItem = nil
             }
@@ -288,6 +377,7 @@ struct AddExpenseSheet: View {
             CameraPicker(onCapture: { image in
                 receiptImage = image
                 receiptData = image.jpegData(compressionQuality: 0.85)
+                scanReceipt(image)
             }, onClose: { isShowingCamera = false })
             .ignoresSafeArea()
         }

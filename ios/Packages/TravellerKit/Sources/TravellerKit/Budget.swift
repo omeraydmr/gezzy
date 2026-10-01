@@ -70,3 +70,28 @@ public enum Budget {
         return .onTrack(day: dayIndex, of: total)
     }
 }
+
+/// Harcamaların para birimine göre dağılımı (orijinal tutar ve seyahat para birimindeki karşılığı).
+public struct CurrencyTotal: Hashable, Sendable {
+    public var currency: String
+    public var originalTotal: Int
+    public var convertedTotal: Int
+    public var count: Int
+}
+
+extension Budget {
+    public static func currencyBreakdown(for trip: Trip) -> [CurrencyTotal] {
+        var totals: [String: CurrencyTotal] = [:]
+        for expense in trip.expenses where !expense.isTransfer {
+            let currency = expense.originalCurrency ?? trip.currency
+            var total = totals[currency] ?? CurrencyTotal(currency: currency, originalTotal: 0, convertedTotal: 0, count: 0)
+            total.originalTotal += expense.originalAmount ?? expense.amount
+            total.convertedTotal += expense.amount
+            total.count += 1
+            totals[currency] = total
+        }
+        return totals.values.sorted {
+            $0.convertedTotal != $1.convertedTotal ? $0.convertedTotal > $1.convertedTotal : $0.currency < $1.currency
+        }
+    }
+}

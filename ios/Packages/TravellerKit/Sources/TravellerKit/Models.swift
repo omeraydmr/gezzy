@@ -156,9 +156,13 @@ public struct Stop: Codable, Hashable, Identifiable, Sendable {
     public var durationMinutes: Int
     public var coordinate: Coordinate?
     public var note: String
+    /// OpenStreetMap `opening_hours` biçiminde açılış saatleri.
+    public var openingHours: String?
+    /// Açılış saatleri bir kez arandıysa true (bulunamasa bile tekrar aranmaz).
+    public var openingHoursLookedUp: Bool?
 
     public init(id: UUID = UUID(), day: Date, order: Int, name: String, kind: StopKind, startMinutes: Int? = nil,
-                durationMinutes: Int = 60, coordinate: Coordinate? = nil, note: String = "") {
+                durationMinutes: Int = 60, coordinate: Coordinate? = nil, note: String = "", openingHours: String? = nil) {
         self.id = id
         self.day = day
         self.order = order
@@ -168,6 +172,7 @@ public struct Stop: Codable, Hashable, Identifiable, Sendable {
         self.durationMinutes = durationMinutes
         self.coordinate = coordinate
         self.note = note
+        self.openingHours = openingHours
     }
 }
 
@@ -315,6 +320,13 @@ public struct Trip: Codable, Hashable, Identifiable, Sendable {
 
     public func isPast(now: Date = Date(), calendar: Calendar = .current) -> Bool {
         calendar.startOfDay(for: endDate) < calendar.startOfDay(for: now)
+    }
+
+    /// Durağın ziyaret gününe ve saatine göre açılış durumu; saat bilgisi yoksa nil.
+    public func hoursStatus(of stop: Stop, calendar: Calendar = .current) -> OpeningHours.Status? {
+        guard let raw = stop.openingHours, let hours = OpeningHours(raw) else { return nil }
+        let day = OpeningHours.dayIndex(calendarWeekday: calendar.component(.weekday, from: stop.day))
+        return hours.status(day: day, startMinutes: stop.startMinutes, duration: stop.durationMinutes)
     }
 
     // MARK: Stop ordering

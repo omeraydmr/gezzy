@@ -16,6 +16,9 @@ struct MoneySection: View {
     var body: some View {
         VStack(spacing: 16) {
             budgetCard
+            if Budget.currencyBreakdown(for: trip).count > 1 {
+                CurrencyBreakdownCard(trip: trip)
+            }
             balancesCard
             expensesCard
         }
@@ -439,5 +442,73 @@ struct ReceiptViewer: View {
                 }
             }
         }
+    }
+}
+
+/// Harcamaların para birimine göre dağılımı: hangi parayla ne kadar harcandı, seyahat parasında karşılığı.
+struct CurrencyBreakdownCard: View {
+    let trip: Trip
+
+    var body: some View {
+        let totals = Budget.currencyBreakdown(for: trip)
+        let sum = max(totals.reduce(0) { $0 + $1.convertedTotal }, 1)
+        ModuleCard("Para birimleri", symbol: "dollarsign.arrow.circlepath") {
+            StoryHeadline(text: headline(totals, sum: sum))
+
+            GeometryReader { proxy in
+                HStack(spacing: 4) {
+                    ForEach(Array(totals.enumerated()), id: \.element.currency) { index, total in
+                        Capsule()
+                            .fill(Accent.cycle(index).base)
+                            .frame(width: max(8, (proxy.size.width - CGFloat(totals.count - 1) * 4)
+                                * CGFloat(total.convertedTotal) / CGFloat(sum)))
+                    }
+                }
+            }
+            .frame(height: 12)
+            .accessibilityHidden(true)
+
+            VStack(spacing: 0) {
+                ForEach(Array(totals.enumerated()), id: \.element.currency) { index, total in
+                    if index > 0 { Divider().overlay(Color.line) }
+                    HStack(spacing: 12) {
+                        Text(AppFormat.currencySymbol(total.currency))
+                            .font(.system(.headline, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .frame(width: 36, height: 36)
+                            .background(Accent.cycle(index).base, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(AppFormat.money(total.originalTotal, total.currency))
+                                .font(.tBodyStrong)
+                                .foregroundStyle(Color.ink)
+                            Text("\(total.currency) · \(total.count) harcama")
+                                .font(.caption)
+                                .foregroundStyle(Color.ink3)
+                        }
+                        Spacer(minLength: 8)
+                        VStack(alignment: .trailing, spacing: 2) {
+                            if total.currency != trip.currency {
+                                Text("≈ \(AppFormat.money(total.convertedTotal, trip.currency))")
+                                    .font(.tBodyStrong)
+                                    .foregroundStyle(Color.ink)
+                            }
+                            Text("%\(Int((Double(total.convertedTotal) / Double(sum) * 100).rounded()))")
+                                .font(.caption)
+                                .foregroundStyle(Color.ink3)
+                        }
+                    }
+                    .padding(.vertical, 10)
+                    .accessibilityElement(children: .combine)
+                }
+            }
+            .tray(padding: 14)
+        }
+    }
+
+    private func headline(_ totals: [CurrencyTotal], sum: Int) -> String {
+        let foreign = totals.filter { $0.currency != trip.currency }
+        let share = Int((Double(foreign.reduce(0) { $0 + $1.convertedTotal }) / Double(sum) * 100).rounded())
+        let names = foreign.map(\.currency).joined(separator: ", ")
+        return "Harcamaların %\(TurkishGrammar.withPossessive(share)) \(names) ile yapıldı."
     }
 }

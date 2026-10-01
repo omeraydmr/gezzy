@@ -11,6 +11,7 @@ struct PlanSection: View {
     @State private var isAddingStop = false
     @State private var lastOrderBeforeOptimize: [Stop.ID: Int]?
     @State private var dropTarget: Stop.ID?
+    @State private var editingHours: Stop?
     @Environment(\.tripTint) private var tint
 
     private var days: [Date] { trip.days() }
@@ -64,6 +65,18 @@ struct PlanSection: View {
         .sheet(isPresented: $isAddingStop) {
             AddStopSheet(trip: trip, day: day)
         }
+        .sheet(item: $editingHours) { stop in
+            OpeningHoursEditor(stop: stop) { hours in
+                store.update(trip.id) { trip in
+                    if let index = trip.stops.firstIndex(where: { $0.id == stop.id }) {
+                        trip.stops[index].openingHours = hours
+                        trip.stops[index].openingHoursLookedUp = true
+                    }
+                }
+            }
+            .presentationDetents([.medium, .large])
+        }
+        .task(id: trip.stops.filter { $0.coordinate != nil }.count) { await lookUpOpeningHours() }
         .onChange(of: day) { _, _ in
             cameraPosition = .automatic
             lastOrderBeforeOptimize = nil
@@ -86,6 +99,10 @@ struct PlanSection: View {
                                  text: AppFormat.distance(meters: totalMeters))
                         StatChip(symbol: "figure.walk", text: "\(Geo.walkingMinutes(meters: totalMeters)) dk")
                     }
+                    let warnings = stops.filter { trip.hoursStatus(of: $0)?.isWarning == true }.count
+                    if warnings > 0 {
+                        StatChip(symbol: "clock.badge.exclamationmark", text: "\(warnings) saat uyarısı", accent: .orange)
+                    }
                 }
             }
             .padding(.bottom, 14)
@@ -98,7 +115,7 @@ struct PlanSection: View {
                 if index > 0 {
                     HopRow(from: stops[index - 1], to: stop)
                 }
-                StopRow(stop: stop, number: index + 1)
+                StopRow(stop: stop, number: index + 1, hours: trip.hoursStatus(of: stop))
                     .overlay(alignment: .top) {
                         Capsule()
                             .fill(tint)
@@ -153,6 +170,7 @@ struct PlanSection: View {
         if index < stops.count - 1 {
             Button("Aşağı taşı", systemImage: "arrow.down") { move(stop, by: 1) }
         }
+        Button("Açılış saatleri", systemImage: "clock") { editingHours = stop }
         Menu("Başka güne taşı", systemImage: "calendar") {
             ForEach(days.filter { $0 != day }, id: \.self) { target in
                 Button(AppFormat.dayPill(target)) { moveToDay(stop, target) }
@@ -202,6 +220,33 @@ struct PlanSection: View {
         guard ordered.indices.contains(target) else { return }
         ordered.swapAt(index, target)
         applyOrder(ordered.map(\.id))
+    }
+
+    // MARK: Opening hours
+
+    /// Açılış saati henüz aranmamış, konumu olan duraklar (tüm günler).
+    private var pendingHoursLookup: [Stop.ID] {
+        trip.stops.filter { $0.coordinate != nil && $0.openingHoursLookedUp != true }.map(\.id)
+    }
+
+    /// OpenStreetMap'ten açılış saatlerini sırayla sorgular; Overpass'ı yormamak için aralarında kısa bekleme var.
+    private func lookUpOpeningHours() async {
+        for id in pendingHoursLookup {
+            guard !Task.isCancelled,
+                  let stop = trip.stops.first(where: { $0.id == id }), let coordinate = stop.coordinate else { continue }
+            do {
+                let hours = try await OpeningHoursService.shared.lookup(name: stop.name, coordinate: coordinate)
+                store.update(trip.id) { trip in
+                    if let index = trip.stops.firstIndex(where: { $0.id == id }) {
+                        if trip.stops[index].openingHours == nil { trip.stops[index].openingHours = hours }
+                        trip.stops[index].openingHoursLookedUp = true
+                    }
+                }
+            } catch {
+                return // Ağ hatası: işaretlemeden çık, bir sonraki açılışta yeniden denenir.
+            }
+            try? await Task.sleep(for: .seconds(1))
+        }
     }
 
     private func moveStop(_ id: Stop.ID, before target: Stop.ID?, on targetDay: Date) {
@@ -259,6 +304,7 @@ struct PlanSection: View {
 struct StopRow: View {
     let stop: Stop
     let number: Int
+    var hours: OpeningHours.Status?
 
     var body: some View {
         let accent = Accent.cycle(number - 1)
@@ -268,6 +314,9 @@ struct StopRow: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(stop.name).font(.tBodyStrong).foregroundStyle(Color.ink)
                 Text(detail).font(.tBody).foregroundStyle(Color.ink2)
+                if let hours {
+                    HoursLabel(status: hours)
+                }
             }
             Spacer(minLength: 8)
             if let start = stop.startMinutes {
@@ -331,6 +380,98 @@ struct VerticalLine: Shape {
         Path { path in
             path.move(to: CGPoint(x: rect.midX, y: rect.minY))
             path.addLine(to: CGPoint(x: rect.midX, y: rect.maxY))
+        }
+    }
+}
+
+/// Durağın açılış saatine göre kısa durum etiketi.
+struct HoursLabel: View {
+    let status: OpeningHours.Status
+
+    var body: some View {
+        Label(text, systemImage: status.isWarning ? "exclamationmark.circle.fill" : "clock")
+            .font(.system(.caption, weight: .semibold))
+            .foregroundStyle(color)
+            .lineLimit(1)
+    }
+
+    private var color: Color {
+        switch status {
+        case .closedAllDay, .alreadyClosed: Color(hex: 0xD64545)
+        case .opensLater, .closesDuringVisit: .food
+        case .open, .openToday: .ink3
+        }
+    }
+
+    private var text: String {
+        let clock = OpeningHours.clock
+        switch status {
+        case .closedAllDay: return "O gün kapalı"
+        case let .alreadyClosed(at): return "Bu saatte kapalı · kapanış \(clock(at))"
+        case let .opensLater(at): return "Henüz kapalı · açılış \(clock(at))"
+        case let .closesDuringVisit(at): return "Kapanış \(clock(at)) · süre yetmeyebilir"
+        case let .open(until): return "Açık · kapanış \(clock(until))"
+        case let .openToday(intervals):
+            return intervals.map { "\(clock($0.start))–\(clock($0.end))" }.joined(separator: ", ")
+        }
+    }
+}
+
+/// Açılış saatlerini gösterir ve düzenletir (OpenStreetMap biçimi).
+struct OpeningHoursEditor: View {
+    @Environment(\.dismiss) private var dismiss
+    let stop: Stop
+    let onSave: (String?) -> Void
+    @State private var text: String
+
+    init(stop: Stop, onSave: @escaping (String?) -> Void) {
+        self.stop = stop
+        self.onSave = onSave
+        _text = State(initialValue: stop.openingHours ?? "")
+    }
+
+    private var parsed: OpeningHours? { OpeningHours(text) }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    TextField("Mo-Fr 09:00-18:00; Sa 10:00-14:00; Su off", text: $text, axis: .vertical)
+                        .font(.system(.body, design: .monospaced))
+                        .autocorrectionDisabled()
+                        .textInputAutocapitalization(.never)
+                } header: {
+                    Text(stop.name)
+                } footer: {
+                    Text("Günler: Mo Tu We Th Fr Sa Su. Kapalı günler için \"off\". Saatler OpenStreetMap'ten otomatik gelir; yanlışsa buradan düzeltebilirsin.")
+                }
+
+                Section("Önizleme") {
+                    if text.trimmingCharacters(in: .whitespaces).isEmpty {
+                        Text("Açılış saati yok").foregroundStyle(Color.ink3)
+                    } else if let parsed {
+                        Text(parsed.turkishSummary).foregroundStyle(Color.ink)
+                    } else {
+                        Label("Bu biçim anlaşılamadı", systemImage: "exclamationmark.triangle.fill")
+                            .foregroundStyle(Color.food)
+                    }
+                }
+            }
+            .navigationTitle("Açılış saatleri")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Vazgeç") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Kaydet") {
+                        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+                        onSave(trimmed.isEmpty ? nil : trimmed)
+                        dismiss()
+                    }
+                    .disabled(!text.trimmingCharacters(in: .whitespaces).isEmpty && parsed == nil)
+                }
+            }
         }
     }
 }
