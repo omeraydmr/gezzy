@@ -16,6 +16,17 @@ targets:
     platform: iOS
     sources:
       - path: Traveller
+    info:
+      path: Support/Info.plist
+      properties:
+        CKSharingSupported: true
+    entitlements:
+      path: Support/Traveller.entitlements
+      properties:
+        com.apple.developer.icloud-container-identifiers:
+          - iCloud.app.traveller.ios
+        com.apple.developer.icloud-services:
+          - CloudKit
     dependencies:
       - package: TravellerKit
     settings:

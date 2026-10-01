@@ -37,12 +37,24 @@ struct AboutView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(TripStore.self) private var store
     @State private var confirmReset = false
+    private var notifications: NotificationScheduler { .shared }
+    private var sync: CloudSync { .shared }
 
     private var version: String {
         let info = Bundle.main.infoDictionary
         let short = info?["CFBundleShortVersionString"] as? String ?? "—"
         let build = info?["CFBundleVersion"] as? String ?? "—"
         return "\(short) (\(build))"
+    }
+
+    private var syncText: String {
+        switch sync.status {
+        case .unknown: "Kontrol ediliyor"
+        case .unavailable: "Kapalı (iCloud girişi yok)"
+        case .syncing: "Eşitleniyor…"
+        case let .synced(date): "Açık · \(AppFormat.time(date))"
+        case .failed: "Sorun var"
+        }
     }
 
     var body: some View {
@@ -61,6 +73,30 @@ struct AboutView: View {
                         }
                     }
                     .padding(.vertical, 4)
+                }
+
+                Section {
+                    Toggle(isOn: Binding(get: { notifications.isEnabled },
+                                         set: { value in Task { await notifications.setEnabled(value) } })) {
+                        Label("Seyahat bildirimleri", systemImage: "bell.badge")
+                    }
+                    if notifications.authorizationDenied {
+                        Text("Bildirim izni kapalı. Ayarlar > Traveller > Bildirimler'den açabilirsin.")
+                            .font(.caption)
+                            .foregroundStyle(Color.food)
+                    }
+                    HStack {
+                        Label("iCloud eşitleme", systemImage: "icloud")
+                        Spacer()
+                        Text(syncText).font(.subheadline).foregroundStyle(Color.ink2).multilineTextAlignment(.trailing)
+                    }
+                    if sync.isAvailable {
+                        Button("Şimdi eşitle") { Task { await sync.refresh() } }
+                    }
+                } header: {
+                    Text("Ayarlar")
+                } footer: {
+                    Text("Bildirimler: gitmeden önceki akşam valiz hatırlatması, uçuştan 3 saat önce kapı ve koltuk, her sabah günün planı ve notlu duraklardan 45 dk önce.")
                 }
 
                 Section {
@@ -83,7 +119,7 @@ struct AboutView: View {
                 }
 
                 Section {
-                    Label("Seyahatler, harcamalar ve fotoğraflar yalnızca bu cihazda saklanır.", systemImage: "iphone")
+                    Label("Seyahatler bu cihazda ve iCloud hesabında saklanır; yalnızca davet ettiğin kişiler görebilir. Fotoğraflar cihazda kalır.", systemImage: "iphone")
                     Label("Makbuz metni cihaz üzerinde okunur; görüntü hiçbir yere gönderilmez.", systemImage: "doc.text.viewfinder")
                     Label("Kur, hava ve açılış saati sorgularında yalnızca para birimi, konum ve yer adı gönderilir.",
                           systemImage: "network")

@@ -20,6 +20,30 @@ public enum Geo {
         zip(points, points.dropFirst()).reduce(0) { $0 + distance($1.0, $1.1) }
     }
 
+    /// Noktaları kenarlarda pay bırakarak kapsayan bölge (harita görüntüsü için).
+    public struct Bounds: Hashable, Sendable {
+        public var center: Coordinate
+        public var latitudeSpan: Double
+        public var longitudeSpan: Double
+    }
+
+    public static func bounds(_ points: [Coordinate], padding: Double = 0.3, minimumSpan: Double = 0.01) -> Bounds {
+        guard let first = points.first else {
+            return Bounds(center: Coordinate(latitude: 0, longitude: 0), latitudeSpan: 180, longitudeSpan: 360)
+        }
+        var minLat = first.latitude, maxLat = first.latitude
+        var minLon = first.longitude, maxLon = first.longitude
+        for point in points {
+            minLat = min(minLat, point.latitude)
+            maxLat = max(maxLat, point.latitude)
+            minLon = min(minLon, point.longitude)
+            maxLon = max(maxLon, point.longitude)
+        }
+        return Bounds(center: Coordinate(latitude: (minLat + maxLat) / 2, longitude: (minLon + maxLon) / 2),
+                      latitudeSpan: max(minimumSpan, (maxLat - minLat) * (1 + padding * 2)),
+                      longitudeSpan: max(minimumSpan, (maxLon - minLon) * (1 + padding * 2)))
+    }
+
     /// Kuş uçuşu mesafeden tahmini yürüme süresi; sokak dolambacı için 1,25 çarpanı.
     public static func walkingMinutes(meters: Double) -> Int {
         Int((meters * 1.25 / walkingMetersPerMinute).rounded(.up))

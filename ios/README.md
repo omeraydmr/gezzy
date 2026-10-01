@@ -14,6 +14,22 @@ open Traveller.xcodeproj
 `Traveller.xcodeproj` üretilen bir dosyadır ve repoya eklenmez; yapı `project.yml` içinde tanımlıdır.
 Yeni dosya eklediğinde `xcodegen generate` komutunu tekrar çalıştır.
 
+## iCloud paylaşımı (CloudKit)
+
+Ekip paylaşımı ve eşitleme Apple'ın iCloud altyapısını kullanır; ayrı bir sunucu yoktur.
+Gerçek cihazda çalıştırmak için bir kez:
+
+1. Xcode → Traveller hedefi → *Signing & Capabilities* → kendi geliştirici ekibini seç.
+2. *iCloud* yeteneğinde **CloudKit** işaretli olmalı; konteyner `iCloud.app.traveller.ios`
+   (farklı bir kimlik kullanırsan `CloudConfig.containerIdentifier` ve `project.yml`'i güncelle).
+3. İlk çalıştırmada CloudKit geliştirme şeması kendiliğinden oluşur (`Trip` kaydı: `payload`, `name`, `updatedAt`).
+   Yayından önce CloudKit Console'da şemayı **Production**'a taşı.
+
+iCloud'a giriş yapılmamış cihazda uygulama yalnızca yerel çalışır. Eşitleme iki kopyayı öğe bazında birleştirir;
+silinen öğeler `tombstones` ile işaretlenir ve geri gelmez. Fotoğraflar (kapak, makbuz) şimdilik eşitlenmez.
+
+`Support/Info.plist` ve `Support/Traveller.entitlements` `xcodegen generate` ile üretilir.
+
 ## Yapı
 
 ```

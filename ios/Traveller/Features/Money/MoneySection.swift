@@ -9,6 +9,7 @@ struct MoneySection: View {
     @State private var isEditingBudget = false
     @State private var pendingTransfer: Transfer?
     @State private var viewingReceipt: Expense?
+    @State private var editingExpense: Expense?
 
     private var summary: BudgetSummary { Budget.summary(for: trip) }
     private var transfers: [Transfer] { Settlement.transfers(for: trip) }
@@ -30,6 +31,9 @@ struct MoneySection: View {
         }
         .sheet(item: $viewingReceipt) { expense in
             ReceiptViewer(trip: trip, expense: expense)
+        }
+        .sheet(item: $editingExpense) { expense in
+            AddExpenseSheet(trip: trip, editing: expense)
         }
         .confirmationDialog("Ödeme yapıldı mı?", isPresented: Binding(
             get: { pendingTransfer != nil }, set: { if !$0 { pendingTransfer = nil } }
@@ -192,9 +196,12 @@ struct MoneySection: View {
                                     ExpenseRow(trip: trip, expense: expense)
                                         .contentShape(Rectangle())
                                         .onTapGesture {
-                                            if expense.receiptPhoto != nil { viewingReceipt = expense }
+                                            if !expense.isTransfer { editingExpense = expense }
                                         }
                                         .contextMenu {
+                                            if !expense.isTransfer {
+                                                Button("Düzenle", systemImage: "pencil") { editingExpense = expense }
+                                            }
                                             if expense.receiptPhoto != nil {
                                                 Button("Makbuzu göster", systemImage: "doc.text.image") {
                                                     viewingReceipt = expense

@@ -29,6 +29,10 @@ Görsel maket: [`design/screens.html`](../design/screens.html)
 | Saat düzeltme | Yalnızca uyarı | Uyarının altında tek dokunuşla çözüm: "Saati 10:00 yap" ya da "Taşı: Sal 13" (aynı saatte açık en yakın gün; eşitlikte sonraki gün) |
 | Kalem kalem bölme | Herkese eşit | Makbuz kalemleri okunur, her kalem kişilere atanır; vergi/servis/kur farkı oransal dağıtılır; bakiyeler kişi başı paylarla hesaplanır |
 | Hakkında | — | Veri kaynakları ve lisans atıfları, gizlilik notları, vize verisi uyarısı, örnek verileri sıfırlama |
+| Harcama düzenleme | Yalnızca silme | Harcamaya dokununca aynı ekran düzenleme modunda açılır; tutar/para birimi aynıysa kayıtlı karşılık korunur, özel paylar yeni tutara oranlanır, makbuz değiştirilebilir |
+| Ekip paylaşımı | Elle kişi ekleme | iCloud daveti Mesajlar/Mail ile; seyahat herkesin telefonunda eşitlenir, çakışmalar öğe bazında birleşir, silinenler geri gelmez; katılan kişi kendini ekibe ekler |
+| Çevrimdışı harita | — | Günlerin rotası numaralı pinleriyle görüntü olarak kaydedilir; internet yokken canlı haritanın yerine gösterilir |
+| Bildirimler | — | Önceki akşam valiz, uçuştan 3 saat önce kapı/koltuk, her sabah günün planı, notlu duraklardan 45 dk önce |
 | Durak ekle | Yalnızca metin sonuç listesi | Numaralı sonuçlar ve aynı numaralarla harita önizlemesi; seçilen yer yeşil işaretle |
 | Yeni seyahat | Düz form | Yazdıkça güncellenen canlı bilet kartı + fotoğraf ekleme |
 
@@ -42,7 +46,12 @@ Görsel maket: [`design/screens.html`](../design/screens.html)
 ## Atıflar
 Lisans gereği görünür atıf gereken yerler: plan listesinin altında (açılış saatleri varsa) "© OpenStreetMap katkıcıları" bağlantısı, açılış saati düzenleyicisinde, valizdeki hava kartında "Open-Meteo", döviz satırında "ECB", ve hepsi "Hakkında" ekranında bağlantılarıyla.
 
+## Bilinen sınırlar
+- iCloud eşitlemesi açılışta, uygulama öne gelince ve her değişiklikte çalışır; anlık (push) güncelleme yok.
+- Kapak ve makbuz fotoğrafları eşitlenmez.
+- Çevrimdışı harita yakınlaştırılamayan bir görüntüdür; adım adım yol tarifi için Apple Haritalar'ın çevrimdışı haritaları önerilir.
+
 ## Sonraki adaylar
-- Kayıtlı harcamayı düzenleme (tutar, kişiler, kalem dağılımı).
-- Ekip arkadaşlarıyla senkronizasyon ve davet bağlantısı (sunucu gerektirir).
-- Çevrimdışı harita ve seyahat günü bildirimleri.
+- CloudKit abonelikleriyle anlık güncelleme ve "Elif bir harcama ekledi" bildirimi.
+- Fotoğrafların CKAsset olarak eşitlenmesi.
+- Seyahat günü Live Activity (kapı, kalkışa kalan süre).
