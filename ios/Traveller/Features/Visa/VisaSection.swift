@@ -3,6 +3,7 @@ import TravellerKit
 
 struct VisaSection: View {
     let trip: Trip
+    @Environment(TripStore.self) private var store
     @State private var focusedID: Member.ID?
     @State private var checkedDocuments: [Member.ID: Set<String>] = [:]
 
@@ -13,9 +14,7 @@ struct VisaSection: View {
 
     private var assessments: [Row] {
         trip.members.map { member in
-            Row(member: member,
-                result: VisaAdvisor.assess(countryCode: trip.destination.countryCode, passport: member.passport,
-                                           tripStart: trip.startDate, tripEnd: trip.endDate))
+            Row(member: member, result: store.visaAssessment(for: member, in: trip))
         }
     }
 
@@ -67,6 +66,12 @@ struct VisaSection: View {
                                                  set: { checkedDocuments[row.member.id] = $0 }))
                     .id(row.member.id)
                     .transition(.opacity.combined(with: .move(edge: .trailing)))
+
+                if Schengen.isSchengen(trip.destination.countryCode) {
+                    SchengenCard(member: row.member, trip: trip)
+                        .id("schengen-\(row.member.id)")
+                        .transition(.opacity)
+                }
             }
 
             VStack(alignment: .leading, spacing: 8) {
@@ -193,9 +198,11 @@ struct VisaPreview: View {
     let passport: Passport?
     let start: Date
     let end: Date
+    var otherSchengenStays: [Schengen.Stay] = []
 
     var body: some View {
-        let result = VisaAdvisor.assess(countryCode: countryCode, passport: passport, tripStart: start, tripEnd: end)
+        let result = VisaAdvisor.assess(countryCode: countryCode, passport: passport, tripStart: start, tripEnd: end,
+                                        otherSchengenStays: otherSchengenStays)
         let tag = VisaText.tag(result)
         VStack(alignment: .leading, spacing: 6) {
             HStack {
@@ -359,6 +366,9 @@ enum VisaText {
             return "Seyahat \(tripDays) gün; vizesiz kalış sınırı \(maxDays) gün."
         case let .heldVisaExpiresDuringTrip(zone, until):
             return "\(zoneName(zone)) vizen seyahat bitmeden sona eriyor (\(AppFormat.shortDate(until)))."
+        case let .schengenOverstay(firstDay, latestExit, days):
+            let exit = latestExit.map { " En geç \(AppFormat.shortDate($0)) günü çıkmalısın." } ?? ""
+            return "Schengen 90/180 sınırı \(AppFormat.shortDate(firstDay)) günü aşılıyor (\(days) gün fazla).\(exit)"
         }
     }
 

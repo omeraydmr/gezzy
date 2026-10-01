@@ -171,6 +171,7 @@ struct TripsView: View {
 struct TripGlance: View {
     let trip: Trip
     let open: (TripDetailView.TripSection) -> Void
+    @Environment(TripStore.self) private var store
 
     var body: some View {
         HStack(spacing: 10) {
@@ -212,10 +213,7 @@ struct TripGlance: View {
     }
 
     private var visa: (value: String, accent: Accent) {
-        let pending = trip.members.filter { member in
-            VisaAdvisor.assess(countryCode: trip.destination.countryCode, passport: member.passport,
-                               tripStart: trip.startDate, tripEnd: trip.endDate).needsAction
-        }.count
+        let pending = trip.members.filter { store.visaAssessment(for: $0, in: trip).needsAction }.count
         return pending == 0 ? ("Hazır ✓", .green) : ("\(pending) kişi bekliyor", .orange)
     }
 

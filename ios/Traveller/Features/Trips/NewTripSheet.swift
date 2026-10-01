@@ -51,7 +51,8 @@ struct NewTripSheet: View {
                     Toggle("Taslak olarak kaydet", isOn: $isDraft)
                 }
                 Section {
-                    VisaPreview(countryCode: countryCode, passport: store.me.passport, start: startDate, end: endDate)
+                    VisaPreview(countryCode: countryCode, passport: store.me.passport, start: startDate, end: endDate,
+                                otherSchengenStays: store.schengenStays(for: store.me.id))
                 } header: {
                     Text("Senin için vize durumu")
                 }

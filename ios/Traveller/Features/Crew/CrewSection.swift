@@ -115,10 +115,10 @@ struct CrewSection: View {
 struct MemberTile: View {
     let member: Member
     let trip: Trip
+    @Environment(TripStore.self) private var store
 
     var body: some View {
-        let result = VisaAdvisor.assess(countryCode: trip.destination.countryCode, passport: member.passport,
-                                        tripStart: trip.startDate, tripEnd: trip.endDate)
+        let result = store.visaAssessment(for: member, in: trip)
         let tag = VisaText.tag(result)
         VStack(spacing: 8) {
             AvatarView(member: member, size: 56)

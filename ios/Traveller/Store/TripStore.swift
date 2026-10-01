@@ -10,8 +10,12 @@ final class TripStore {
     /// Cihaz sahibinin profili (pasaport bilgileri yeni seyahatlere kopyalanır).
     private(set) var me: Member
 
+    /// Elle eklenen geçmiş Schengen ziyaretleri (kişi kimliğine göre; yalnızca bu cihazda saklanır).
+    private(set) var manualStays: [UUID: [ManualStay]] = [:]
+
     private let fileURL: URL
     private static let meKey = "traveller.me"
+    private static let manualStaysKey = "traveller.schengen.manualStays"
 
     init(fileURL: URL = TripStore.defaultFileURL, seedIfEmpty: Bool = true) {
         self.fileURL = fileURL
@@ -21,6 +25,10 @@ final class TripStore {
         } else {
             self.me = Member(name: "Ben", role: .owner, colorIndex: 3,
                              passport: Passport(expiresOn: Calendar.current.date(byAdding: .year, value: 5, to: .now) ?? .now))
+        }
+        if let data = UserDefaults.standard.data(forKey: Self.manualStaysKey),
+           let stays = try? JSONDecoder().decode([UUID: [ManualStay]].self, from: data) {
+            manualStays = stays
         }
         load()
         if trips.isEmpty && seedIfEmpty {
@@ -117,6 +125,46 @@ final class TripStore {
         guard trips.contains(where: { $0.id == id }) else { return }
         trips.removeAll { $0.id == id }
         save()
+    }
+
+    // MARK: Schengen 90/180
+
+    /// Kişinin bu seyahat dışındaki Schengen kalışları: planlanmış seyahatler ve elle eklenen ziyaretler.
+    func schengenStays(for memberID: UUID, excluding tripID: Trip.ID? = nil) -> [Schengen.Stay] {
+        let fromTrips = trips
+            .filter { trip in
+                trip.id != tripID && trip.status == .planned && Schengen.isSchengen(trip.destination.countryCode)
+                    && trip.members.contains { $0.id == memberID }
+            }
+            .map { Schengen.Stay(id: $0.id, start: $0.startDate, end: $0.endDate, label: $0.name) }
+        let manual = (manualStays[memberID] ?? []).map {
+            Schengen.Stay(id: $0.id, start: $0.start, end: $0.end, label: $0.note.isEmpty ? "Önceki ziyaret" : $0.note)
+        }
+        return fromTrips + manual
+    }
+
+    /// Kişinin bu seyahat için vize değerlendirmesi (diğer Schengen kalışları dahil).
+    func visaAssessment(for member: Member, in trip: Trip) -> VisaAssessment {
+        VisaAdvisor.assess(countryCode: trip.destination.countryCode, passport: member.passport,
+                           tripStart: trip.startDate, tripEnd: trip.endDate,
+                           otherSchengenStays: Schengen.isSchengen(trip.destination.countryCode)
+                               ? schengenStays(for: member.id, excluding: trip.id) : [])
+    }
+
+    func addManualStay(_ stay: ManualStay, for memberID: UUID) {
+        manualStays[memberID, default: []].append(stay)
+        saveManualStays()
+    }
+
+    func removeManualStay(_ id: ManualStay.ID, for memberID: UUID) {
+        manualStays[memberID]?.removeAll { $0.id == id }
+        saveManualStays()
+    }
+
+    private func saveManualStays() {
+        if let data = try? JSONEncoder().encode(manualStays) {
+            UserDefaults.standard.set(data, forKey: Self.manualStaysKey)
+        }
     }
 
     func updateMe(_ change: (inout Member) -> Void) {

@@ -105,6 +105,8 @@ public enum VisaWarning: Hashable, Sendable {
     case stayExceedsLimit(maxDays: Int, tripDays: Int)
     /// Eldeki vize seyahat bitmeden sona eriyor.
     case heldVisaExpiresDuringTrip(zone: VisaZone, until: Date)
+    /// Schengen 90/180 kuralı aşılıyor: ilk aşım günü, en geç çıkış günü, kural dışı gün sayısı.
+    case schengenOverstay(firstDay: Date, latestExit: Date?, days: Int)
 }
 
 public struct VisaAssessment: Hashable, Sendable {
@@ -118,7 +120,7 @@ public struct VisaAssessment: Hashable, Sendable {
         case .required, .eVisa, .noPassport: return true
         default: return warnings.contains { warning in
             switch warning {
-            case .passportExpiresDuringTrip, .stayExceedsLimit, .heldVisaExpiresDuringTrip: return true
+            case .passportExpiresDuringTrip, .stayExceedsLimit, .heldVisaExpiresDuringTrip, .schengenOverstay: return true
             case let .passportValidityShort(_, mandatory, _): return mandatory
             }
         }
@@ -127,7 +129,9 @@ public struct VisaAssessment: Hashable, Sendable {
 }
 
 public enum VisaAdvisor {
+    /// - Parameter otherSchengenStays: aynı kişinin diğer Schengen kalışları (90/180 hesabı için).
     public static func assess(countryCode: String, passport: Passport?, tripStart: Date, tripEnd: Date,
+                              otherSchengenStays: [Schengen.Stay] = [],
                               calendar: Calendar = .current) -> VisaAssessment {
         let code = countryCode.uppercased()
         guard let passport else { return VisaAssessment(status: .noPassport, warnings: [], entry: nil) }
@@ -171,6 +175,14 @@ public enum VisaAdvisor {
             }
         }
 
+        if Schengen.isSchengen(code) {
+            let evaluation = Schengen.evaluate(Schengen.Stay(start: tripStart, end: tripEnd, label: ""),
+                                               others: otherSchengenStays, calendar: calendar)
+            if let first = evaluation.firstOverstayDay {
+                warnings.append(.schengenOverstay(firstDay: first, latestExit: evaluation.latestExit,
+                                                  days: evaluation.overstayDays))
+            }
+        }
         warnings += passportWarnings(passport: passport, entry: entry, tripEnd: tripEnd, calendar: calendar)
         return VisaAssessment(status: status, warnings: warnings, entry: entry)
     }
