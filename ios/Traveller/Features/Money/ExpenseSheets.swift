@@ -6,8 +6,15 @@ struct AddExpenseSheet: View {
     @Environment(TripStore.self) private var store
     @Environment(\.dismiss) private var dismiss
     let trip: Trip
+    /// Doluysa kayıtlı harcama düzenlenir.
+    var editing: Expense?
 
     @State private var entry = AmountEntry()
+    @State private var didLoadEditing = false
+    /// Düzenlenen harcamanın özel payları (kalem kalem bölünmüşse); kişiler değişirse bırakılır.
+    @State private var keptShares: [UUID: Int]?
+    @State private var existingReceipt: String?
+    @State private var isConfirmingDelete = false
     @State private var title = ""
     @State private var category: SpendCategory = .food
     @State private var paidBy: UUID?
@@ -65,6 +72,7 @@ struct AddExpenseSheet: View {
                 VStack(spacing: 10) {
                     peopleRow("Ödeyen", selected: { paidBy == $0 }) { paidBy = $0 }
                     peopleRow("Bölünecek", selected: { splitAmong.contains($0) }) { id in
+                        keptShares = nil
                         if splitAmong.contains(id) {
                             if splitAmong.count > 1 { splitAmong.remove(id) }
                         } else {
@@ -93,15 +101,28 @@ struct AddExpenseSheet: View {
             }
             .animation(.spring(duration: 0.3), value: isTitleFocused)
             .background(TintGlow(tint: category.accent.base, offsetY: -260))
-            .navigationTitle("Masraf ekle")
+            .navigationTitle(editing == nil ? "Masraf ekle" : "Masrafı düzenle")
+            .confirmationDialog("Harcama silinsin mi?", isPresented: $isConfirmingDelete, titleVisibility: .visible) {
+                Button("Sil", role: .destructive) { deleteEditing() }
+            }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Vazgeç") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    DatePicker("Tarih", selection: $date, displayedComponents: .date)
-                        .labelsHidden()
+                    HStack(spacing: 8) {
+                        DatePicker("Tarih", selection: $date, displayedComponents: .date)
+                            .labelsHidden()
+                        if editing != nil {
+                            Button(role: .destructive) {
+                                isConfirmingDelete = true
+                            } label: {
+                                Image(systemName: "trash")
+                            }
+                            .accessibilityLabel("Harcamayı sil")
+                        }
+                    }
                 }
             }
             .sheet(isPresented: $isSplittingItems) {
@@ -113,6 +134,7 @@ struct AddExpenseSheet: View {
                 }
             }
             .onAppear {
+                loadEditingIfNeeded()
                 if paidBy == nil { paidBy = trip.members.first?.id }
                 if splitAmong.isEmpty { splitAmong = Set(trip.members.map(\.id)) }
             }
@@ -126,6 +148,11 @@ struct AddExpenseSheet: View {
 
     /// Girilen tutarın seyahat para birimindeki karşılığı (kur yoksa nil).
     private var tripAmount: Int? {
+        // Düzenlemede tutar ve para birimi değişmediyse kayıtlı karşılığı aynen koru (kur yuvarlaması olmasın).
+        if let editing, currency == (editing.originalCurrency ?? trip.currency),
+           entry.minorUnits == (editing.originalAmount ?? editing.amount) {
+            return editing.amount
+        }
         guard isForeign else { return entry.minorUnits }
         guard let rate = effectiveRate else { return nil }
         return CurrencyConverter.convert(minorUnits: entry.minorUnits, rate: rate)
@@ -416,6 +443,9 @@ struct AddExpenseSheet: View {
     }
 
     private var shareText: String {
+        if itemAssignments == nil, let keptShares {
+            return "Özel paylar korunuyor · \(keptShares.filter { $0.value > 0 }.count) kişi"
+        }
         if let itemAssignments {
             let people = Set(itemAssignments.values.flatMap { $0 }).count
             return "Kalem kalem bölündü · \(people) kişi"
@@ -486,22 +516,68 @@ struct AddExpenseSheet: View {
         guard let paidBy, let amount = tripAmount, isValid else { return }
         let trimmed = title.trimmingCharacters(in: .whitespaces)
         // Üye sırasını koru ki artan kuruşların kime düştüğü tutarlı olsun.
-        var split = trip.members.map(\.id).filter { splitAmong.contains($0) }
+        let order = trip.members.map(\.id)
+        var split = order.filter { splitAmong.contains($0) }
         var shares: [UUID: Int]?
         if let itemAssignments {
             let computed = ItemSplit.shares(items: receiptItems, assignments: itemAssignments, total: amount)
-            if !computed.isEmpty {
-                shares = computed
-                split = trip.members.map(\.id).filter { (computed[$0] ?? 0) > 0 }
-            }
+            if !computed.isEmpty { shares = computed }
+        } else if let keptShares {
+            let scaled = ItemSplit.scale(keptShares, order: order.filter { keptShares[$0] != nil }, to: amount)
+            if !scaled.isEmpty { shares = scaled }
         }
-        let receipt = receiptData.flatMap { try? CoverImageStore.receipts.save($0) }
-        let expense = Expense(title: trimmed.isEmpty ? category.title : trimmed, amount: amount,
+        if let shares {
+            split = order.filter { (shares[$0] ?? 0) > 0 }
+        }
+
+        var receipt = existingReceipt
+        if let receiptData {
+            receipt = try? CoverImageStore.receipts.save(receiptData)
+            if let existingReceipt { CoverImageStore.receipts.delete(named: existingReceipt) }
+        } else if receiptImage == nil, let existingReceipt {
+            CoverImageStore.receipts.delete(named: existingReceipt)
+            receipt = nil
+        }
+
+        let expense = Expense(id: editing?.id ?? UUID(), title: trimmed.isEmpty ? category.title : trimmed, amount: amount,
                               category: category, paidBy: paidBy, splitAmong: split, date: date,
                               originalAmount: isForeign ? entry.minorUnits : nil,
                               originalCurrency: isForeign ? currency : nil,
                               receiptPhoto: receipt, shares: shares)
-        store.update(trip.id) { $0.expenses.append(expense) }
+        store.update(trip.id) { trip in
+            if let index = trip.expenses.firstIndex(where: { $0.id == expense.id }) {
+                trip.expenses[index] = expense
+            } else {
+                trip.expenses.append(expense)
+            }
+        }
+        dismiss()
+    }
+
+    private func loadEditingIfNeeded() {
+        guard let editing, !didLoadEditing else { return }
+        didLoadEditing = true
+        entry = AmountEntry(minorUnits: editing.originalAmount ?? editing.amount)
+        title = editing.title
+        category = editing.category
+        paidBy = editing.paidBy
+        splitAmong = Set(editing.splitAmong)
+        date = editing.date
+        keptShares = editing.shares
+        existingReceipt = editing.receiptPhoto
+        receiptImage = editing.receiptPhoto.flatMap { CoverImageStore.receipts.image(named: $0) }
+        if let code = editing.originalCurrency, let original = editing.originalAmount, original > 0 {
+            inputCurrency = code
+            // Kayıttaki kuru göster; kullanıcı tutarı değiştirirse aynı kurla çevrilir.
+            let rate = Decimal(editing.amount) / Decimal(original)
+            manualRate = NSDecimalNumber(decimal: rate).stringValue
+        }
+    }
+
+    private func deleteEditing() {
+        guard let editing else { return }
+        if let receipt = editing.receiptPhoto { CoverImageStore.receipts.delete(named: receipt) }
+        store.update(trip.id) { $0.expenses.removeAll { $0.id == editing.id } }
         dismiss()
     }
 }

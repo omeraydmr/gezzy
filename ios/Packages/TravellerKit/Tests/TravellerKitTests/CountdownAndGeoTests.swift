@@ -41,3 +41,14 @@ final class RouteOptimizerTests: XCTestCase {
         XCTAssertEqual(RouteOptimizer.order([]), [])
     }
 }
+
+final class GeoBoundsTests: XCTestCase {
+    func testBoundsPadAndCenter() {
+        let bounds = Geo.bounds([Coordinate(latitude: 38.70, longitude: -9.20), Coordinate(latitude: 38.72, longitude: -9.10)])
+        XCTAssertEqual(bounds.center.latitude, 38.71, accuracy: 0.0001)
+        XCTAssertEqual(bounds.center.longitude, -9.15, accuracy: 0.0001)
+        XCTAssertEqual(bounds.latitudeSpan, 0.032, accuracy: 0.0001)
+        XCTAssertEqual(bounds.longitudeSpan, 0.16, accuracy: 0.0001)
+        XCTAssertEqual(Geo.bounds([Coordinate(latitude: 1, longitude: 1)]).latitudeSpan, 0.01, "tek nokta için en küçük alan")
+    }
+}

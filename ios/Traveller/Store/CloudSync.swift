@@ -1,0 +1,289 @@
+import CloudKit
+import CoreTransferable
+import Foundation
+import Observation
+import SwiftUI
+import TravellerKit
+
+/// iCloud (CloudKit) ile seyahat eşitleme ve ekip paylaşımı.
+///
+/// - Her seyahat, özel veritabanındaki "Trips" bölgesinde tek bir `Trip` kaydıdır; içerik JSON olarak `payload`
+///   alanında durur (fotoğraflar eşitlenmez).
+/// - Paylaşılan seyahat bir `CKShare` ile davet edilir; katılanlar onu paylaşılan veritabanında görür.
+/// - Çakışmada iki kopya `Trip.merged(with:)` ile birleştirilir (silinenler geri gelmez).
+@MainActor
+@Observable
+final class CloudSync {
+    static let shared = CloudSync()
+
+    enum Status: Equatable {
+        case unknown
+        case unavailable(String)
+        case syncing
+        case synced(Date)
+        case failed(String)
+    }
+
+    private(set) var status: Status = .unknown
+    /// Başkasının paylaştığı (bizim katıldığımız) seyahatler.
+    private(set) var sharedWithMe: Set<UUID> = []
+    /// Bizim paylaşıma açtığımız seyahatler.
+    private(set) var sharedByMe: Set<UUID> = []
+
+    var isAvailable: Bool {
+        switch status {
+        case .syncing, .synced, .failed: true
+        default: false
+        }
+    }
+
+    private weak var store: TripStore?
+    private var pending: Set<UUID> = []
+    private var pushTask: Task<Void, Never>?
+    /// Seyahat → paylaşılan veritabanındaki bölgesi (bizim olmayanlar için).
+    private var sharedZones: [UUID: CKRecordZone.ID] = [:]
+
+    private var container: CKContainer { CloudConfig.container }
+    private let zoneID = CKRecordZone.ID(zoneName: "Trips", ownerName: CKCurrentUserDefaultName)
+    private static let recordType = "Trip"
+
+    // MARK: Lifecycle
+
+    func start(with store: TripStore) async {
+        self.store = store
+        do {
+            let account = try await container.accountStatus()
+            guard account == .available else {
+                status = .unavailable("iCloud'a giriş yapılmamış. Ayarlar'dan giriş yapınca seyahatler eşitlenir.")
+                return
+            }
+            _ = try await container.privateCloudDatabase.modifyRecordZones(saving: [CKRecordZone(zoneID: zoneID)], deleting: [])
+            await pull()
+            // İlk açılışta yerel seyahatleri buluta gönder.
+            pending.formUnion(store.trips.map(\.id))
+            schedulePush(after: .milliseconds(200))
+        } catch {
+            status = .unavailable("iCloud'a ulaşılamadı: \(error.localizedDescription)")
+        }
+    }
+
+    func tripChanged(_ id: UUID) {
+        guard isAvailable else { return }
+        pending.insert(id)
+        schedulePush(after: .seconds(1.5))
+    }
+
+    func tripDeleted(_ id: UUID) {
+        guard isAvailable else { return }
+        pending.remove(id)
+        Task {
+            if sharedZones[id] != nil {
+                // Başkasının seyahati: kaydı silemeyiz, paylaşımdan ayrılırız (CKShare'i kendi tarafımızda sileriz).
+                let database = container.sharedCloudDatabase
+                if let root = try? await database.record(for: recordID(for: id)), let share = root.share {
+                    _ = try? await database.modifyRecords(saving: [], deleting: [share.recordID])
+                }
+                sharedZones[id] = nil
+                sharedWithMe.remove(id)
+                return
+            }
+            _ = try? await container.privateCloudDatabase.modifyRecords(saving: [], deleting: [recordID(for: id)])
+            sharedByMe.remove(id)
+        }
+    }
+
+    /// Öne gelince ya da kullanıcı yenileyince çağrılır.
+    func refresh() async {
+        guard isAvailable else { return }
+        await pull()
+    }
+
+    // MARK: Pull
+
+    private func pull() async {
+        guard let store else { return }
+        status = .syncing
+        do {
+            var needsPush: Set<UUID> = []
+            // Kendi seyahatlerimiz.
+            for trip in try await fetchTrips(in: container.privateCloudDatabase, zone: zoneID) {
+                if store.mergeFromCloud(trip.trip) { needsPush.insert(trip.trip.id) }
+                if trip.isShared { sharedByMe.insert(trip.trip.id) }
+            }
+            // Bize paylaşılanlar.
+            var seenShared: Set<UUID> = []
+            for zone in try await container.sharedCloudDatabase.allRecordZones() {
+                for trip in try await fetchTrips(in: container.sharedCloudDatabase, zone: zone.zoneID) {
+                    sharedZones[trip.trip.id] = zone.zoneID
+                    seenShared.insert(trip.trip.id)
+                    if store.mergeFromCloud(trip.trip) { needsPush.insert(trip.trip.id) }
+                }
+            }
+            // Paylaşımdan çıkarıldığımız seyahatleri kaldır.
+            for removed in sharedWithMe.subtracting(seenShared) {
+                store.removeFromCloud(removed)
+                sharedZones[removed] = nil
+            }
+            sharedWithMe = seenShared
+            status = .synced(.now)
+            if !needsPush.isEmpty {
+                pending.formUnion(needsPush)
+                schedulePush(after: .milliseconds(300))
+            }
+        } catch {
+            status = .failed(error.localizedDescription)
+        }
+    }
+
+    private struct FetchedTrip {
+        let trip: Trip
+        let isShared: Bool
+    }
+
+    private func fetchTrips(in database: CKDatabase, zone: CKRecordZone.ID) async throws -> [FetchedTrip] {
+        var result: [FetchedTrip] = []
+        var token: CKServerChangeToken?
+        var moreComing = true
+        while moreComing {
+            let changes = try await database.recordZoneChanges(inZoneWith: zone, since: token)
+            for (_, change) in changes.modificationResultsByID {
+                guard let modification = try? change.get(),
+                      modification.record.recordType == Self.recordType,
+                      let trip = Self.decode(modification.record) else { continue }
+                result.append(FetchedTrip(trip: trip, isShared: modification.record.share != nil))
+            }
+            token = changes.changeToken
+            moreComing = changes.moreComing
+        }
+        return result
+    }
+
+    // MARK: Push
+
+    private func schedulePush(after delay: Duration) {
+        pushTask?.cancel()
+        pushTask = Task {
+            try? await Task.sleep(for: delay)
+            guard !Task.isCancelled else { return }
+            await push()
+        }
+    }
+
+    private func push() async {
+        guard let store, !pending.isEmpty else { return }
+        let ids = pending
+        pending.removeAll()
+        status = .syncing
+        for id in ids {
+            guard let trip = store.trip(id) else { continue }
+            do {
+                try await save(trip)
+            } catch {
+                status = .failed(error.localizedDescription)
+                pending.insert(id)
+                return
+            }
+        }
+        status = .synced(.now)
+    }
+
+    /// Kaydı yazar; sunucuda daha yeni bir kopya varsa birleştirip bir kez daha dener.
+    private func save(_ trip: Trip, attempt: Int = 0) async throws {
+        let database = database(for: trip.id)
+        let id = recordID(for: trip.id)
+        let record: CKRecord
+        if let existing = try? await database.record(for: id) {
+            record = existing
+        } else {
+            record = CKRecord(recordType: Self.recordType, recordID: id)
+        }
+        record["payload"] = try Self.encoder.encode(trip) as CKRecordValue
+        record["name"] = trip.name as CKRecordValue
+        record["updatedAt"] = (trip.updatedAt ?? .now) as CKRecordValue
+
+        let (results, _) = try await database.modifyRecords(saving: [record], deleting: [], savePolicy: .ifServerRecordUnchanged)
+        if case let .failure(error)? = results[id] {
+            if let ckError = error as? CKError, ckError.code == .serverRecordChanged, attempt < 2,
+               let server = ckError.serverRecord, let remote = Self.decode(server), let store {
+                store.mergeFromCloud(remote)
+                if let merged = store.trip(trip.id) {
+                    try await save(merged, attempt: attempt + 1)
+                }
+                return
+            }
+            throw error
+        }
+    }
+
+    // MARK: Sharing
+
+    /// Seyahat için bir CKShare hazırlar (yoksa oluşturur). Paylaşım sayfası bunu kullanır.
+    func share(for tripID: UUID) async throws -> CKShare {
+        guard let trip = store?.trip(tripID) else { throw CKError(.unknownItem) }
+        let database = container.privateCloudDatabase
+        let id = recordID(for: tripID)
+        try await save(trip)
+        let record = try await database.record(for: id)
+        if let reference = record.share, let existing = try await database.record(for: reference.recordID) as? CKShare {
+            return existing
+        }
+        let share = CKShare(rootRecord: record)
+        share[CKShare.SystemFieldKey.title] = trip.name as CKRecordValue
+        share.publicPermission = .none
+        _ = try await database.modifyRecords(saving: [record, share], deleting: [])
+        sharedByMe.insert(tripID)
+        return share
+    }
+
+    /// Davet bağlantısına dokunulduğunda (SceneDelegate) çağrılır.
+    func accept(_ metadata: CKShare.Metadata) async {
+        do {
+            _ = try await container.accept(metadata)
+            await pull()
+        } catch {
+            status = .failed("Davet kabul edilemedi: \(error.localizedDescription)")
+        }
+    }
+
+    // MARK: Helpers
+
+    private func database(for tripID: UUID) -> CKDatabase {
+        sharedZones[tripID] == nil ? container.privateCloudDatabase : container.sharedCloudDatabase
+    }
+
+    private func recordID(for tripID: UUID) -> CKRecord.ID {
+        CKRecord.ID(recordName: tripID.uuidString, zoneID: sharedZones[tripID] ?? zoneID)
+    }
+
+    private static let encoder: JSONEncoder = {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        return encoder
+    }()
+
+    private static func decode(_ record: CKRecord) -> Trip? {
+        guard let data = record["payload"] as? Data else { return nil }
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try? decoder.decode(Trip.self, from: data)
+    }
+}
+
+enum CloudConfig {
+    static let containerIdentifier = "iCloud.app.traveller.ios"
+    static let container = CKContainer(identifier: containerIdentifier)
+}
+
+/// Paylaşım sayfasına (Mesajlar, Mail…) verilen öğe; iCloud davet bağlantısını oluşturur.
+struct TripShareItem: Transferable {
+    let tripID: UUID
+    let title: String
+
+    static var transferRepresentation: some TransferRepresentation {
+        CKShareTransferRepresentation { item in
+            .prepareShare(container: CloudConfig.container) {
+                try await CloudSync.shared.share(for: item.tripID)
+            }
+        }
+    }
+}

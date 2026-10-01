@@ -51,8 +51,11 @@ final class TripStore {
     // MARK: Mutations
 
     func add(_ trip: Trip) {
+        var trip = trip
+        trip.updatedAt = .now
         trips.append(trip)
         save()
+        CloudSync.shared.tripChanged(trip.id)
     }
 
     func delete(_ id: Trip.ID) {
@@ -64,6 +67,7 @@ final class TripStore {
         }
         trips.removeAll { $0.id == id }
         save()
+        CloudSync.shared.tripDeleted(id)
     }
 
     /// Kapak fotoğrafını değiştirir; eski dosya silinir.
@@ -83,7 +87,35 @@ final class TripStore {
     /// Bir seyahati yerinde değiştirir ve kaydeder.
     func update(_ id: Trip.ID, _ change: (inout Trip) -> Void) {
         guard let index = trips.firstIndex(where: { $0.id == id }) else { return }
+        let before = trips[index]
         change(&trips[index])
+        guard trips[index] != before else { return }
+        trips[index].recordDeletions(since: before)
+        trips[index].updatedAt = .now
+        save()
+        CloudSync.shared.tripChanged(id)
+    }
+
+    /// iCloud'dan gelen kopyayı yerel kopyayla birleştirir. Yerelde buluttakinden fazlası varsa
+    /// birleşmiş hali geri gönderilmek üzere true döner.
+    @discardableResult
+    func mergeFromCloud(_ remote: Trip) -> Bool {
+        guard let index = trips.firstIndex(where: { $0.id == remote.id }) else {
+            trips.append(remote)
+            save()
+            return false
+        }
+        let merged = trips[index].merged(with: remote)
+        guard merged != trips[index] else { return merged != remote }
+        trips[index] = merged
+        save()
+        return merged != remote
+    }
+
+    /// Bulutta silinen (ya da paylaşımı kaldırılan) seyahati yerelden kaldırır.
+    func removeFromCloud(_ id: Trip.ID) {
+        guard trips.contains(where: { $0.id == id }) else { return }
+        trips.removeAll { $0.id == id }
         save()
     }
 
@@ -114,6 +146,11 @@ final class TripStore {
     }
 
     private func save() {
+        NotificationScheduler.shared.tripsChanged(trips)
+        saveToDisk()
+    }
+
+    private func saveToDisk() {
         do {
             try FileManager.default.createDirectory(at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true)
             let data = try Self.encoder.encode(trips)

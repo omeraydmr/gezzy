@@ -263,6 +263,10 @@ public struct Trip: Codable, Hashable, Identifiable, Sendable {
     public var budget: [BudgetLine]
     public var expenses: [Expense]
     public var packing: [PackingItem]
+    /// Son değişiklik zamanı (eşitlemede hangi kopyanın daha yeni olduğunu belirler).
+    public var updatedAt: Date?
+    /// Silinen üye/durak/harcama/valiz kimlikleri; eşitlemede silinenlerin geri gelmesini önler.
+    public var tombstones: Set<UUID>?
 
     public init(id: UUID = UUID(), name: String, destination: Destination, startDate: Date, endDate: Date,
                 status: TripStatus = .planned, currency: String = "EUR", coverSeed: Int = 0, coverPhoto: String? = nil,
@@ -406,5 +410,40 @@ public struct Trip: Codable, Hashable, Identifiable, Sendable {
                 stops[index].order = order
             }
         }
+    }
+
+    // MARK: Sync
+
+    /// Bu seyahatteki tüm alt öğelerin kimlikleri.
+    public var itemIDs: Set<UUID> {
+        Set(members.map(\.id) + stops.map(\.id) + expenses.map(\.id) + packing.map(\.id))
+    }
+
+    /// Önceki halde olup bu halde olmayan öğeleri silindi olarak işaretler.
+    public mutating func recordDeletions(since previous: Trip) {
+        let removed = previous.itemIDs.subtracting(itemIDs)
+        guard !removed.isEmpty else { return }
+        tombstones = (tombstones ?? []).union(removed)
+    }
+
+    /// İki kopyayı birleştirir: alanlarda daha yeni kopya kazanır, listeler kimliğe göre birleşir
+    /// (ortak öğede daha yeni kopyanınki), her iki taraftaki silinenler çıkarılır.
+    public func merged(with other: Trip) -> Trip {
+        let selfIsNewer = (updatedAt ?? .distantPast) >= (other.updatedAt ?? .distantPast)
+        var result = selfIsNewer ? self : other
+        let older = selfIsNewer ? other : self
+        let deleted = (tombstones ?? []).union(other.tombstones ?? [])
+
+        func union<T: Identifiable>(_ newer: [T], _ older: [T]) -> [T] where T.ID == UUID {
+            let known = Set(newer.map(\.id))
+            return (newer + older.filter { !known.contains($0.id) }).filter { !deleted.contains($0.id) }
+        }
+
+        result.members = union(result.members, older.members)
+        result.stops = union(result.stops, older.stops)
+        result.expenses = union(result.expenses, older.expenses)
+        result.packing = union(result.packing, older.packing)
+        result.tombstones = deleted.isEmpty ? nil : deleted
+        return result
     }
 }

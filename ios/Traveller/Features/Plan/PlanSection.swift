@@ -12,6 +12,8 @@ struct PlanSection: View {
     @State private var lastOrderBeforeOptimize: [Stop.ID: Int]?
     @State private var dropTarget: Stop.ID?
     @State private var editingHours: Stop?
+    private var network: NetworkMonitor { .shared }
+    private var offlineMaps: OfflineMapStore { .shared }
     @Environment(\.tripTint) private var tint
 
     private var days: [Date] { trip.days() }
@@ -31,7 +33,12 @@ struct PlanSection: View {
                      onDropStop: { id, target in moveStop(id, before: nil, on: target) })
 
             if !coordinates.isEmpty {
-                map
+                if !network.isOnline, let offline = offlineMaps.image(tripID: trip.id, day: day) {
+                    OfflineMapImage(image: offline)
+                } else {
+                    map
+                }
+                OfflineMapRow(trip: trip)
             }
 
             stopList
@@ -528,6 +535,94 @@ struct OpeningHoursEditor: View {
                     .disabled(!text.trimmingCharacters(in: .whitespaces).isEmpty && parsed == nil)
                 }
             }
+        }
+    }
+}
+
+/// İnternet yokken gösterilen kayıtlı harita görüntüsü.
+struct OfflineMapImage: View {
+    let image: UIImage
+
+    var body: some View {
+        Image(uiImage: image)
+            .resizable()
+            .scaledToFill()
+            .frame(height: 240)
+            .clipShape(RoundedRectangle(cornerRadius: Radius.tray, style: .continuous))
+            .overlay(alignment: .topLeading) {
+                Label("Çevrimdışı harita", systemImage: "wifi.slash")
+                    .font(.system(.caption, weight: .semibold))
+                    .foregroundStyle(Color.ink)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(.regularMaterial, in: Capsule())
+                    .padding(10)
+            }
+            .softShadow()
+            .accessibilityLabel("Kayıtlı çevrimdışı harita")
+    }
+}
+
+/// Haritaları çevrimdışı kullanım için kaydetme satırı.
+struct OfflineMapRow: View {
+    let trip: Trip
+    private var store: OfflineMapStore { .shared }
+
+    var body: some View {
+        let state = store.state(for: trip.id)
+        HStack(spacing: 10) {
+            Image(systemName: icon(state))
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(color(state))
+            Text(text(state))
+                .font(.system(.footnote, weight: .medium))
+                .foregroundStyle(Color.ink2)
+                .lineLimit(1)
+            Spacer()
+            if case .saving = state {
+                ProgressView().controlSize(.small)
+            } else {
+                Button(isSaved(state) ? "Güncelle" : "Kaydet") {
+                    Task { await store.save(trip) }
+                }
+                .font(.system(.footnote, weight: .semibold))
+                .foregroundStyle(Color.ink)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(Color.tray, in: Capsule())
+        .softShadow()
+    }
+
+    private func isSaved(_ state: OfflineMapStore.State) -> Bool {
+        if case .saved = state { return true }
+        return false
+    }
+
+    private func icon(_ state: OfflineMapStore.State) -> String {
+        switch state {
+        case .idle: "arrow.down.circle"
+        case .saving: "arrow.down.circle.dotted"
+        case .saved: "checkmark.circle.fill"
+        case .failed: "exclamationmark.triangle.fill"
+        }
+    }
+
+    private func color(_ state: OfflineMapStore.State) -> Color {
+        switch state {
+        case .saved: .success
+        case .failed: .food
+        default: .ink2
+        }
+    }
+
+    private func text(_ state: OfflineMapStore.State) -> String {
+        switch state {
+        case .idle: "Haritaları internetsiz kullanım için kaydet"
+        case let .saving(done, total): "Kaydediliyor · \(done + 1)/\(total) gün"
+        case let .saved(date): "Çevrimdışı kayıtlı · \(AppFormat.shortDate(date)) \(AppFormat.time(date))"
+        case let .failed(message): message
         }
     }
 }

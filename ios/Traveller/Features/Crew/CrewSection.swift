@@ -49,15 +49,28 @@ struct CrewSection: View {
                 .buttonStyle(.plain)
             }
 
-            VStack(alignment: .leading, spacing: 8) {
-                Label("Davet linki ve QR kod", systemImage: "link")
-                    .font(.tBodyStrong)
-                    .foregroundStyle(Color.ink)
-                Text("Yakında: arkadaşların kendi telefonlarından katılabilecek. Şimdilik kişileri buradan ekleyebilirsin.")
-                    .font(.tBody)
-                    .foregroundStyle(Color.ink2)
+            InviteCard(trip: trip)
+
+            if CloudSync.shared.sharedWithMe.contains(trip.id), !trip.members.contains(where: { $0.id == store.me.id }) {
+                HStack(spacing: 12) {
+                    AvatarView(member: store.me, size: 40)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Bu seyahate katıldın").font(.tBodyStrong).foregroundStyle(Color.ink)
+                        Text("Harcama ve valizde görünmek için kendini ekle.").font(.caption).foregroundStyle(Color.ink2)
+                    }
+                    Spacer()
+                    Button("Ekle") {
+                        var me = store.me
+                        me.role = .editor
+                        me.colorIndex = trip.members.count
+                        store.update(trip.id) { $0.members.append(me) }
+                    }
+                    .font(.system(.subheadline, weight: .semibold))
+                    .buttonStyle(.borderedProminent)
+                    .tint(Color.ink)
+                }
+                .tray(padding: 14)
             }
-            .tray()
         }
         .sheet(item: $editing) { member in
             MemberEditor(member: member) { updated in
@@ -229,5 +242,53 @@ struct MemberEditor: View {
             get: { member.passport![keyPath: keyPath] },
             set: { member.passport?[keyPath: keyPath] = $0 }
         )
+    }
+}
+
+/// iCloud paylaşım davetini (Mesajlar, Mail, AirDrop…) gönderen kart.
+struct InviteCard: View {
+    let trip: Trip
+    private var sync: CloudSync { .shared }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 10) {
+                Image(systemName: "person.crop.circle.badge.plus")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(Color.transport)
+                    .frame(width: 36, height: 36)
+                    .background(Color.transportTint, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title).font(.tBodyStrong).foregroundStyle(Color.ink)
+                    Text(subtitle).font(.caption).foregroundStyle(Color.ink2)
+                }
+            }
+
+            if sync.isAvailable {
+                ShareLink(item: TripShareItem(tripID: trip.id, title: trip.name),
+                          preview: SharePreview("\(trip.name) · Traveller")) {
+                    Label(sync.sharedByMe.contains(trip.id) ? "Paylaşımı yönet / yeni kişi davet et" : "Davet bağlantısı gönder",
+                          systemImage: "square.and.arrow.up")
+                }
+                .buttonStyle(.primary)
+            }
+        }
+        .tray()
+    }
+
+    private var title: String {
+        if sync.sharedWithMe.contains(trip.id) { return "Bu seyahat seninle paylaşıldı" }
+        if sync.sharedByMe.contains(trip.id) { return "Ekip iCloud ile bağlı" }
+        return "Ekibi davet et"
+    }
+
+    private var subtitle: String {
+        switch sync.status {
+        case let .unavailable(reason): return reason
+        case .unknown: return "iCloud durumu kontrol ediliyor…"
+        case .syncing: return "Eşitleniyor…"
+        case let .synced(date): return "Değişiklikler herkesin telefonunda görünür · son eşitleme \(AppFormat.time(date))"
+        case let .failed(message): return "Eşitleme sorunu: \(message)"
+        }
     }
 }

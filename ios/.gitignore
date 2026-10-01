@@ -5,3 +5,5 @@ DerivedData/
 .swiftpm/
 *.xcuserstate
 build.log
+Support/Info.plist
+Support/Traveller.entitlements
