@@ -44,6 +44,48 @@ public enum NotificationPlanner {
                                               link: TripLink(tripID: trip.id, section: "plan")))
         }
 
+        // Konaklama: giriş günü sabahı ve çıkış günü sabahı.
+        for lodging in trip.lodgingList {
+            let checkInClock = String(format: "%02d:%02d", calendar.component(.hour, from: lodging.checkIn),
+                                      calendar.component(.minute, from: lodging.checkIn))
+            let checkOutClock = String(format: "%02d:%02d", calendar.component(.hour, from: lodging.checkOut),
+                                       calendar.component(.minute, from: lodging.checkOut))
+            if let morning = at(hour: 9, minute: 0, on: calendar.startOfDay(for: lodging.checkIn), calendar) {
+                var body = "Giriş saati \(checkInClock)"
+                if !lodging.confirmation.isEmpty { body += " · rezervasyon \(lodging.confirmation)" }
+                result.append(PlannedNotification(id: "\(prefix)-checkin-\(lodging.id.uuidString)", date: morning,
+                                                  title: "Bugün otel girişi: \(lodging.name)", body: body,
+                                                  link: TripLink(tripID: trip.id, section: "plan")))
+            }
+            if let morning = at(hour: 8, minute: 0, on: calendar.startOfDay(for: lodging.checkOut), calendar) {
+                result.append(PlannedNotification(id: "\(prefix)-checkout-\(lodging.id.uuidString)", date: morning,
+                                                  title: "Bugün çıkış: \(lodging.name)",
+                                                  body: "Çıkış saati en geç \(checkOutClock).",
+                                                  link: TripLink(tripID: trip.id, section: "plan")))
+            }
+        }
+
+        // Vize randevusu: önceki akşam ve randevudan 2 saat önce.
+        for application in trip.visaApplications ?? [] {
+            guard let appointment = application.appointment,
+                  application.status == .preparing || application.status == .appointmentBooked else { continue }
+            let name = trip.member(application.memberID)?.name ?? "Vize"
+            let place = application.center.isEmpty ? "" : " · \(application.center)"
+            let clock = String(format: "%02d:%02d", calendar.component(.hour, from: appointment),
+                               calendar.component(.minute, from: appointment))
+            if let eve = at(hour: 20, minute: 0, on: calendar.date(byAdding: .day, value: -1, to: appointment), calendar) {
+                result.append(PlannedNotification(id: "\(prefix)-visa-eve-\(application.id.uuidString)", date: eve,
+                                                  title: "Yarın vize randevusu: \(name)",
+                                                  body: "Saat \(clock)\(place). Belge listesini kontrol et.",
+                                                  link: TripLink(tripID: trip.id, section: "visa")))
+            }
+            if let before = calendar.date(byAdding: .hour, value: -2, to: appointment) {
+                result.append(PlannedNotification(id: "\(prefix)-visa-\(application.id.uuidString)", date: before,
+                                                  title: "Vize randevusu 2 saat sonra", body: "\(name) · \(clock)\(place)",
+                                                  link: TripLink(tripID: trip.id, section: "visa")))
+            }
+        }
+
         // Her sabah günün planı.
         for (index, day) in days.enumerated() {
             let stops = trip.stops(on: day, calendar: calendar)

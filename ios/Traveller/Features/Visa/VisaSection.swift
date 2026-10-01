@@ -3,8 +3,8 @@ import TravellerKit
 
 struct VisaSection: View {
     let trip: Trip
+    @Environment(TripStore.self) private var store
     @State private var focusedID: Member.ID?
-    @State private var checkedDocuments: [Member.ID: Set<String>] = [:]
 
     private struct Row {
         let member: Member
@@ -13,72 +13,78 @@ struct VisaSection: View {
 
     private var assessments: [Row] {
         trip.members.map { member in
-            Row(member: member,
-                result: VisaAdvisor.assess(countryCode: trip.destination.countryCode, passport: member.passport,
-                                           tripStart: trip.startDate, tripEnd: trip.endDate))
+            Row(member: member, result: store.visaAssessment(for: member, in: trip))
         }
     }
 
     var body: some View {
         let rows = assessments
         let readyCount = rows.filter { !$0.result.needsAction }.count
-        ModuleCard("Vize", symbol: "person.text.rectangle.fill") {
-            StoryHeadline(text: headline(ready: readyCount, total: rows.count))
+        VStack(spacing: 16) {
+            ModuleCard("Vize", symbol: "person.text.rectangle.fill") {
+                StoryHeadline(text: headline(ready: readyCount, total: rows.count))
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                    ForEach(rows, id: \.member.id) { row in
-                        Button {
-                            withAnimation(.spring(duration: 0.35)) { focusedID = row.member.id }
-                        } label: {
-                            PassportCard(member: row.member, result: row.result,
-                                         countryCode: trip.destination.countryCode)
-                                .scaleEffect(row.member.id == focusedRow(rows)?.member.id ? 1 : 0.94)
-                                .opacity(row.member.id == focusedRow(rows)?.member.id ? 1 : 0.7)
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(rows, id: \.member.id) { row in
+                            Button {
+                                withAnimation(.spring(duration: 0.35)) { focusedID = row.member.id }
+                            } label: {
+                                PassportCard(member: row.member, result: row.result,
+                                             countryCode: trip.destination.countryCode)
+                                    .scaleEffect(row.member.id == focusedRow(rows)?.member.id ? 1 : 0.94)
+                                    .opacity(row.member.id == focusedRow(rows)?.member.id ? 1 : 0.7)
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
+                    }
+                    .scrollTargetLayout()
+                    .padding(.vertical, 6)
+                }
+                .scrollTargetBehavior(.viewAligned)
+                .scrollPosition(id: $focusedID)
+                .scrollClipDisabled()
+                .animation(.spring(duration: 0.35), value: focusedID)
+
+                if rows.count > 1 {
+                    HStack(spacing: 6) {
+                        ForEach(rows, id: \.member.id) { row in
+                            let isFocused = row.member.id == focusedRow(rows)?.member.id
+                            Capsule()
+                                .fill(isFocused ? Color.ink : Color.ink3.opacity(0.4))
+                                .frame(width: isFocused ? 18 : 6, height: 6)
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .animation(.spring(duration: 0.3), value: focusedID)
+                    .accessibilityHidden(true)
+                }
+
+                if let row = focusedRow(rows) {
+                    VisaDetailPanel(member: row.member, result: row.result, trip: trip)
+                        .id(row.member.id)
+                        .transition(.opacity.combined(with: .move(edge: .trailing)))
+
+                    if Schengen.isSchengen(trip.destination.countryCode) {
+                        SchengenCard(member: row.member, trip: trip)
+                            .id("schengen-\(row.member.id)")
+                            .transition(.opacity)
                     }
                 }
-                .scrollTargetLayout()
-                .padding(.vertical, 6)
-            }
-            .scrollTargetBehavior(.viewAligned)
-            .scrollPosition(id: $focusedID)
-            .scrollClipDisabled()
-            .animation(.spring(duration: 0.35), value: focusedID)
 
-            if rows.count > 1 {
-                HStack(spacing: 6) {
-                    ForEach(rows, id: \.member.id) { row in
-                        let isFocused = row.member.id == focusedRow(rows)?.member.id
-                        Capsule()
-                            .fill(isFocused ? Color.ink : Color.ink3.opacity(0.4))
-                            .frame(width: isFocused ? 18 : 6, height: 6)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("\(Countries.flag(trip.destination.countryCode)) \(Countries.name(trip.destination.countryCode))")
+                        .font(.tBodyStrong)
+                        .foregroundStyle(Color.ink)
+                    if let note = VisaRules.entry(for: trip.destination.countryCode)?.note {
+                        Text(note).font(.tBody).foregroundStyle(Color.ink2)
                     }
+                    SourceFootnote()
                 }
-                .frame(maxWidth: .infinity)
-                .animation(.spring(duration: 0.3), value: focusedID)
-                .accessibilityHidden(true)
+                .tray()
             }
 
-            if let row = focusedRow(rows) {
-                VisaDetailPanel(member: row.member, result: row.result,
-                                checked: Binding(get: { checkedDocuments[row.member.id] ?? [] },
-                                                 set: { checkedDocuments[row.member.id] = $0 }))
-                    .id(row.member.id)
-                    .transition(.opacity.combined(with: .move(edge: .trailing)))
-            }
-
-            VStack(alignment: .leading, spacing: 8) {
-                Text("\(Countries.flag(trip.destination.countryCode)) \(Countries.name(trip.destination.countryCode))")
-                    .font(.tBodyStrong)
-                    .foregroundStyle(Color.ink)
-                if let note = VisaRules.entry(for: trip.destination.countryCode)?.note {
-                    Text(note).font(.tBody).foregroundStyle(Color.ink2)
-                }
-                SourceFootnote()
-            }
-            .tray()
+            DocumentsCard(trip: trip)
         }
     }
 
@@ -193,9 +199,11 @@ struct VisaPreview: View {
     let passport: Passport?
     let start: Date
     let end: Date
+    var otherSchengenStays: [Schengen.Stay] = []
 
     var body: some View {
-        let result = VisaAdvisor.assess(countryCode: countryCode, passport: passport, tripStart: start, tripEnd: end)
+        let result = VisaAdvisor.assess(countryCode: countryCode, passport: passport, tripStart: start, tripEnd: end,
+                                        otherSchengenStays: otherSchengenStays)
         let tag = VisaText.tag(result)
         VStack(alignment: .leading, spacing: 6) {
             HStack {
@@ -227,11 +235,13 @@ struct SourceFootnote: View {
 
 // MARK: - Detail
 
-/// Odaktaki pasaportun detayı: pasaport bitişi, uyarılar ve gerekiyorsa belge listesi.
+/// Odaktaki pasaportun detayı: pasaport bitişi, uyarılar ve vize gerekiyorsa başvuru takibi
+/// (durum, randevu, belge listesi). Takip seyahatle birlikte saklanır ve ekiple eşitlenir.
 struct VisaDetailPanel: View {
+    @Environment(TripStore.self) private var store
     let member: Member
     let result: VisaAssessment
-    @Binding var checked: Set<String>
+    let trip: Trip
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -260,45 +270,139 @@ struct VisaDetailPanel: View {
             }
 
             if case let .required(zone) = result.status {
-                let documents = VisaText.documents(for: zone)
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        Text("Belge listesi").font(.tCaption).foregroundStyle(Color.ink3)
-                        Spacer()
-                        Text("\(checked.intersection(documents).count)/\(documents.count)")
-                            .font(.tCaption)
-                            .foregroundStyle(Color.ink3)
-                    }
-                    ForEach(documents, id: \.self) { document in
-                        let isDone = checked.contains(document)
-                        Button {
-                            withAnimation(.spring(duration: 0.2)) {
-                                if isDone { checked.remove(document) } else { checked.insert(document) }
-                            }
-                        } label: {
-                            HStack(spacing: 12) {
-                                Image(systemName: isDone ? "checkmark.square.fill" : "square")
-                                    .font(.system(size: 20))
-                                    .foregroundStyle(isDone ? Color.success : Color.ink3)
-                                Text(document)
-                                    .font(.subheadline)
-                                    .foregroundStyle(isDone ? Color.ink3 : Color.ink)
-                                    .multilineTextAlignment(.leading)
-                                Spacer(minLength: 0)
-                            }
-                            .padding(.vertical, 6)
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    Text("Konsolosluğa ve başvuru amacına göre değişir; randevu ve güncel liste için yetkili aracı kurumu kontrol et.")
-                        .font(.caption)
-                        .foregroundStyle(Color.ink3)
-                        .padding(.top, 4)
-                }
+                applicationTracker(zone: zone)
             }
         }
         .tray()
+    }
+
+    // MARK: Başvuru takibi
+
+    private var application: VisaApplication {
+        trip.visaApplication(for: member.id) ?? VisaApplication(memberID: member.id)
+    }
+
+    private func updateApplication(_ change: (inout VisaApplication) -> Void) {
+        store.update(trip.id) { trip in
+            var list = trip.visaApplications ?? []
+            if let index = list.firstIndex(where: { $0.memberID == member.id }) {
+                change(&list[index])
+            } else {
+                var created = VisaApplication(memberID: member.id)
+                change(&created)
+                list.append(created)
+            }
+            trip.visaApplications = list
+        }
+    }
+
+    @ViewBuilder
+    private func applicationTracker(zone: VisaZone?) -> some View {
+        let application = self.application
+        let documents = VisaText.documents(for: zone)
+        let checked = Set(application.checkedDocuments)
+
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Başvuru durumu").font(.tCaption).foregroundStyle(Color.ink3)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ForEach(VisaApplication.Status.allCases, id: \.self) { status in
+                        let isSelected = application.status == status
+                        Button {
+                            withAnimation(.spring(duration: 0.25)) { updateApplication { $0.status = status } }
+                        } label: {
+                            Text(VisaText.statusTitle(status))
+                                .font(.system(.footnote, weight: .semibold))
+                                .foregroundStyle(isSelected ? Color.onInk : Color.ink2)
+                                .padding(.horizontal, 12)
+                                .frame(height: 32)
+                                .background(isSelected ? VisaText.statusAccent(status).base : Color.track, in: Capsule())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
+
+        VStack(alignment: .leading, spacing: 8) {
+            Toggle(isOn: Binding(
+                get: { application.appointment != nil },
+                set: { isOn in
+                    updateApplication {
+                        $0.appointment = isOn
+                            ? Calendar.current.date(bySettingHour: 10, minute: 0, second: 0,
+                                                    of: Calendar.current.date(byAdding: .day, value: 14, to: .now) ?? .now)
+                            : nil
+                        if isOn && $0.status == .preparing { $0.status = .appointmentBooked }
+                    }
+                }
+            )) {
+                Label("Randevu", systemImage: "calendar.badge.clock").font(.subheadline)
+            }
+            .tint(Color.ink)
+            if let appointment = application.appointment {
+                DatePicker("Tarih ve saat", selection: Binding(
+                    get: { appointment },
+                    set: { value in updateApplication { $0.appointment = value } }
+                ), in: Date.now...)
+                .font(.subheadline)
+                TextField("Yer (ör. VFS Global İstanbul)", text: Binding(
+                    get: { application.center },
+                    set: { value in updateApplication { $0.center = value } }
+                ))
+                .font(.subheadline)
+                .textFieldStyle(.roundedBorder)
+                if let days = Calendar.current.dateComponents([.day], from: .now, to: appointment).day,
+                   let latest = Calendar.current.date(byAdding: .day, value: -15, to: trip.startDate), appointment > latest {
+                    Label("Randevu seyahate \(max(0, days)) gün kala; onay süresi yetmeyebilir.",
+                          systemImage: "exclamationmark.triangle.fill")
+                        .font(.caption)
+                        .foregroundStyle(Color.food)
+                }
+            }
+        }
+
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text("Belge listesi").font(.tCaption).foregroundStyle(Color.ink3)
+                Spacer()
+                Text("\(checked.intersection(documents).count)/\(documents.count)")
+                    .font(.tCaption)
+                    .foregroundStyle(Color.ink3)
+            }
+            ForEach(documents, id: \.self) { document in
+                let isDone = checked.contains(document)
+                Button {
+                    withAnimation(.spring(duration: 0.2)) {
+                        updateApplication { application in
+                            if isDone {
+                                application.checkedDocuments.removeAll { $0 == document }
+                            } else {
+                                application.checkedDocuments.append(document)
+                            }
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: isDone ? "checkmark.square.fill" : "square")
+                            .font(.system(size: 20))
+                            .foregroundStyle(isDone ? Color.success : Color.ink3)
+                        Text(document)
+                            .font(.subheadline)
+                            .foregroundStyle(isDone ? Color.ink3 : Color.ink)
+                            .multilineTextAlignment(.leading)
+                        Spacer(minLength: 0)
+                    }
+                    .padding(.vertical, 6)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+            Text("Konsolosluğa ve başvuru amacına göre değişir; randevu ve güncel liste için yetkili aracı kurumu kontrol et.")
+                .font(.caption)
+                .foregroundStyle(Color.ink3)
+                .padding(.top, 4)
+        }
     }
 }
 
@@ -359,6 +463,28 @@ enum VisaText {
             return "Seyahat \(tripDays) gün; vizesiz kalış sınırı \(maxDays) gün."
         case let .heldVisaExpiresDuringTrip(zone, until):
             return "\(zoneName(zone)) vizen seyahat bitmeden sona eriyor (\(AppFormat.shortDate(until)))."
+        case let .schengenOverstay(firstDay, latestExit, days):
+            let exit = latestExit.map { " En geç \(AppFormat.shortDate($0)) günü çıkmalısın." } ?? ""
+            return "Schengen 90/180 sınırı \(AppFormat.shortDate(firstDay)) günü aşılıyor (\(days) gün fazla).\(exit)"
+        }
+    }
+
+    static func statusTitle(_ status: VisaApplication.Status) -> String {
+        switch status {
+        case .preparing: "Hazırlanıyor"
+        case .appointmentBooked: "Randevu alındı"
+        case .submitted: "Başvuruldu"
+        case .approved: "Onaylandı"
+        case .rejected: "Reddedildi"
+        }
+    }
+
+    static func statusAccent(_ status: VisaApplication.Status) -> Accent {
+        switch status {
+        case .preparing: .gray
+        case .appointmentBooked, .submitted: .blue
+        case .approved: .green
+        case .rejected: .orange
         }
     }
 

@@ -34,13 +34,12 @@ struct ModuleCard<Accessory: View, Content: View>: View {
             content
         }
         .padding(20)
-        .background(Color.surface, in: RoundedRectangle(cornerRadius: Radius.module, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: Radius.module, style: .continuous)
                 .strokeBorder(Color.white.opacity(0.6), lineWidth: 1)
                 .blendMode(.overlay)
         )
-        .softShadow()
+        .cardBackground(Color.surface, in: RoundedRectangle(cornerRadius: Radius.module, style: .continuous))
     }
 }
 
@@ -56,11 +55,17 @@ extension View {
         self
             .padding(padding)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.tray, in: RoundedRectangle(cornerRadius: Radius.tray, style: .continuous))
-            .softShadow()
+            .cardBackground(Color.tray, in: RoundedRectangle(cornerRadius: Radius.tray, style: .continuous))
+    }
+
+    /// Zemin şekli ve gölgesi. Gölge yalnızca şekilden hesaplanır: içerik gölgelenmez, katmana birleştirilmez,
+    /// kaydırma ya da harita gibi canlı içerik gölge yüzünden yeniden çizilmez. Kart zeminleri için bunu kullan.
+    func cardBackground<S: Shape, F: ShapeStyle>(_ fill: F, in shape: S) -> some View {
+        background { shape.fill(fill).softShadow() }
     }
 
     /// Önce tek katmana birleştirilir; aksi halde gölge her alt görünüme (her metne) ayrı ayrı uygulanır.
+    /// Büyük kartlarda `cardBackground` tercih edilmeli.
     func softShadow() -> some View {
         self
             .compositingGroup()
@@ -90,8 +95,7 @@ struct PrimaryButtonStyle: ButtonStyle {
             .foregroundStyle(Color.onInk)
             .frame(maxWidth: .infinity, minHeight: 56)
             .padding(.horizontal, 20)
-            .background(Color.ink, in: Capsule())
-            .softShadow()
+            .cardBackground(Color.ink, in: Capsule())
             .opacity(configuration.isPressed ? 0.85 : 1)
             .scaleEffect(configuration.isPressed ? 0.98 : 1)
             .animation(.spring(duration: 0.2), value: configuration.isPressed)
@@ -106,8 +110,7 @@ struct CircleIconButtonStyle: ButtonStyle {
             .font(.system(size: size * 0.36, weight: .semibold))
             .foregroundStyle(Color.ink)
             .frame(width: size, height: size)
-            .background(Color.tray, in: Circle())
-            .softShadow()
+            .cardBackground(Color.tray, in: Circle())
             .scaleEffect(configuration.isPressed ? 0.94 : 1)
             .animation(.spring(duration: 0.2), value: configuration.isPressed)
     }
@@ -307,8 +310,7 @@ struct FlagBadge: View {
         Text(Countries.flag(countryCode))
             .font(.system(size: 16))
             .frame(width: 30, height: 22)
-            .background(Color.tray, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
-            .softShadow()
+            .cardBackground(Color.tray, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
             .accessibilityLabel(Text(Countries.name(countryCode)))
     }
 }

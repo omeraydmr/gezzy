@@ -21,6 +21,7 @@ Hiçbir özellik henüz gerçek cihazda denenmedi.
 | Bütçe | Borç sadeleştirme, transferler | ✅ | |
 | Valiz | Kişiye atama, ilerleme, hava durumuna göre öneriler | ✅ | |
 | Vize | Pasaport kartları, vize durumu, pasaport geçerlilik uyarısı | ✅ | Kural tablosu elle tutuluyor |
+| Vize | Schengen 90/180 hesaplayıcı: kullanılan gün, 180 günlük şerit, aşım uyarısı, en geç çıkış ve en erken giriş önerisi | ✅ | |
 | Ekip | iCloud ile paylaşım, eşitleme, anlık güncelleme, değişiklik bildirimi | ✅ | |
 | Ekip | Kapak/makbuz fotoğrafı eşitleme | ✅ | |
 | Bildirim | Valiz, uçuş, günün planı, durak hatırlatmaları; dokununca ilgili sekme | ✅ | |
@@ -33,18 +34,18 @@ Hiçbir özellik henüz gerçek cihazda denenmedi.
 
 | Özellik | Durum | Not |
 |---|---|---|
-| Anılar: fotoğrafları tarih/konuma göre toplama, öbekleme, haritada gösterme | ⬜ | İlk hedeflerden biriydi |
-| Konaklama (otel) kayıtları | ⬜ | Günün planı otelden başlayabilir |
-| Rezervasyon içe aktarma (PDF, ekran görüntüsü, Wallet biniş kartı) | ⬜ | Uçuş şu an elle giriliyor |
-| Duraklar arası ulaşım satırı (yürüme/tram/taksi süreleri) | 🟡 | Yalnızca toplam mesafe/yürüme var |
-| Rota optimizasyonu | ⬜ | Açılış saatleri verisi hazır |
-| "Fikirler" havuzu (güne atanmamış yerler) | ⬜ | |
-| Vize başvuru takibi: randevu, belge listesi, durum | 🟡 | Uyarılar var, takip yok |
-| Belge kasası (pasaport, sigorta, bilet PDF'leri) | ⬜ | |
-| Settle up: IBAN kopyala, "ödendi" işaretle, özet paylaş | 🟡 | Transferler var, IBAN/paylaşım yok |
-| Roller (düzenleyebilir / yalnızca görüntüler) | ⬜ | iCloud paylaşımı izin veriyor ama arayüz yok |
-| Aktivite akışı ("Elif durak ekledi") | 🟡 | Bildirim olarak var, uygulama içi liste yok |
-| Profil: gezilen ülkeler | ⬜ | |
+| Anılar: fotoğrafları tarih/konuma göre toplama, öbekleme, haritada gösterme | ✅ | Yeni "Anılar" sekmesi: anlar, durakla eşleme, harita, kartpostal paylaşma; tamamen cihazda |
+| Konaklama (otel) kayıtları | ✅ | Plan sekmesinde kart; gün planı ve harita otelden başlar; giriş/çıkış bildirimi; konaklamasız gece uyarısı |
+| Rezervasyon içe aktarma (PDF, ekran görüntüsü, Wallet biniş kartı) | 🟡 | PDF ve ekran görüntüsünden uçuş + otel (cihazda); Wallet .pkpass yok |
+| Duraklar arası ulaşım satırı (yürüme/tram/taksi süreleri) | ✅ | Apple Haritalar'dan yürüme ve toplu taşıma süresi; otelden ilk durağa da |
+| Rota optimizasyonu | 🟡 | En kısa yürüyüş sırası, sabah oteli başlangıç; açılış saatlerini henüz dikkate almıyor |
+| "Fikirler" havuzu (güne atanmamış yerler) | ✅ | Plan sekmesinde; "Güne ekle", duraktan "Fikirlere taşı" |
+| Vize başvuru takibi: randevu, belge listesi, durum | ✅ | Durum hapları, randevu tarihi ve yeri, kalıcı belge listesi; randevu öncesi bildirim; ekiple eşitlenir |
+| Belge kasası (pasaport, sigorta, bilet PDF'leri) | ✅ | Vize sekmesinde; dosya/fotoğraf/kamera, önizleme, kişiye bağlama, "yalnızca bu cihazda"; diğerleri iCloud ile eşitlenir |
+| Settle up: IBAN kopyala, "ödendi" işaretle, özet paylaş | ✅ | Kişi kartında IBAN (doğrulamalı), ödeme sorusunda "IBAN'ı kopyala", metin özeti paylaşma |
+| Roller (düzenleyebilir / yalnızca görüntüler) | ✅ | "Sadece görür" yetkisinde seyahat salt okunur; yetkiyi yalnızca sahip değiştirir. iCloud paylaşım izni henüz ayrıca ayarlanmıyor |
+| Aktivite akışı ("Elif durak ekledi") | ✅ | Ekip sekmesinde "Son hareketler" (ekipten gelen değişiklikler, cihazda) |
+| Profil: gezilen ülkeler | ✅ | Ana sayfada avatar → profil: kendi bilgilerin, IBAN, gezilen ülkeler (otomatik + elle), dünya yüzdesi; Hakkında buraya taşındı |
 
 ## 3. Yeni adaylar
 
@@ -53,7 +54,7 @@ Hiçbir özellik henüz gerçek cihazda denenmedi.
 | A | Cihazda test turu + TestFlight | Çok yüksek | Orta | İlk açılış, izin akışları, ikon, gizlilik etiketleri |
 | B | Anılar (fotoğraf öbekleme + kartpostal özet) | Yüksek | Büyük | PhotoKit, cihazda öbekleme |
 | C | Biletten otomatik doldurma (PDF/ekran görüntüsü/.pkpass) | Yüksek | Orta | Vision ile cihazda okuma |
-| D | Schengen 90/180 gün hesaplayıcı | Yüksek (TR) | Küçük | Saf mantık, test edilebilir |
+| D | Schengen 90/180 gün hesaplayıcı | Yüksek (TR) | Küçük | ✅ Vize sekmesinde; seyahatler + elle eklenen ziyaretler |
 | E | Vize randevu ve belge takibi | Yüksek (TR) | Orta | |
 | F | Tax-free iade takibi | Orta | Küçük | |
 | G | Gidiş öncesi kontrol listesi (harç, roaming/eSIM, sigorta, kart) | Orta | Küçük | Valize benzer |
@@ -89,3 +90,17 @@ Ana ekranın kaydırırken kasmasının olası nedenleri ve yapılanlar:
 | Yeni seyahat formunda 12 MP fotoğraf her tuş vuruşunda yeniden çiziliyordu | Önizleme küçültülüyor |
 | `softShadow` gölgeyi her alt görünüme ayrı uyguluyordu (22 yerde) | Önce tek katmana birleştiriliyor |
 | Her değişiklikte tüm seyahatler JSON olarak ana iş parçacığında diske yazılıyordu | 300 ms toplanıp arka planda, sırayla yazılıyor; arka plana geçerken bekleyen yazma bitiriliyor |
+
+## 6. Genel performans turu
+
+| Alan | Sorun | Düzeltme |
+|---|---|---|
+| Tüm kartlar (`tray`, `ModuleCard`, kutucuklar, hap düğmeler) | Gölge tüm içeriği tek katmana birleştirip hesaplıyordu; içinde kaydırma görünümü olan büyük kartlarda her değişiklikte büyük ekran dışı çizim | `cardBackground`: gölge yalnızca zemin şeklinden; içerik katmana birleştirilmiyor |
+| Plan haritası | Canlı harita gölge için katmana birleştiriliyordu | Gölge harita altındaki şekilden |
+| Plan | Seçili günün durakları, mesafe, açılış saati durumları ve önerileri gövde başına 5–10 kez yeniden hesaplanıyordu; açılış saatleri her seferinde metinden ayrıştırılıyordu | Gün planı gövde başına bir kez hesaplanıyor; açılış saati ayrıştırması önbellekli |
+| Plan · gün çipleri | Her çip kendi durak sayısını tüm duraklardan süzüyordu | Sayılar bir kez sözlükte |
+| Çevrimdışı harita | İnternet yokken görüntü ve kayıt tarihi her çizimde diskten okunuyordu | Bellek önbelleği |
+| Bütçe | Borç sadeleştirme bir çizimde 4–5 kez, para birimi dağılımı iki kez hesaplanıyordu | Birer kez |
+| Para birimi menüsü | Her satır için `NumberFormatter` kuruluyordu | Sembol önbelleği |
+| Masraf ekranı | Tuş takımında her basışta tam boy makbuz fotoğrafı 44 pt'ye ölçekleniyordu | Küçük kopya |
+| Bildirimler | Her düzenlemede tüm seyahat bildirimleri silinip yeniden ekleniyordu | Plan değişmediyse dokunulmuyor |

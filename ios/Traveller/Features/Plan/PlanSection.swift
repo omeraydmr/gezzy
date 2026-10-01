@@ -9,6 +9,7 @@ struct PlanSection: View {
     @State private var selectedDay: Date?
     @State private var cameraPosition: MapCameraPosition = .automatic
     @State private var isAddingStop = false
+    @State private var isImporting = false
     @State private var lastOrderBeforeOptimize: [Stop.ID: Int]?
     @State private var dropTarget: Stop.ID?
     @State private var editingHours: Stop?
@@ -17,31 +18,65 @@ struct PlanSection: View {
     @Environment(\.tripTint) private var tint
 
     private var days: [Date] { trip.days() }
-    private var day: Date {
-        if let selectedDay { return selectedDay }
+    private var day: Date { Self.day(selected: selectedDay, in: days) }
+    private var stops: [Stop] { trip.stops(on: day) }
+
+    private static func day(selected: Date?, in days: [Date]) -> Date {
+        if let selected { return selected }
         let today = Calendar.current.startOfDay(for: .now)
         return days.contains(today) ? today : (days.first ?? today)
     }
-    private var stops: [Stop] { trip.stops(on: day) }
-    private var coordinates: [Coordinate] { stops.compactMap(\.coordinate) }
-    private var totalMeters: Double { Geo.routeDistance(coordinates) }
+
+    /// Seçili günün çizim için gereken her şeyi; gövde başına bir kez hesaplanır
+    /// (durak süzme/sıralama, mesafe, açılış saati durumları ve önerileri tekrar tekrar yapılmaz).
+    private struct DayPlan {
+        let days: [Date]
+        let day: Date
+        let stops: [Stop]
+        let coordinates: [Coordinate]
+        let totalMeters: Double
+        let hours: [Stop.ID: OpeningHours.Status]
+        let fixes: [Stop.ID: Trip.HoursFix]
+        let stopCounts: [Date: Int]
+
+        var warningCount: Int { hours.values.filter(\.isWarning).count }
+    }
+
+    private func makePlan() -> DayPlan {
+        let days = trip.days()
+        let day = Self.day(selected: selectedDay, in: days)
+        let calendar = Calendar.current
+        var counts: [Date: Int] = [:]
+        for stop in trip.stops { counts[calendar.startOfDay(for: stop.day), default: 0] += 1 }
+        let stops = trip.stops(on: day)
+        let coordinates = stops.compactMap(\.coordinate)
+        var hours: [Stop.ID: OpeningHours.Status] = [:]
+        var fixes: [Stop.ID: Trip.HoursFix] = [:]
+        for stop in stops {
+            hours[stop.id] = trip.hoursStatus(of: stop)
+            fixes[stop.id] = trip.hoursFix(for: stop)
+        }
+        return DayPlan(days: days, day: day, stops: stops, coordinates: coordinates,
+                       totalMeters: Geo.routeDistance(coordinates), hours: hours, fixes: fixes, stopCounts: counts)
+    }
 
     var body: some View {
+        let plan = makePlan()
         VStack(alignment: .leading, spacing: 16) {
-            DayChips(days: days, selection: Binding(get: { day }, set: { selectedDay = $0 }),
-                     stopCount: { trip.stops(on: $0).count },
+            DayChips(days: plan.days, selection: Binding(get: { plan.day }, set: { selectedDay = $0 }),
+                     stopCount: { plan.stopCounts[Calendar.current.startOfDay(for: $0)] ?? 0 },
                      onDropStop: { id, target in moveStop(id, before: nil, on: target) })
 
-            if !coordinates.isEmpty {
-                if !network.isOnline, let offline = offlineMaps.image(tripID: trip.id, day: day) {
+            if !plan.coordinates.isEmpty {
+                if !network.isOnline, let offline = offlineMaps.image(tripID: trip.id, day: plan.day) {
                     OfflineMapImage(image: offline)
                 } else {
-                    map
+                    map(plan)
                 }
                 OfflineMapRow(trip: trip)
             }
 
-            stopList
+            stopList(plan)
 
             HStack(spacing: 12) {
                 Button {
@@ -64,13 +99,27 @@ struct PlanSection: View {
                         Image(systemName: "point.topleft.down.to.point.bottomright.curvepath.fill")
                     }
                     .buttonStyle(.circleIcon)
-                    .disabled(coordinates.count < 3)
+                    .disabled(plan.coordinates.count < (trip.lodging(forMorningOf: plan.day)?.coordinate == nil ? 3 : 2))
                     .accessibilityLabel("Rotayı en kısa sıraya diz")
                 }
+
+                Button {
+                    isImporting = true
+                } label: {
+                    Image(systemName: "doc.viewfinder")
+                }
+                .buttonStyle(.circleIcon)
+                .accessibilityLabel("Rezervasyon içe aktar")
             }
+
+            IdeasCard(trip: trip, day: plan.day)
+            LodgingCard(trip: trip)
+        }
+        .sheet(isPresented: $isImporting) {
+            BookingImportSheet(trip: trip)
         }
         .sheet(isPresented: $isAddingStop) {
-            AddStopSheet(trip: trip, day: day)
+            AddStopSheet(trip: trip, day: plan.day)
         }
         .sheet(item: $editingHours) { stop in
             OpeningHoursEditor(stop: stop) { hours in
@@ -84,7 +133,7 @@ struct PlanSection: View {
             .presentationDetents([.medium, .large])
         }
         .task(id: trip.stops.filter { $0.coordinate != nil }.count) { await lookUpOpeningHours() }
-        .onChange(of: day) { _, _ in
+        .onChange(of: plan.day) { _, _ in
             cameraPosition = .automatic
             lastOrderBeforeOptimize = nil
         }
@@ -92,11 +141,12 @@ struct PlanSection: View {
 
     // MARK: List
 
-    @ViewBuilder
-    private var stopList: some View {
-        VStack(alignment: .leading, spacing: 0) {
+    private func stopList(_ plan: DayPlan) -> some View {
+        let stops = plan.stops
+        let totalMeters = plan.totalMeters
+        return VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 10) {
-                Text(dayTitle)
+                Text(dayTitle(plan))
                     .font(.tBodyStrong)
                     .foregroundStyle(Color.ink)
                 HStack(spacing: 6) {
@@ -106,7 +156,7 @@ struct PlanSection: View {
                                  text: AppFormat.distance(meters: totalMeters))
                         StatChip(symbol: "figure.walk", text: "\(Geo.walkingMinutes(meters: totalMeters)) dk")
                     }
-                    let warnings = stops.filter { trip.hoursStatus(of: $0)?.isWarning == true }.count
+                    let warnings = plan.warningCount
                     if warnings > 0 {
                         StatChip(symbol: "clock.badge.exclamationmark", text: "\(warnings) saat uyarısı", accent: .orange)
                     }
@@ -118,12 +168,17 @@ struct PlanSection: View {
                 EmptyHint(symbol: "mappin.and.ellipse", text: "Bu gün için henüz durak yok.")
             }
 
+            if let lodging = trip.lodging(forMorningOf: plan.day), let first = stops.first {
+                LodgingStartRow(lodging: lodging)
+                HopRow(from: lodging.coordinate, to: first.coordinate)
+            }
+
             ForEach(Array(stops.enumerated()), id: \.element.id) { index, stop in
                 if index > 0 {
-                    HopRow(from: stops[index - 1], to: stop)
+                    HopRow(from: stops[index - 1].coordinate, to: stop.coordinate)
                 }
-                StopRow(stop: stop, number: index + 1, hours: trip.hoursStatus(of: stop),
-                        fix: trip.hoursFix(for: stop)) { fix in apply(fix, to: stop) }
+                StopRow(stop: stop, number: index + 1, hours: plan.hours[stop.id],
+                        fix: plan.fixes[stop.id]) { fix in apply(fix, to: stop) }
                     .overlay(alignment: .top) {
                         Capsule()
                             .fill(tint)
@@ -141,12 +196,12 @@ struct PlanSection: View {
                     }
                     .dropDestination(for: String.self) { items, _ in
                         guard let first = items.first, let id = UUID(uuidString: first) else { return false }
-                        moveStop(id, before: stop.id, on: day)
+                        moveStop(id, before: stop.id, on: plan.day)
                         return true
                     } isTargeted: { targeted in
                         if targeted { dropTarget = stop.id } else if dropTarget == stop.id { dropTarget = nil }
                     }
-                    .contextMenu { menu(for: stop, index: index) }
+                    .contextMenu { menu(for: stop, index: index, in: plan) }
             }
 
             if stops.contains(where: { $0.openingHours != nil }) {
@@ -169,29 +224,40 @@ struct PlanSection: View {
         .tray()
         .dropDestination(for: String.self) { items, _ in
             guard let first = items.first, let id = UUID(uuidString: first) else { return false }
-            moveStop(id, before: nil, on: day)
+            moveStop(id, before: nil, on: plan.day)
             return true
         }
         .animation(.spring(duration: 0.3), value: stops.map(\.id))
     }
 
-    private var dayTitle: String {
-        let number = (days.firstIndex(of: day) ?? 0) + 1
-        return "\(number). gün · \(AppFormat.dayPill(day)) · \(trip.destination.city)"
+    private func dayTitle(_ plan: DayPlan) -> String {
+        let number = (plan.days.firstIndex(of: plan.day) ?? 0) + 1
+        return "\(number). gün · \(AppFormat.dayPill(plan.day)) · \(trip.destination.city)"
     }
 
     @ViewBuilder
-    private func menu(for stop: Stop, index: Int) -> some View {
+    private func menu(for stop: Stop, index: Int, in plan: DayPlan) -> some View {
         if index > 0 {
             Button("Yukarı taşı", systemImage: "arrow.up") { move(stop, by: -1) }
         }
-        if index < stops.count - 1 {
+        if index < plan.stops.count - 1 {
             Button("Aşağı taşı", systemImage: "arrow.down") { move(stop, by: 1) }
         }
         Button("Açılış saatleri", systemImage: "clock") { editingHours = stop }
         Menu("Başka güne taşı", systemImage: "calendar") {
-            ForEach(days.filter { $0 != day }, id: \.self) { target in
+            ForEach(plan.days.filter { $0 != plan.day }, id: \.self) { target in
                 Button(AppFormat.dayPill(target)) { moveToDay(stop, target) }
+            }
+        }
+        Button("Fikirlere taşı", systemImage: "lightbulb") {
+            withAnimation(.spring(duration: 0.3)) {
+                store.update(trip.id) { trip in
+                    trip.stops.removeAll { $0.id == stop.id }
+                    var idea = stop
+                    idea.id = UUID()
+                    idea.startMinutes = nil
+                    trip.ideas = (trip.ideas ?? []) + [idea]
+                }
             }
         }
         Button("Sil", systemImage: "trash", role: .destructive) {
@@ -201,15 +267,32 @@ struct PlanSection: View {
 
     // MARK: Map
 
-    private var map: some View {
-        let pinned = stops.enumerated().compactMap { (index, stop) -> PinnedStop? in
+    private func map(_ plan: DayPlan) -> some View {
+        let pinned = plan.stops.enumerated().compactMap { (index, stop) -> PinnedStop? in
             guard let coordinate = stop.coordinate else { return nil }
             return PinnedStop(stop: stop, number: index + 1,
                               coordinate: CLLocationCoordinate2D(latitude: coordinate.latitude, longitude: coordinate.longitude))
         }
+        let hotel = trip.lodging(forMorningOf: plan.day)
+        let hotelCoordinate: CLLocationCoordinate2D? = hotel?.coordinate.map {
+            CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude)
+        }
+        var route: [CLLocationCoordinate2D] = []
+        if let hotelCoordinate { route.append(hotelCoordinate) }
+        route += pinned.map(\.coordinate)
         return Map(position: $cameraPosition) {
-            MapPolyline(coordinates: pinned.map(\.coordinate))
+            MapPolyline(coordinates: route)
                 .stroke(Color.ink, style: StrokeStyle(lineWidth: 3, lineCap: .round, dash: [0.5, 8]))
+            if let hotel, let hotelCoordinate {
+                Annotation(hotel.name, coordinate: hotelCoordinate, anchor: .center) {
+                    Image(systemName: "bed.double.fill")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 28, height: 28)
+                        .background(Accent.green.base, in: Circle())
+                        .overlay(Circle().strokeBorder(.white, lineWidth: 2))
+                }
+            }
             ForEach(pinned) { item in
                 Annotation(item.stop.name, coordinate: item.coordinate, anchor: .bottom) {
                     NumberedPin(number: item.number, accent: Accent.cycle(item.number - 1), size: 28)
@@ -219,7 +302,8 @@ struct PlanSection: View {
         .mapStyle(.standard(elevation: .flat, pointsOfInterest: .excludingAll))
         .frame(height: 240)
         .clipShape(RoundedRectangle(cornerRadius: Radius.tray, style: .continuous))
-        .softShadow()
+        // Gölge haritanın kendisinden değil zemin şeklinden: canlı harita katmana birleştirilmez.
+        .cardBackground(Color.tray, in: RoundedRectangle(cornerRadius: Radius.tray, style: .continuous))
     }
 
     private struct PinnedStop: Identifiable {
@@ -303,7 +387,13 @@ struct PlanSection: View {
     private func optimize() {
         let located = stops.filter { $0.coordinate != nil }
         let others = stops.filter { $0.coordinate == nil }
-        let order = RouteOptimizer.order(located.compactMap(\.coordinate))
+        // Sabah otelden çıkılıyorsa rota otelden başlar.
+        let order: [Int]
+        if let hotel = trip.lodging(forMorningOf: day)?.coordinate {
+            order = RouteOptimizer.order(located.compactMap(\.coordinate), from: hotel)
+        } else {
+            order = RouteOptimizer.order(located.compactMap(\.coordinate))
+        }
         lastOrderBeforeOptimize = Dictionary(uniqueKeysWithValues: stops.map { ($0.id, $0.order) })
         withAnimation(.spring(duration: 0.35)) {
             applyOrder(order.map { located[$0].id } + others.map(\.id))
@@ -402,39 +492,76 @@ struct StopRow: View {
     }
 }
 
-/// İki durak arasındaki geçiş satırı (tahmini yürüme süresi).
+/// İki nokta arasındaki geçiş satırı: Apple Haritalar'dan yürüme ve toplu taşıma süresi;
+/// gelene kadar (ya da ağ yoksa) kuş uçuşu mesafeden yürüme tahmini.
 struct HopRow: View {
-    let from: Stop
-    let to: Stop
+    let from: Coordinate?
+    let to: Coordinate?
+    @State private var times: TravelTimeService.Times?
 
     var body: some View {
         HStack(spacing: 8) {
             VerticalLine()
                 .stroke(Color.line, style: StrokeStyle(lineWidth: 2, dash: [4, 4]))
                 .frame(width: 36)
-            Image(systemName: symbol)
-                .font(.system(size: 13))
-            Text(text)
-                .font(.tBody)
+            content
         }
+        .font(.tBody)
         .foregroundStyle(Color.ink3)
         .frame(height: 34)
         .accessibilityElement(children: .combine)
+        .task(id: key) {
+            guard let from, let to else { return }
+            times = await TravelTimeService.shared.times(from: from, to: to)
+        }
     }
 
-    private var minutes: Int? {
-        guard let a = from.coordinate, let b = to.coordinate else { return nil }
-        return Geo.walkingMinutes(meters: Geo.distance(a, b))
+    private var key: String {
+        guard let from, let to else { return "" }
+        return "\(from.latitude),\(from.longitude)>\(to.latitude),\(to.longitude)"
     }
 
-    private var symbol: String {
-        guard let minutes else { return "arrow.down" }
-        return minutes > 30 ? "tram.fill" : "figure.walk"
+    @ViewBuilder
+    private var content: some View {
+        if let walking = times?.walkingMinutes {
+            HStack(spacing: 10) {
+                Label("\(walking) dk", systemImage: "figure.walk")
+                if let transit = times?.transitMinutes, walking > 15, transit < walking {
+                    Label("\(transit) dk", systemImage: "tram.fill")
+                }
+            }
+        } else if let estimate {
+            Label(estimate > 30 ? "Toplu taşıma önerilir · \(estimate) dk yürüyüş" : "\(estimate) dk",
+                  systemImage: estimate > 30 ? "tram.fill" : "figure.walk")
+        } else {
+            Label("Geçiş", systemImage: "arrow.down")
+        }
     }
 
-    private var text: String {
-        guard let minutes else { return "Geçiş" }
-        return minutes > 30 ? "Toplu taşıma önerilir · \(minutes) dk yürüyüş" : "\(minutes) dk"
+    private var estimate: Int? {
+        guard let from, let to else { return nil }
+        return Geo.walkingMinutes(meters: Geo.distance(from, to))
+    }
+}
+
+/// Günün başladığı konaklama satırı.
+struct LodgingStartRow: View {
+    let lodging: Lodging
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "bed.double.fill")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Accent.green.base)
+                .frame(width: 36, height: 36)
+                .background(Accent.green.tint, in: Circle())
+            Text(lodging.name)
+                .font(.tBody)
+                .foregroundStyle(Color.ink2)
+                .lineLimit(1)
+            Spacer()
+        }
+        .accessibilityLabel(Text("Gün \(lodging.name) konaklamasından başlıyor"))
     }
 }
 
@@ -558,7 +685,7 @@ struct OfflineMapImage: View {
                     .background(.regularMaterial, in: Capsule())
                     .padding(10)
             }
-            .softShadow()
+            .cardBackground(Color.tray, in: RoundedRectangle(cornerRadius: Radius.tray, style: .continuous))
             .accessibilityLabel("Kayıtlı çevrimdışı harita")
     }
 }
@@ -591,8 +718,7 @@ struct OfflineMapRow: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
-        .background(Color.tray, in: Capsule())
-        .softShadow()
+        .cardBackground(Color.tray, in: Capsule())
     }
 
     private func isSaved(_ state: OfflineMapStore.State) -> Bool {

@@ -35,6 +35,18 @@ Görsel maket: [`design/screens.html`](../design/screens.html)
 | Bildirimler | — | Önceki akşam valiz, uçuştan 3 saat önce kapı/koltuk, her sabah günün planı, notlu duraklardan 45 dk önce |
 | Anlık güncelleme | Açılışta eşitleme | CloudKit abonelikleri sessiz push gönderir; değişiklik hemen birleşir ve "Elif bir harcama ekledi: Kahvaltı · €27,75" gibi bildirim düşer; kendi değişikliklerin bildirilmez |
 | Fotoğraf eşitleme | Yalnızca bu cihazda | Kapak ve makbuz fotoğrafları CKAsset olarak yüklenir; her fotoğraf bir kez gönderilir, ekipteki diğer telefonlara iner |
+| Schengen 90/180 | — | Schengen seyahatlerinde vize sekmesinde: dönüş günü itibarıyla son 180 günde kullanılan gün (seyahat dahil), 180 günlük şerit (bu seyahat, diğer ziyaretler, aşan günler), sayılan ziyaretler, elle geçmiş ziyaret ekleme; aşımda ilk aşım günü, en geç çıkış ve aynı uzunluk için en erken giriş önerisi. Aşım, vize uyarıları ve ana sayfadaki vize kutusuna da yansır |
+| Konaklama | — | Plan sekmesinde otel kartı (ad, adres araması, giriş/çıkış saati, rezervasyon no); gün planı ve harita sabah kalınan otelden başlar, otelden ilk durağa süre gösterilir; giriş ve çıkış sabahı bildirim; konaklaması olmayan geceler uyarılır |
+| Fikirler | — | Güne atanmamış yerler havuzu; "Sal 14 ekle" ile seçili günün sonuna taşınır; duraktan "Fikirlere taşı" |
+| Rezervasyon içe aktarma | — | PDF ya da ekran görüntüsünden (cihazda okunur) uçuş numarası, rota, tarih, saat, koltuk ve otel adı, giriş/çıkış, rezervasyon no bulunur; seçilenler seyahate eklenir |
+| Duraklar arası süre | Kuş uçuşu tahmin | Apple Haritalar'dan yürüme ve (uzun mesafede) toplu taşıma süresi; ağ yoksa tahmin |
+| Vize başvurusu | Oturumluk belge işaretleri | Durum (hazırlanıyor → onaylandı), randevu tarihi ve yeri, kalıcı belge listesi; randevudan önceki akşam ve 2 saat önce bildirim; randevu seyahate çok yakınsa uyarı |
+| Belgeler | — | Vize sekmesinde belge kasası: PDF, fotoğraf ya da kamera; tür ve kişi; önizleme ve paylaşma; pasaport/vize varsayılan olarak yalnızca cihazda |
+| Hesaplaşma | Yalnızca "ödendi" | Kişi kartında IBAN; ödeme sorusunda "IBAN'ı kopyala"; hesaplaşma özetini mesajla paylaş |
+| Profil | — | Ana sayfa başlığındaki avatar: ad, pasaport, vizeler, IBAN (tüm seyahatlerdeki kendi kopyana yansır), gezilen ülkeler ve dünya yüzdesi; Hakkında buraya taşındı |
+| Anılar | — | Yeni sekme: seyahat tarihlerindeki fotoğraflar zaman (2 saat) ve konuma (300 m) göre anlara ayrılır, aynı gündeki en yakın durakla adlandırılır; haritada fotoğraf sayılı pinler, günlere göre liste, genişleyen ızgara; "Kartpostal oluştur" ile kapak fotoğraflı, istatistikli ve PASSED damgalı görsel paylaşılır. Fotoğraflar cihazdan çıkmaz |
+| Roller | Yalnızca etiket | "Sadece görür" yetkisindeki kişi için seyahat salt okunur (bant + kapalı düğmeler + kayıt engeli); yetkiyi yalnızca sahip değiştirir |
+| Son hareketler | — | Ekip sekmesinde ekipten gelen değişikliklerin listesi |
 | Uçuş durumu | Elle girilen kapı | AeroDataBox'tan rötar, kapı, terminal ve aşama; bilet koçanında "Rötarlı +40 dk" ve üstü çizili eski saat; kapı değişince, rötar olunca, biniş başlayınca bildirim; uygulama açılınca ve arka planda yenilenir |
 | Ana ekran widget'ı | — | Küçük: sıradaki seyahate kalan gün; seyahatteyken "3. gün / 7" ve günün sıradaki durağı. Orta: ek olarak uçuş ve tarihler. Dokununca ilgili seyahat açılır |
 | Bildirimden geçiş | Ana ekran açılır | Bildirime dokununca ilgili seyahatin ilgili sekmesi: harcama → Bütçe, valiz → Valiz, durak/uçuş → Plan, katılım → Ekip; widget ve canlı kart da aynı bağlantıyı kullanır |

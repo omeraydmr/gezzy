@@ -10,8 +10,17 @@ final class TripStore {
     /// Cihaz sahibinin profili (pasaport bilgileri yeni seyahatlere kopyalanır).
     private(set) var me: Member
 
+    /// Elle eklenen geçmiş Schengen ziyaretleri (kişi kimliğine göre; yalnızca bu cihazda saklanır).
+    private(set) var manualStays: [UUID: [ManualStay]] = [:]
+
     private let fileURL: URL
     private static let meKey = "traveller.me"
+    private static let manualStaysKey = "traveller.schengen.manualStays"
+    private static let visitedKey = "traveller.profile.visitedCountries"
+
+    /// Uygulamada seyahati olmayan, elle eklenen gezilmiş ülkeler.
+    private(set) var extraVisitedCountries: Set<String> =
+        Set(UserDefaults.standard.stringArray(forKey: TripStore.visitedKey) ?? [])
 
     init(fileURL: URL = TripStore.defaultFileURL, seedIfEmpty: Bool = true) {
         self.fileURL = fileURL
@@ -21,6 +30,10 @@ final class TripStore {
         } else {
             self.me = Member(name: "Ben", role: .owner, colorIndex: 3,
                              passport: Passport(expiresOn: Calendar.current.date(byAdding: .year, value: 5, to: .now) ?? .now))
+        }
+        if let data = UserDefaults.standard.data(forKey: Self.manualStaysKey),
+           let stays = try? JSONDecoder().decode([UUID: [ManualStay]].self, from: data) {
+            manualStays = stays
         }
         load()
         if trips.isEmpty && seedIfEmpty {
@@ -84,9 +97,42 @@ final class TripStore {
         CoverImageStore.shared.delete(named: old)
     }
 
-    /// Bir seyahati yerinde değiştirir ve kaydeder.
+    // MARK: Roles
+
+    /// Bu cihazın kullanıcısının seyahatteki rolü. Ekipte yoksa: paylaşılan seyahatte düzenleyici, kendi seyahatinde sahip.
+    func role(in trip: Trip) -> MemberRole {
+        if let member = trip.members.first(where: { $0.id == me.id }) { return member.role }
+        return CloudSync.shared.sharedWithMe.contains(trip.id) ? .editor : .owner
+    }
+
+    /// "Sadece görür" yetkisindeki kişi seyahati değiştiremez.
+    func canEdit(_ trip: Trip) -> Bool { role(in: trip) != .viewer }
+
+    // MARK: Activity
+
+    /// Ekipten gelen değişikliklerin kısa geçmişi (seyahat başına en fazla 50; yalnızca bu cihazda).
+    private(set) var activity: [UUID: [ActivityEntry]] = TripStore.loadActivity()
+    private static let activityKey = "traveller.activity"
+
+    func recordActivity(_ summary: TripChanges.Summary, at date: Date = .now) {
+        let entry = ActivityEntry(date: date, title: summary.title, lines: summary.lines, section: summary.link.section)
+        var list = activity[summary.link.tripID] ?? []
+        list.insert(entry, at: 0)
+        activity[summary.link.tripID] = Array(list.prefix(50))
+        if let data = try? JSONEncoder().encode(activity) {
+            UserDefaults.standard.set(data, forKey: Self.activityKey)
+        }
+    }
+
+    private static func loadActivity() -> [UUID: [ActivityEntry]] {
+        guard let data = UserDefaults.standard.data(forKey: activityKey),
+              let decoded = try? JSONDecoder().decode([UUID: [ActivityEntry]].self, from: data) else { return [:] }
+        return decoded
+    }
+
+    /// Bir seyahati yerinde değiştirir ve kaydeder. Görüntüleyici yetkisindeyse değişiklik yapılmaz.
     func update(_ id: Trip.ID, _ change: (inout Trip) -> Void) {
-        guard let index = trips.firstIndex(where: { $0.id == id }) else { return }
+        guard let index = trips.firstIndex(where: { $0.id == id }), canEdit(trips[index]) else { return }
         let before = trips[index]
         change(&trips[index])
         guard trips[index] != before else { return }
@@ -117,6 +163,68 @@ final class TripStore {
         guard trips.contains(where: { $0.id == id }) else { return }
         trips.removeAll { $0.id == id }
         save()
+    }
+
+    // MARK: Schengen 90/180
+
+    /// Kişinin bu seyahat dışındaki Schengen kalışları: planlanmış seyahatler ve elle eklenen ziyaretler.
+    func schengenStays(for memberID: UUID, excluding tripID: Trip.ID? = nil) -> [Schengen.Stay] {
+        let fromTrips = trips
+            .filter { trip in
+                trip.id != tripID && trip.status == .planned && Schengen.isSchengen(trip.destination.countryCode)
+                    && trip.members.contains { $0.id == memberID }
+            }
+            .map { Schengen.Stay(id: $0.id, start: $0.startDate, end: $0.endDate, label: $0.name) }
+        let manual = (manualStays[memberID] ?? []).map {
+            Schengen.Stay(id: $0.id, start: $0.start, end: $0.end, label: $0.note.isEmpty ? "Önceki ziyaret" : $0.note)
+        }
+        return fromTrips + manual
+    }
+
+    /// Kişinin bu seyahat için vize değerlendirmesi (diğer Schengen kalışları dahil).
+    func visaAssessment(for member: Member, in trip: Trip) -> VisaAssessment {
+        VisaAdvisor.assess(countryCode: trip.destination.countryCode, passport: member.passport,
+                           tripStart: trip.startDate, tripEnd: trip.endDate,
+                           otherSchengenStays: Schengen.isSchengen(trip.destination.countryCode)
+                               ? schengenStays(for: member.id, excluding: trip.id) : [])
+    }
+
+    func addManualStay(_ stay: ManualStay, for memberID: UUID) {
+        manualStays[memberID, default: []].append(stay)
+        saveManualStays()
+    }
+
+    func removeManualStay(_ id: ManualStay.ID, for memberID: UUID) {
+        manualStays[memberID]?.removeAll { $0.id == id }
+        saveManualStays()
+    }
+
+    private func saveManualStays() {
+        if let data = try? JSONEncoder().encode(manualStays) {
+            UserDefaults.standard.set(data, forKey: Self.manualStaysKey)
+        }
+    }
+
+    /// Profil kaydedilince ad, pasaport ve IBAN, kendi kopyanın bulunduğu tüm seyahatlere de yansır.
+    func saveProfile(_ profile: Member) {
+        updateMe { me in
+            me.name = profile.name
+            me.passport = profile.passport
+            me.iban = profile.iban
+        }
+        for trip in trips where trip.members.contains(where: { $0.id == profile.id }) {
+            update(trip.id) { trip in
+                guard let index = trip.members.firstIndex(where: { $0.id == profile.id }) else { return }
+                trip.members[index].name = profile.name
+                trip.members[index].passport = profile.passport
+                trip.members[index].iban = profile.iban
+            }
+        }
+    }
+
+    func setVisited(_ code: String, _ visited: Bool) {
+        if visited { extraVisitedCountries.insert(code.uppercased()) } else { extraVisitedCountries.remove(code.uppercased()) }
+        UserDefaults.standard.set(Array(extraVisitedCountries), forKey: Self.visitedKey)
     }
 
     func updateMe(_ change: (inout Member) -> Void) {
@@ -201,4 +309,13 @@ final class TripStore {
         decoder.dateDecodingStrategy = .iso8601
         return decoder
     }()
+}
+
+/// Ekip aktivite akışındaki bir satır grubu ("Elif bir harcama ekledi: …").
+struct ActivityEntry: Codable, Hashable, Identifiable {
+    var id = UUID()
+    var date: Date
+    var title: String
+    var lines: [String]
+    var section: String?
 }
