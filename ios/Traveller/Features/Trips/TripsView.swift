@@ -156,11 +156,16 @@ struct TripsView: View {
 
     private var header: some View {
         HStack {
+            // Dar ekranda seçici yazıları kesilmesin; gerekirse başlık küçülür.
             Label("Seyahatler", systemImage: "suitcase.fill")
                 .font(.tTitle)
                 .foregroundStyle(Color.ink2)
-            Spacer()
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                .layoutPriority(-1)
+            Spacer(minLength: 8)
             PillPicker(selection: $scope, options: [.upcoming, .past]) { $0 == .upcoming ? "Yaklaşan" : "Geçmiş" }
+                .fixedSize()
             Button {
                 isShowingProfile = true
             } label: {
