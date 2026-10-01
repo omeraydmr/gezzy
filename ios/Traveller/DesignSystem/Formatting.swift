@@ -1,0 +1,106 @@
+import Foundation
+import TravellerKit
+
+enum AppFormat {
+    static let locale = Locale(identifier: "tr_TR")
+
+    /// Kuruş/cent → "€2.900" ya da "€12,50".
+    static func money(_ minor: Int, _ currency: String) -> String {
+        let value = Decimal(minor) / 100
+        let isWhole = minor % 100 == 0
+        return value.formatted(
+            .currency(code: currency)
+                .locale(locale)
+                .precision(.fractionLength(isWhole ? 0 : 2))
+        )
+    }
+
+    /// Kullanıcının yazdığı tutarı ("1.600", "12,50") kuruşa çevirir.
+    static func parseMinor(_ text: String) -> Int? {
+        MoneyParser.minorUnits(from: text)
+    }
+
+    static func shortDate(_ date: Date) -> String {
+        date.formatted(.dateTime.day().month(.abbreviated).locale(locale))
+    }
+
+    /// "1 Haz 2027".
+    static func longDate(_ date: Date) -> String {
+        date.formatted(.dateTime.day().month(.abbreviated).year().locale(locale))
+    }
+
+    /// "12 – 17 Eki" veya "28 Eki – 2 Kas".
+    static func dateRange(_ start: Date, _ end: Date, calendar: Calendar = .current) -> String {
+        if calendar.isDate(start, equalTo: end, toGranularity: .month) {
+            let day = start.formatted(.dateTime.day().locale(locale))
+            return "\(day) – \(shortDate(end))"
+        }
+        return "\(shortDate(start)) – \(shortDate(end))"
+    }
+
+    /// Gün seçici etiketi: "Sal 14".
+    static func dayPill(_ date: Date) -> String {
+        date.formatted(.dateTime.weekday(.abbreviated).day().locale(locale))
+    }
+
+    static func time(_ date: Date, timeZone identifier: String? = nil) -> String {
+        var style = Date.FormatStyle.dateTime.hour(.twoDigits(amPM: .omitted)).minute(.twoDigits).locale(locale)
+        if let identifier, let zone = TimeZone(identifier: identifier) {
+            style.timeZone = zone
+        }
+        return date.formatted(style)
+    }
+
+    static func time(minutes: Int) -> String {
+        String(format: "%02d:%02d", (minutes / 60) % 24, minutes % 60)
+    }
+
+    static func duration(minutes: Int) -> String {
+        let h = minutes / 60
+        let m = minutes % 60
+        switch (h, m) {
+        case (0, _): return "\(m) dk"
+        case (_, 0): return "\(h) sa"
+        default: return "\(h) sa \(m) dk"
+        }
+    }
+
+    static func distance(meters: Double) -> String {
+        if meters < 1000 { return "\(Int(meters.rounded())) m" }
+        return (meters / 1000).formatted(.number.precision(.fractionLength(1)).locale(locale)) + " km"
+    }
+
+    static func countdown(_ countdown: Countdown) -> String {
+        switch countdown {
+        case .today: "Bugün"
+        case let .days(n): n == 1 ? "Yarın" : "\(n) gün"
+        case let .months(n): "\(n) ay"
+        case let .ongoing(day, total): "Gün \(day)/\(total)"
+        case .past: "Bitti"
+        }
+    }
+}
+
+enum Countries {
+    static func flag(_ code: String) -> String {
+        let base: UInt32 = 0x1F1E6 - 65
+        return code.uppercased().unicodeScalars
+            .compactMap { UnicodeScalar(base + $0.value) }
+            .map(String.init)
+            .joined()
+    }
+
+    static func name(_ code: String) -> String {
+        if code.uppercased() == "XK" { return "Kosova" }
+        return AppFormat.locale.localizedString(forRegionCode: code) ?? code
+    }
+
+    /// Ülke seçici için alfabetik (Türkçe) liste.
+    static let all: [String] = {
+        var codes = Locale.Region.isoRegions
+            .map(\.identifier)
+            .filter { $0.count == 2 && $0.allSatisfy(\.isLetter) }
+        if !codes.contains("XK") { codes.append("XK") }
+        return codes.sorted { name($0).compare(name($1), locale: AppFormat.locale) == .orderedAscending }
+    }()
+}
