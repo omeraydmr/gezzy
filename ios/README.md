@@ -26,7 +26,17 @@ Gerçek cihazda çalıştırmak için bir kez:
    Yayından önce CloudKit Console'da şemayı **Production**'a taşı.
 
 iCloud'a giriş yapılmamış cihazda uygulama yalnızca yerel çalışır. Eşitleme iki kopyayı öğe bazında birleştirir;
-silinen öğeler `tombstones` ile işaretlenir ve geri gelmez. Fotoğraflar (kapak, makbuz) şimdilik eşitlenmez.
+silinen öğeler `tombstones` ile işaretlenir ve geri gelmez. Kapak fotoğrafı `Trip` kaydında `cover` varlığı,
+makbuzlar ise seyahate bağlı `Photo` kayıtları (`name`, `kind`, `asset`) olarak eşitlenir.
+
+Anlık güncelleme için *Push Notifications* yeteneği (`aps-environment`) ve *Background Modes → Remote notifications*
+gerekir; ikisi de `project.yml`'de tanımlı. Uygulama CloudKit veritabanı aboneliklerini ilk açılışta kurar.
+
+## Canlı uçuş kartı (Live Activity)
+
+`TravellerWidgets` uzantısı (`Widgets/`) kilit ekranı ve Dynamic Island görünümünü çizer; ortak
+`FlightActivityAttributes` tipi `Shared/` klasöründedir. Uzantının paket kimliği `app.traveller.ios.widgets`;
+imzalarken uygulamayla aynı ekibi seç. Kart push'suz, uygulama içinden güncellenir.
 
 `Support/Info.plist` ve `Support/Traveller.entitlements` `xcodegen generate` ile üretilir.
 

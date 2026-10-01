@@ -33,6 +33,9 @@ Görsel maket: [`design/screens.html`](../design/screens.html)
 | Ekip paylaşımı | Elle kişi ekleme | iCloud daveti Mesajlar/Mail ile; seyahat herkesin telefonunda eşitlenir, çakışmalar öğe bazında birleşir, silinenler geri gelmez; katılan kişi kendini ekibe ekler |
 | Çevrimdışı harita | — | Günlerin rotası numaralı pinleriyle görüntü olarak kaydedilir; internet yokken canlı haritanın yerine gösterilir |
 | Bildirimler | — | Önceki akşam valiz, uçuştan 3 saat önce kapı/koltuk, her sabah günün planı, notlu duraklardan 45 dk önce |
+| Anlık güncelleme | Açılışta eşitleme | CloudKit abonelikleri sessiz push gönderir; değişiklik hemen birleşir ve "Elif bir harcama ekledi: Kahvaltı · €27,75" gibi bildirim düşer; kendi değişikliklerin bildirilmez |
+| Fotoğraf eşitleme | Yalnızca bu cihazda | Kapak ve makbuz fotoğrafları CKAsset olarak yüklenir; her fotoğraf bir kez gönderilir, ekipteki diğer telefonlara iner |
+| Canlı uçuş kartı | — | Uçuştan 6 saat önce kilit ekranı ve Dynamic Island'da bilet: rota, kapı, koltuk, kalkışa geri sayım, durum (Zamanında/Biniş/Havada); 24 saat içinde elle de açılır, inişte kapanır |
 | Durak ekle | Yalnızca metin sonuç listesi | Numaralı sonuçlar ve aynı numaralarla harita önizlemesi; seçilen yer yeşil işaretle |
 | Yeni seyahat | Düz form | Yazdıkça güncellenen canlı bilet kartı + fotoğraf ekleme |
 
@@ -47,11 +50,11 @@ Görsel maket: [`design/screens.html`](../design/screens.html)
 Lisans gereği görünür atıf gereken yerler: plan listesinin altında (açılış saatleri varsa) "© OpenStreetMap katkıcıları" bağlantısı, açılış saati düzenleyicisinde, valizdeki hava kartında "Open-Meteo", döviz satırında "ECB", ve hepsi "Hakkında" ekranında bağlantılarıyla.
 
 ## Bilinen sınırlar
-- iCloud eşitlemesi açılışta, uygulama öne gelince ve her değişiklikte çalışır; anlık (push) güncelleme yok.
-- Kapak ve makbuz fotoğrafları eşitlenmez.
+- Anlık güncelleme sessiz push'a dayanır; iOS bunları geciktirebilir ya da düşük güç modunda atlayabilir, uygulama öne gelince yine eşitlenir.
+- Canlı uçuş kartındaki kapı/koltuk kullanıcının girdiği bilgidir; havayolundan canlı kapı değişikliği alınmaz.
 - Çevrimdışı harita yakınlaştırılamayan bir görüntüdür; adım adım yol tarifi için Apple Haritalar'ın çevrimdışı haritaları önerilir.
 
 ## Sonraki adaylar
-- CloudKit abonelikleriyle anlık güncelleme ve "Elif bir harcama ekledi" bildirimi.
-- Fotoğrafların CKAsset olarak eşitlenmesi.
-- Seyahat günü Live Activity (kapı, kalkışa kalan süre).
+- Uçuş durumunu bir servisten (rötar, kapı değişikliği) çekip canlı kartı push ile güncellemek.
+- Ana ekran widget'ı: sıradaki seyahate kalan gün ve günün ilk durağı.
+- Bildirimden ilgili seyahatin ilgili sekmesine doğrudan gitmek.

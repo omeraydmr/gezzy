@@ -159,6 +159,7 @@ struct TripHero: View {
 struct TripStub: View {
     let trip: Trip
     @Environment(\.tripTint) private var tint
+    @State private var isLiveActivityRunning = false
 
     var body: some View {
         VStack(spacing: 14) {
@@ -187,7 +188,24 @@ struct TripStub: View {
                 }
                 AvatarStack(members: trip.members, size: 30, limit: 3)
             }
+            if LiveActivityController.canStart(for: trip) {
+                let running = isLiveActivityRunning
+                Button {
+                    if running { LiveActivityController.stop(for: trip) } else { LiveActivityController.start(for: trip) }
+                    isLiveActivityRunning.toggle()
+                } label: {
+                    Label(running ? "Kilit ekranından kaldır" : "Kilit ekranında göster",
+                          systemImage: running ? "lock.slash" : "lock.iphone")
+                        .font(.system(.subheadline, weight: .semibold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .foregroundStyle(running ? Color.ink : Color.onInk)
+                        .background(running ? Color.track : Color.ink, in: Capsule())
+                }
+                .buttonStyle(.plain)
+            }
         }
+        .onAppear { isLiveActivityRunning = LiveActivityController.isRunning(for: trip) }
         .padding(18)
         .background(Color.tray, in: RoundedRectangle(cornerRadius: Radius.tray, style: .continuous))
         .overlay(alignment: .top) {
