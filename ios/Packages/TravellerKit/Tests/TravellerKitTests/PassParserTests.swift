@@ -106,6 +106,7 @@ final class PassParserTests: XCTestCase {
 /// Testler için en küçük ZIP yazıcı (CRC doğrulanmadığı için 0 yazılır).
 enum TestZip {
     static func make(_ files: [(String, Data)], deflate: Bool) -> Data {
+        // Uzun "+" zincirleri derleyicinin tür çıkarımını çok yavaşlatıyor; parça parça eklenir.
         var body = Data()
         var central = Data()
         for (name, content) in files {
@@ -113,16 +114,29 @@ enum TestZip {
             let method: UInt16 = deflate ? 8 : 0
             let offset = UInt32(body.count)
             let nameBytes = Data(name.utf8)
-            body += le32(0x0403_4B50) + le16(20) + le16(0) + le16(method) + le16(0) + le16(0) + le32(0)
-            body += le32(UInt32(payload.count)) + le32(UInt32(content.count)) + le16(UInt16(nameBytes.count)) + le16(0)
-            body += nameBytes + payload
-            central += le32(0x0201_4B50) + le16(20) + le16(20) + le16(0) + le16(method) + le16(0) + le16(0) + le32(0)
-            central += le32(UInt32(payload.count)) + le32(UInt32(content.count)) + le16(UInt16(nameBytes.count))
-            central += le16(0) + le16(0) + le16(0) + le16(0) + le32(0) + le32(offset) + nameBytes
+            let sizes: [Data] = [le32(0), le32(UInt32(payload.count)), le32(UInt32(content.count)),
+                                 le16(UInt16(nameBytes.count))]
+
+            let local: [Data] = [le32(0x0403_4B50), le16(20), le16(0), le16(method), le16(0), le16(0)]
+            local.forEach { body.append($0) }
+            sizes.forEach { body.append($0) }
+            body.append(le16(0))
+            body.append(nameBytes)
+            body.append(payload)
+
+            let header: [Data] = [le32(0x0201_4B50), le16(20), le16(20), le16(0), le16(method), le16(0), le16(0)]
+            header.forEach { central.append($0) }
+            sizes.forEach { central.append($0) }
+            let tail: [Data] = [le16(0), le16(0), le16(0), le16(0), le32(0), le32(offset)]
+            tail.forEach { central.append($0) }
+            central.append(nameBytes)
         }
-        let end = le32(0x0605_4B50) + le16(0) + le16(0) + le16(UInt16(files.count)) + le16(UInt16(files.count))
-            + le32(UInt32(central.count)) + le32(UInt32(body.count)) + le16(0)
-        return body + central + end
+        var archive = body
+        archive.append(central)
+        let end: [Data] = [le32(0x0605_4B50), le16(0), le16(0), le16(UInt16(files.count)), le16(UInt16(files.count)),
+                           le32(UInt32(central.count)), le32(UInt32(body.count)), le16(0)]
+        end.forEach { archive.append($0) }
+        return archive
     }
 
     static func compress(_ data: Data) -> Data {
