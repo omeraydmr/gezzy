@@ -48,6 +48,22 @@ final class CoverImageStore {
         return image
     }
 
+    /// Diskteki dosya (iCloud'a yüklemek için); yoksa nil.
+    func fileURL(named name: String) -> URL? {
+        let url = directory.appendingPathComponent(name)
+        return FileManager.default.fileExists(atPath: url.path) ? url : nil
+    }
+
+    /// iCloud'dan gelen dosyayı aynı adla kopyalar (zaten varsa dokunmaz).
+    func importFile(at source: URL, named name: String) {
+        let target = directory.appendingPathComponent(name)
+        guard !FileManager.default.fileExists(atPath: target.path) else { return }
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try? FileManager.default.copyItem(at: source, to: target)
+        images.removeObject(forKey: name as NSString)
+        colors[name] = nil
+    }
+
     func delete(named name: String) {
         images.removeObject(forKey: name as NSString)
         colors[name] = nil

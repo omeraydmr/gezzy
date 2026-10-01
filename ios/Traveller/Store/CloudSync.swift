@@ -58,6 +58,7 @@ final class CloudSync {
                 return
             }
             _ = try await container.privateCloudDatabase.modifyRecordZones(saving: [CKRecordZone(zoneID: zoneID)], deleting: [])
+            await ensureSubscriptions()
             await pull()
             // İlk açılışta yerel seyahatleri buluta gönder.
             pending.formUnion(store.trips.map(\.id))
@@ -98,16 +99,51 @@ final class CloudSync {
         await pull()
     }
 
+    /// CloudKit'in sessiz bildirimi geldiğinde (başka bir cihazda değişiklik): çek ve değişiklikleri bildir.
+    func handleRemoteNotification() async -> Bool {
+        guard isAvailable else { return false }
+        await pull(notifyChanges: true)
+        return true
+    }
+
+    private static let subscriptionsKey = "traveller.cloud.subscriptions.v1"
+
+    /// Özel ve paylaşılan veritabanındaki her değişiklikte sessiz bildirim gelmesi için abonelikler (bir kez).
+    private func ensureSubscriptions() async {
+        guard !UserDefaults.standard.bool(forKey: Self.subscriptionsKey) else { return }
+        let info = CKSubscription.NotificationInfo()
+        info.shouldSendContentAvailable = true
+        do {
+            for (database, id) in [(container.privateCloudDatabase, "private-changes"), (container.sharedCloudDatabase, "shared-changes")] {
+                let subscription = CKDatabaseSubscription(subscriptionID: id)
+                subscription.notificationInfo = info
+                _ = try await database.modifySubscriptions(saving: [subscription], deleting: [])
+            }
+            UserDefaults.standard.set(true, forKey: Self.subscriptionsKey)
+        } catch {
+            // Bir sonraki açılışta yeniden denenir; eşitleme yine açılış/öne gelişte çalışır.
+        }
+    }
+
     // MARK: Pull
 
-    private func pull() async {
+    private func pull(notifyChanges: Bool = false) async {
         guard let store else { return }
         status = .syncing
         do {
             var needsPush: Set<UUID> = []
+            var summaries: [TripChanges.Summary] = []
+            func merge(_ remote: Trip) {
+                let before = store.trip(remote.id)
+                if store.mergeFromCloud(remote) { needsPush.insert(remote.id) }
+                if notifyChanges, let after = store.trip(remote.id),
+                   let summary = TripChanges.summarize(old: before, new: after, me: store.me.id, money: AppFormat.money) {
+                    summaries.append(summary)
+                }
+            }
             // Kendi seyahatlerimiz.
             for trip in try await fetchTrips(in: container.privateCloudDatabase, zone: zoneID) {
-                if store.mergeFromCloud(trip.trip) { needsPush.insert(trip.trip.id) }
+                merge(trip.trip)
                 if trip.isShared { sharedByMe.insert(trip.trip.id) }
             }
             // Bize paylaşılanlar.
@@ -116,8 +152,11 @@ final class CloudSync {
                 for trip in try await fetchTrips(in: container.sharedCloudDatabase, zone: zone.zoneID) {
                     sharedZones[trip.trip.id] = zone.zoneID
                     seenShared.insert(trip.trip.id)
-                    if store.mergeFromCloud(trip.trip) { needsPush.insert(trip.trip.id) }
+                    merge(trip.trip)
                 }
+            }
+            for summary in summaries {
+                await NotificationScheduler.shared.notifyCloudChange(summary)
             }
             // Paylaşımdan çıkarıldığımız seyahatleri kaldır.
             for removed in sharedWithMe.subtracting(seenShared) {
@@ -147,10 +186,18 @@ final class CloudSync {
         while moreComing {
             let changes = try await database.recordZoneChanges(inZoneWith: zone, since: token)
             for (_, change) in changes.modificationResultsByID {
-                guard let modification = try? change.get(),
-                      modification.record.recordType == Self.recordType,
-                      let trip = Self.decode(modification.record) else { continue }
-                result.append(FetchedTrip(trip: trip, isShared: modification.record.share != nil))
+                guard let modification = try? change.get() else { continue }
+                let record = modification.record
+                if record.recordType == Self.photoType {
+                    importPhoto(record)
+                    continue
+                }
+                guard record.recordType == Self.recordType, let trip = Self.decode(record) else { continue }
+                if let name = record["coverName"] as? String, let asset = record["cover"] as? CKAsset, let url = asset.fileURL {
+                    CoverImageStore.shared.importFile(at: url, named: name)
+                    uploadedPhotos.insert("cover-\(name)")
+                }
+                result.append(FetchedTrip(trip: trip, isShared: record.share != nil))
             }
             token = changes.changeToken
             moreComing = changes.moreComing
@@ -201,7 +248,36 @@ final class CloudSync {
         record["name"] = trip.name as CKRecordValue
         record["updatedAt"] = (trip.updatedAt ?? .now) as CKRecordValue
 
-        let (results, _) = try await database.modifyRecords(saving: [record], deleting: [], savePolicy: .ifServerRecordUnchanged)
+        // Kapak fotoğrafı kaydın üzerinde varlık (asset) olarak; yalnızca değiştiyse yüklenir.
+        if let cover = trip.coverPhoto {
+            if (record["coverName"] as? String) != cover, let url = CoverImageStore.shared.fileURL(named: cover) {
+                record["cover"] = CKAsset(fileURL: url)
+                record["coverName"] = cover as CKRecordValue
+            }
+        } else if record["coverName"] != nil {
+            record["cover"] = nil
+            record["coverName"] = nil
+        }
+
+        // Makbuzlar seyahat kaydına bağlı ayrı kayıtlar; paylaşımla birlikte katılanlara da gider.
+        let receipts = trip.expenses.compactMap(\.receiptPhoto).filter { !uploadedPhotos.contains("receipt-\($0)") }
+        let photoRecords: [CKRecord] = receipts.compactMap { name in
+            guard let url = CoverImageStore.receipts.fileURL(named: name) else { return nil }
+            let photo = CKRecord(recordType: Self.photoType, recordID: CKRecord.ID(recordName: "receipt-\(name)", zoneID: id.zoneID))
+            photo["name"] = name as CKRecordValue
+            photo["kind"] = "receipt" as CKRecordValue
+            photo["asset"] = CKAsset(fileURL: url)
+            photo.setParent(id)
+            return photo
+        }
+
+        let (results, _) = try await database.modifyRecords(saving: [record] + photoRecords, deleting: [],
+                                                            savePolicy: .ifServerRecordUnchanged, atomically: false)
+        for photo in photoRecords {
+            if case .success? = results[photo.recordID], let name = photo["name"] as? String {
+                uploadedPhotos.insert("receipt-\(name)")
+            }
+        }
         if case let .failure(error)? = results[id] {
             if let ckError = error as? CKError, ckError.code == .serverRecordChanged, attempt < 2,
                let server = ckError.serverRecord, let remote = Self.decode(server), let store {
@@ -243,6 +319,23 @@ final class CloudSync {
         } catch {
             status = .failed("Davet kabul edilemedi: \(error.localizedDescription)")
         }
+    }
+
+    // MARK: Photos
+
+    private static let photoType = "Photo"
+    private static let uploadedKey = "traveller.cloud.uploadedPhotos"
+
+    /// Buluta yüklenmiş (ya da buluttan gelmiş) fotoğraf anahtarları; tekrar yüklenmez.
+    @ObservationIgnored
+    private var uploadedPhotos: Set<String> = Set(UserDefaults.standard.stringArray(forKey: CloudSync.uploadedKey) ?? []) {
+        didSet { UserDefaults.standard.set(Array(uploadedPhotos), forKey: Self.uploadedKey) }
+    }
+
+    private func importPhoto(_ record: CKRecord) {
+        guard let name = record["name"] as? String, let asset = record["asset"] as? CKAsset, let url = asset.fileURL else { return }
+        CoverImageStore.receipts.importFile(at: url, named: name)
+        uploadedPhotos.insert("receipt-\(name)")
     }
 
     // MARK: Helpers

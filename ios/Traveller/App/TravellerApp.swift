@@ -1,6 +1,7 @@
 import CloudKit
 import SwiftUI
 import UIKit
+import UserNotifications
 
 @main
 struct TravellerApp: App {
@@ -17,18 +18,41 @@ struct TravellerApp: App {
                 .task {
                     await CloudSync.shared.start(with: store)
                     NotificationScheduler.shared.tripsChanged(store.trips)
+                    LiveActivityController.refresh(trips: store.trips)
                 }
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
                 Task { await CloudSync.shared.refresh() }
+                LiveActivityController.refresh(trips: store.trips)
             }
         }
     }
 }
 
 /// iCloud davet bağlantısının uygulamada açılabilmesi için sahne temsilcisi gerekir.
-final class AppDelegate: NSObject, UIApplicationDelegate {
+final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
+    func application(_ application: UIApplication,
+                     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+        UNUserNotificationCenter.current().delegate = self
+        // CloudKit sessiz bildirimleri için (kullanıcıdan izin gerektirmez).
+        application.registerForRemoteNotifications()
+        return true
+    }
+
+    /// Başka bir cihazda yapılan değişiklik: CloudKit sessiz bildirimi.
+    func application(_ application: UIApplication,
+                     didReceiveRemoteNotification userInfo: [AnyHashable: Any]) async -> UIBackgroundFetchResult {
+        guard CKNotification(fromRemoteNotificationDictionary: userInfo) != nil else { return .noData }
+        return await CloudSync.shared.handleRemoteNotification() ? .newData : .noData
+    }
+
+    /// Uygulama açıkken de bildirimleri göster.
+    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification) async
+        -> UNNotificationPresentationOptions {
+        [.banner, .sound, .list]
+    }
+
     func application(_ application: UIApplication, configurationForConnecting connectingSceneSession: UISceneSession,
                      options: UIScene.ConnectionOptions) -> UISceneConfiguration {
         let configuration = UISceneConfiguration(name: nil, sessionRole: connectingSceneSession.role)

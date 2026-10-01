@@ -16,10 +16,13 @@ targets:
     platform: iOS
     sources:
       - path: Traveller
+      - path: Shared
     info:
       path: Support/Info.plist
       properties:
         CKSharingSupported: true
+        UIBackgroundModes:
+          - remote-notification
     entitlements:
       path: Support/Traveller.entitlements
       properties:
@@ -27,8 +30,11 @@ targets:
           - iCloud.app.traveller.ios
         com.apple.developer.icloud-services:
           - CloudKit
+        aps-environment: development
     dependencies:
       - package: TravellerKit
+      - target: TravellerWidgets
+        embed: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.traveller.ios
@@ -43,9 +49,33 @@ targets:
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
         INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
+        INFOPLIST_KEY_NSSupportsLiveActivities: YES
         INFOPLIST_KEY_NSCameraUsageDescription: "Harcama makbuzlarının fotoğrafını çekmek için kamerayı kullanır."
         DEVELOPMENT_LANGUAGE: tr
         ENABLE_PREVIEWS: YES
+
+  TravellerWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Widgets
+      - path: Shared
+    info:
+      path: Support/Widgets-Info.plist
+      properties:
+        CFBundleDisplayName: Traveller
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.traveller.ios.widgets
+        PRODUCT_NAME: TravellerWidgets
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "5.0"
+        TARGETED_DEVICE_FAMILY: "1"
+        GENERATE_INFOPLIST_FILE: YES
+        SKIP_INSTALL: YES
 
 schemes:
   Traveller:

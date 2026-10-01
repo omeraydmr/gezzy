@@ -35,6 +35,18 @@ final class NotificationScheduler {
         await reschedule()
     }
 
+    /// Başka bir ekip üyesinin değişikliğini hemen bildirir ("Elif bir harcama ekledi").
+    func notifyCloudChange(_ summary: TripChanges.Summary) async {
+        guard isEnabled else { return }
+        let content = UNMutableNotificationContent()
+        content.title = summary.title
+        content.body = summary.body
+        content.sound = .default
+        content.threadIdentifier = "cloud-\(summary.title)"
+        let request = UNNotificationRequest(identifier: "cloud-\(UUID().uuidString)", content: content, trigger: nil)
+        try? await UNUserNotificationCenter.current().add(request)
+    }
+
     func tripsChanged(_ trips: [Trip]) {
         latestTrips = trips
         task?.cancel()
