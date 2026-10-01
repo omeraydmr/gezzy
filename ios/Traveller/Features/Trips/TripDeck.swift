@@ -31,6 +31,7 @@ struct TripDeck: View {
                     if geometry.isVisible(relative) {
                         let t = geometry.transform(relative: relative)
                         TripTicketCard(trip: trip, side: side)
+                            .equatable()
                             .overlay {
                                 if trip.id == arrivingID {
                                     StampImprint(subtitle: StampImprint.subtitle(for: trip), scale: side / 280)
@@ -44,7 +45,8 @@ struct TripDeck: View {
                             .scaleEffect(t.scale)
                             .rotationEffect(.degrees(t.rotationDegrees), anchor: .bottom)
                             .offset(x: t.x, y: t.y)
-                            .blur(radius: t.blur)
+                            // Bulanıklık yarım puanlık adımlarla değişir; her karede yeniden süzülmez.
+                            .blur(radius: (t.blur * 2).rounded() / 2, opaque: false)
                             .opacity(t.opacity)
                             .zIndex(t.zIndex)
                             .onTapGesture {

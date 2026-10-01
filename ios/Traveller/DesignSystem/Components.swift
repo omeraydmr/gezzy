@@ -60,8 +60,10 @@ extension View {
             .softShadow()
     }
 
+    /// Önce tek katmana birleştirilir; aksi halde gölge her alt görünüme (her metne) ayrı ayrı uygulanır.
     func softShadow() -> some View {
         self
+            .compositingGroup()
             .shadow(color: .black.opacity(0.04), radius: 1, y: 1)
             .shadow(color: .black.opacity(0.06), radius: 12, y: 8)
     }

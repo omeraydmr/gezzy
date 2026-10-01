@@ -1,0 +1,91 @@
+# 05 · Özellik listesi: ne var, ne eksik, sırada ne var
+
+Durum: ✅ yapıldı (CI'da derleniyor, testli mantık) · 🟡 kısmen · ⬜ yok.
+Hiçbir özellik henüz gerçek cihazda denenmedi.
+
+## 1. Yapılanlar
+
+| Alan | Özellik | Durum | Not |
+|---|---|---|---|
+| Ana ekran | Kare bilet kartlı deste, yörüngede kaydırma, arka kartlar bulanık | ✅ | Bu turda performans için yeniden düzenlendi |
+| Ana ekran | Kapak fotoğrafı, fotoğraftan dinamik renk | ✅ | |
+| Ana ekran | Vize / bütçe / valiz özet kutuları | ✅ | |
+| Yeni seyahat | Canlı bilet önizlemesi, 3B "PASSED" mühür animasyonu | ✅ | |
+| Plan | Gün çipleri, harita, numaralı duraklar, sürükle-bırak, başka güne taşıma | ✅ | |
+| Plan | Yer arama + harita önizleme | ✅ | |
+| Plan | Açılış saatleri (OSM), uyarı ve tek dokunuşla düzeltme | ✅ | |
+| Plan | Çevrimdışı harita görüntüleri | ✅ | Yakınlaştırılamaz |
+| Bütçe | Masraf ekleme/düzenleme, hesap makinesi tuşları, kategoriler, donut | ✅ | |
+| Bütçe | Döviz (ECB kuru), para birimi dağılımı | ✅ | |
+| Bütçe | Makbuz fotoğrafı, tutar okuma (OCR), kalem kalem bölme | ✅ | |
+| Bütçe | Borç sadeleştirme, transferler | ✅ | |
+| Valiz | Kişiye atama, ilerleme, hava durumuna göre öneriler | ✅ | |
+| Vize | Pasaport kartları, vize durumu, pasaport geçerlilik uyarısı | ✅ | Kural tablosu elle tutuluyor |
+| Ekip | iCloud ile paylaşım, eşitleme, anlık güncelleme, değişiklik bildirimi | ✅ | |
+| Ekip | Kapak/makbuz fotoğrafı eşitleme | ✅ | |
+| Bildirim | Valiz, uçuş, günün planı, durak hatırlatmaları; dokununca ilgili sekme | ✅ | |
+| Uçuş | Rötar/kapı/terminal (AeroDataBox), değişiklik bildirimi | ✅ | API anahtarı gerekir |
+| Uçuş | Kilit ekranı ve Dynamic Island canlı kartı | ✅ | Push'suz güncelleme |
+| Widget | Sıradaki seyahate kalan gün, günün sıradaki durağı | ✅ | |
+| Diğer | Hakkında, atıflar, örnek verileri sıfırlama | ✅ | |
+
+## 2. İlk plandan eksik kalanlar (02 · Özellik Seti'ne göre)
+
+| Özellik | Durum | Not |
+|---|---|---|
+| Anılar: fotoğrafları tarih/konuma göre toplama, öbekleme, haritada gösterme | ⬜ | İlk hedeflerden biriydi |
+| Konaklama (otel) kayıtları | ⬜ | Günün planı otelden başlayabilir |
+| Rezervasyon içe aktarma (PDF, ekran görüntüsü, Wallet biniş kartı) | ⬜ | Uçuş şu an elle giriliyor |
+| Duraklar arası ulaşım satırı (yürüme/tram/taksi süreleri) | 🟡 | Yalnızca toplam mesafe/yürüme var |
+| Rota optimizasyonu | ⬜ | Açılış saatleri verisi hazır |
+| "Fikirler" havuzu (güne atanmamış yerler) | ⬜ | |
+| Vize başvuru takibi: randevu, belge listesi, durum | 🟡 | Uyarılar var, takip yok |
+| Belge kasası (pasaport, sigorta, bilet PDF'leri) | ⬜ | |
+| Settle up: IBAN kopyala, "ödendi" işaretle, özet paylaş | 🟡 | Transferler var, IBAN/paylaşım yok |
+| Roller (düzenleyebilir / yalnızca görüntüler) | ⬜ | iCloud paylaşımı izin veriyor ama arayüz yok |
+| Aktivite akışı ("Elif durak ekledi") | 🟡 | Bildirim olarak var, uygulama içi liste yok |
+| Profil: gezilen ülkeler | ⬜ | |
+
+## 3. Yeni adaylar
+
+| # | Özellik | Değer | Efor | Not |
+|---|---|---|---|---|
+| A | Cihazda test turu + TestFlight | Çok yüksek | Orta | İlk açılış, izin akışları, ikon, gizlilik etiketleri |
+| B | Anılar (fotoğraf öbekleme + kartpostal özet) | Yüksek | Büyük | PhotoKit, cihazda öbekleme |
+| C | Biletten otomatik doldurma (PDF/ekran görüntüsü/.pkpass) | Yüksek | Orta | Vision ile cihazda okuma |
+| D | Schengen 90/180 gün hesaplayıcı | Yüksek (TR) | Küçük | Saf mantık, test edilebilir |
+| E | Vize randevu ve belge takibi | Yüksek (TR) | Orta | |
+| F | Tax-free iade takibi | Orta | Küçük | |
+| G | Gidiş öncesi kontrol listesi (harç, roaming/eSIM, sigorta, kart) | Orta | Küçük | Valize benzer |
+| H | Hesaplaşma: IBAN, "ödendi", özet paylaş | Orta | Küçük | |
+| I | Konaklama kayıtları + giriş/çıkış bildirimleri | Orta | Orta | |
+| J | Duraklar arası toplu taşıma süreleri | Orta | Orta | MapKit ETA |
+| K | Acil durum kartı (konsolosluk, acil numaralar, alerji kartı) | Orta | Küçük | İnternetsiz |
+| L | Seyahat özeti (harcama, adım, yerler) paylaşılabilir kart | Orta | Orta | HealthKit isteğe bağlı |
+| M | Canlı kartı sunucu push'u ile güncelleme | Düşük-orta | Büyük | Sunucu gerekir |
+| N | İngilizce yerelleştirme | Orta | Orta | Global kitle için |
+
+## 4. Teknik borç / kalite
+
+- Gerçek cihazda performans ölçümü (Instruments: SwiftUI, Time Profiler, Hangs).
+- Uygulama hedefi için UI testleri ve ekran görüntüsü testleri yok; yalnızca TravellerKit birim testleri var.
+- Çökme raporlama yok.
+- Vize kural tablosu elle güncelleniyor; kaynak ve güncelleme tarihi gösterilmeli.
+
+## 5. Performans turu (bu değişiklik)
+
+Ana ekranın kaydırırken kasmasının olası nedenleri ve yapılanlar:
+
+| Sorun | Düzeltme |
+|---|---|
+| Arka plan ışığı: 440 pt daire, 100 pt bulanıklık; odak değişince 0,6 sn boyunca her karede yeniden süzülüyordu (tüm ekranlarda) | Radyal gradyan; aynı görünüm, bulanıklık yok |
+| Her kart her karede baştan kuruluyordu | Kart `Equatable`; kaydırırken yalnızca konumu değişiyor |
+| Kart içeriği çok katmanlı (fotoğraf, tarama deseni, metinler) ve üstüne bulanıklık + iki gölge | İçerik `drawingGroup` ile tek dokuya çiziliyor; gölge yalnızca basit şeklin gölgesi |
+| Bulanıklık yarıçapı her karede değişiyordu | Yarım puanlık adımlara yuvarlandı |
+| Karttaki geri sayım hapı materyal (arka plan bulanıklığı) kullanıyordu | Düz yarı saydam zemin |
+| Bilet çentiği her çizimde boolean yol işlemiyle (`subtracting`) hesaplanıyordu | Yol doğrudan çiziliyor |
+| Kartlar 1400 px JPEG'i ana iş parçacığında açıp her karede ölçekliyordu | ImageIO ile 900 px'e küçültülmüş, önceden çözülmüş görsel; açılışta arka planda hazırlanıyor |
+| Baskın renk tam boy görüntüden hesaplanıyordu | 64 px'lik görselden |
+| Yeni seyahat formunda 12 MP fotoğraf her tuş vuruşunda yeniden çiziliyordu | Önizleme küçültülüyor |
+| `softShadow` gölgeyi her alt görünüme ayrı uyguluyordu (22 yerde) | Önce tek katmana birleştiriliyor |
+| Her değişiklikte tüm seyahatler JSON olarak ana iş parçacığında diske yazılıyordu | 300 ms toplanıp arka planda, sırayla yazılıyor; arka plana geçerken bekleyen yazma bitiriliyor |

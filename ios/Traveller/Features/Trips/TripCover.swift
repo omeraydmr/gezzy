@@ -4,7 +4,14 @@ import TravellerKit
 /// Seyahatin kapağı: kullanıcının fotoğrafı, yoksa pastel yer tutucu.
 struct TripCover: View {
     let trip: Trip
+    /// Verilirse fotoğraf bu boyuta küçültülmüş haliyle çizilir (destedeki kartlar).
+    var maxPixelSize: CGFloat?
     @Environment(\.coverOverride) private var override
+
+    private func photo(named name: String) -> UIImage? {
+        if let maxPixelSize { return CoverImageStore.shared.thumbnail(named: name, maxPixelSize: maxPixelSize) }
+        return CoverImageStore.shared.image(named: name)
+    }
 
     var body: some View {
         if let override {
@@ -12,7 +19,7 @@ struct TripCover: View {
                 .overlay(Image(uiImage: override).resizable().scaledToFill())
                 .clipped()
                 .accessibilityHidden(true)
-        } else if let name = trip.coverPhoto, let image = CoverImageStore.shared.image(named: name) {
+        } else if let name = trip.coverPhoto, let image = photo(named: name) {
             Color.clear
                 .overlay(Image(uiImage: image).resizable().scaledToFill())
                 .clipped()

@@ -73,7 +73,9 @@ struct NewTripSheet: View {
             .onChange(of: photoItem) { _, item in
                 guard let item else { return }
                 Task {
-                    if let data = try? await item.loadTransferable(type: Data.self), let image = UIImage(data: data) {
+                    // Önizleme için küçültülmüş görüntü: 12 MP fotoğraf her tuş vuruşunda yeniden çizilmesin.
+                    if let data = try? await item.loadTransferable(type: Data.self),
+                       let image = CoverImageStore.downsample(data: data, maxPixelSize: CoverImageStore.cardPixelSize) {
                         withAnimation(.easeInOut(duration: 0.3)) {
                             photoData = data
                             previewImage = image

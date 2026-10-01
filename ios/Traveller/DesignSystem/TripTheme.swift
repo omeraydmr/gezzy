@@ -16,6 +16,7 @@ extension EnvironmentValues {
 }
 
 /// Zemin + seyahat renginden yumuşak bir ışık.
+/// Büyük yarıçaplı bulanıklık yerine radyal gradyan: aynı görünüm, renk geçişinde her kare ucuz.
 struct TintGlow: View {
     let tint: Color
     var offsetY: CGFloat = -140
@@ -24,11 +25,17 @@ struct TintGlow: View {
     var body: some View {
         ZStack {
             Color.canvas
-            Circle()
-                .fill(tint.opacity(0.3))
-                .frame(width: size, height: size)
-                .blur(radius: 100)
+            RadialGradient(
+                stops: [
+                    .init(color: tint.opacity(0.3), location: 0),
+                    .init(color: tint.opacity(0.18), location: 0.35),
+                    .init(color: tint.opacity(0.06), location: 0.7),
+                    .init(color: tint.opacity(0), location: 1),
+                ],
+                center: .center, startRadius: 0, endRadius: size * 0.75)
+                .frame(width: size * 1.5, height: size * 1.5)
                 .offset(y: offsetY)
+                .allowsHitTesting(false)
         }
         .ignoresSafeArea()
     }

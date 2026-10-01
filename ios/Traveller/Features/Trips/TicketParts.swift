@@ -2,6 +2,7 @@ import SwiftUI
 import TravellerKit
 
 /// Yanlarında bilet çentikleri olan yuvarlatılmış kart şekli.
+/// Yol doğrudan çizilir; boolean yol işlemi (subtracting) her karede pahalı olduğu için kullanılmaz.
 struct TicketShape: Shape {
     /// Çentiklerin dikey konumu (üstten, pt).
     var notchY: CGFloat
@@ -9,13 +10,29 @@ struct TicketShape: Shape {
     var cornerRadius: CGFloat = 28
 
     func path(in rect: CGRect) -> Path {
-        let body = Path(roundedRect: rect, cornerRadius: cornerRadius, style: .continuous)
-        var notches = Path()
-        for x in [rect.minX, rect.maxX] {
-            notches.addEllipse(in: CGRect(x: x - notchRadius, y: rect.minY + notchY - notchRadius,
-                                          width: notchRadius * 2, height: notchRadius * 2))
-        }
-        return body.subtracting(notches)
+        let r = min(cornerRadius, rect.width / 2, rect.height / 2)
+        let n = notchRadius
+        let notch = min(max(rect.minY + notchY, rect.minY + r + n), rect.maxY - r - n)
+        var path = Path()
+        path.move(to: CGPoint(x: rect.minX + r, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX - r, y: rect.minY))
+        path.addArc(tangent1End: CGPoint(x: rect.maxX, y: rect.minY), tangent2End: CGPoint(x: rect.maxX, y: rect.minY + r), radius: r)
+        path.addLine(to: CGPoint(x: rect.maxX, y: notch - n))
+        // Sağ çentik: kartın içine doğru yarım daire.
+        path.addArc(center: CGPoint(x: rect.maxX, y: notch), radius: n,
+                    startAngle: .degrees(-90), endAngle: .degrees(90), clockwise: true)
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - r))
+        path.addArc(tangent1End: CGPoint(x: rect.maxX, y: rect.maxY), tangent2End: CGPoint(x: rect.maxX - r, y: rect.maxY), radius: r)
+        path.addLine(to: CGPoint(x: rect.minX + r, y: rect.maxY))
+        path.addArc(tangent1End: CGPoint(x: rect.minX, y: rect.maxY), tangent2End: CGPoint(x: rect.minX, y: rect.maxY - r), radius: r)
+        path.addLine(to: CGPoint(x: rect.minX, y: notch + n))
+        // Sol çentik.
+        path.addArc(center: CGPoint(x: rect.minX, y: notch), radius: n,
+                    startAngle: .degrees(90), endAngle: .degrees(-90), clockwise: true)
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.minY + r))
+        path.addArc(tangent1End: CGPoint(x: rect.minX, y: rect.minY), tangent2End: CGPoint(x: rect.minX + r, y: rect.minY), radius: r)
+        path.closeSubpath()
+        return path
     }
 }
 

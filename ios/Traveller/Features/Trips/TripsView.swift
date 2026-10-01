@@ -103,6 +103,10 @@ struct TripsView: View {
                 Text("Plan, harcamalar ve valiz listesi de silinir.")
             }
             .onChange(of: scope) { _, _ in index = 0 }
+            // Kapak küçük görsellerini ve renklerini arka planda hazırla: ilk kaydırma takılmasın.
+            .task(id: store.trips.compactMap(\.coverPhoto)) {
+                await CoverImageStore.shared.prewarm(store.trips.compactMap(\.coverPhoto))
+            }
             .onChange(of: AppRouter.shared.pending) { _, _ in openPendingLink() }
             .onAppear { openPendingLink() }
             .animation(.easeInOut(duration: 0.25), value: focused?.id)
