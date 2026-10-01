@@ -2,9 +2,16 @@ import SwiftUI
 import TravellerKit
 
 /// Destedeki kare bilet kartı: üstte kapak (fotoğraf ya da pastel), altta çentikle ayrılmış bilet koçanı.
-struct TripTicketCard: View {
+///
+/// Performans: kart `Equatable`; deste kaydırılırken yalnızca konumu değişir, içeriği yeniden kurulmaz.
+/// İçerik `drawingGroup` ile tek dokuya çizilir, gölge ise yalnızca basit bir şeklin gölgesidir.
+struct TripTicketCard: View, Equatable {
     let trip: Trip
     let side: CGFloat
+
+    nonisolated static func == (lhs: TripTicketCard, rhs: TripTicketCard) -> Bool {
+        lhs.side == rhs.side && lhs.trip == rhs.trip
+    }
 
     private var coverHeight: CGFloat { (side * 0.6).rounded() }
 
@@ -23,9 +30,13 @@ struct TripTicketCard: View {
             TicketShape(notchY: coverHeight)
                 .stroke(Color.white.opacity(0.35), lineWidth: 1)
         )
-        .compositingGroup()
-        .shadow(color: .black.opacity(0.06), radius: 2, y: 1)
-        .shadow(color: tint.opacity(0.28), radius: 18, y: 12)
+        .drawingGroup()
+        .background {
+            TicketShape(notchY: coverHeight)
+                .fill(Color.tray)
+                .shadow(color: .black.opacity(0.06), radius: 2, y: 1)
+                .shadow(color: tint.opacity(0.28), radius: 18, y: 12)
+        }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(accessibilityText))
     }
@@ -34,7 +45,7 @@ struct TripTicketCard: View {
 
     private func cover(tint: Color) -> some View {
         ZStack(alignment: .bottomLeading) {
-            TripCover(trip: trip)
+            TripCover(trip: trip, maxPixelSize: CoverImageStore.cardPixelSize)
             LinearGradient(colors: [.clear, .black.opacity(0.5)], startPoint: .center, endPoint: .bottom)
             VStack(alignment: .leading, spacing: 3) {
                 Text(trip.name)
@@ -57,7 +68,8 @@ struct TripTicketCard: View {
                 .foregroundStyle(tag.accent == .gray ? Color.ink2 : tag.accent.base)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 5)
-                .background(.regularMaterial, in: Capsule())
+                // Materyal (arka plan bulanıklığı) yerine düz zemin: dokuya çizilebilir ve ucuz.
+                .background(Color.tray.opacity(0.92), in: Capsule())
                 .padding(12)
         }
     }

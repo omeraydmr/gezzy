@@ -148,24 +148,53 @@ final class TripStore {
     private func save() {
         NotificationScheduler.shared.tripsChanged(trips)
         WidgetBridge.shared.tripsChanged(trips)
-        saveToDisk()
+        scheduleDiskWrite()
     }
 
-    private func saveToDisk() {
+    @ObservationIgnored private var writeTask: Task<Void, Never>?
+    @ObservationIgnored private var hasPendingWrite = false
+    /// Yazmalar sırayla yapılır; eski bir anlık görüntü yenisinin üstüne yazılamaz.
+    private static let writeQueue = DispatchQueue(label: "traveller.store.write", qos: .utility)
+
+    /// Arka arkaya gelen değişiklikleri toplar; JSON'u ana iş parçacığı dışında yazar.
+    private func scheduleDiskWrite() {
+        hasPendingWrite = true
+        writeTask?.cancel()
+        writeTask = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(300))
+            guard !Task.isCancelled, let self else { return }
+            let snapshot = trips
+            let url = fileURL
+            hasPendingWrite = false
+            Self.writeQueue.async { Self.write(snapshot, to: url) }
+        }
+    }
+
+    /// Uygulama arka plana geçerken bekleyen yazmayı hemen bitirir.
+    func flush() {
+        writeTask?.cancel()
+        writeTask = nil
+        if hasPendingWrite {
+            hasPendingWrite = false
+            let snapshot = trips
+            let url = fileURL
+            Self.writeQueue.async { Self.write(snapshot, to: url) }
+        }
+        // Kuyruktaki yazmalar bitene kadar bekle (arka plana geçmeden önce).
+        Self.writeQueue.sync {}
+    }
+
+    private nonisolated static func write(_ trips: [Trip], to url: URL) {
         do {
-            try FileManager.default.createDirectory(at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true)
-            let data = try Self.encoder.encode(trips)
-            try data.write(to: fileURL, options: [.atomic, .completeFileProtection])
+            try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
+            let data = try encoder.encode(trips)
+            try data.write(to: url, options: [.atomic, .completeFileProtection])
         } catch {
             assertionFailure("Seyahatler kaydedilemedi: \(error)")
         }
     }
-
-    private static let encoder: JSONEncoder = {
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        return encoder
-    }()
 
     private static let decoder: JSONDecoder = {
         let decoder = JSONDecoder()

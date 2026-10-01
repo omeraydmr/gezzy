@@ -29,6 +29,7 @@ struct TravellerApp: App {
                 }
         }
         .onChange(of: scenePhase) { _, phase in
+            if phase == .background { store.flush() }
             if phase == .active {
                 Task {
                     await CloudSync.shared.refresh()

@@ -1,5 +1,6 @@
 import CoreImage
 import CoreImage.CIFilterBuiltins
+import ImageIO
 import SwiftUI
 import UIKit
 
@@ -15,12 +16,72 @@ final class CoverImageStore {
 
     private let directory: URL
     private let images = NSCache<NSString, UIImage>()
+    /// Kartlar için küçültülmüş ve önceden çözülmüş görüntüler ("ad@piksel").
+    private let thumbnails = NSCache<NSString, UIImage>()
     private var colors: [String: Color] = [:]
     private let context = CIContext(options: [.workingColorSpace: NSNull()])
 
     init(directory: URL = CoverImageStore.defaultDirectory) {
         self.directory = directory
-        images.countLimit = 24
+        images.countLimit = 8
+        thumbnails.countLimit = 48
+    }
+
+    /// Destedeki kartlar için yeterli çözünürlük (piksel, uzun kenar).
+    static let cardPixelSize: CGFloat = 900
+
+    /// Küçültülmüş, çözülmüş görüntü. Tam boy JPEG'i her karede ölçeklemek yerine bunu çizer.
+    func thumbnail(named name: String, maxPixelSize: CGFloat = CoverImageStore.cardPixelSize) -> UIImage? {
+        let key = "\(name)@\(Int(maxPixelSize))" as NSString
+        if let cached = thumbnails.object(forKey: key) { return cached }
+        guard let image = Self.downsample(at: directory.appendingPathComponent(name), maxPixelSize: maxPixelSize) else {
+            return nil
+        }
+        thumbnails.setObject(image, forKey: key)
+        return image
+    }
+
+    /// Kart küçük görsellerini ve renkleri arka planda hazırlar; ilk kaydırmada takılma olmasın.
+    func prewarm(_ names: [String]) async {
+        let missing = names.filter { thumbnails.object(forKey: "\($0)@\(Int(Self.cardPixelSize))" as NSString) == nil }
+        guard !missing.isEmpty else { return }
+        let directory = directory
+        let size = Self.cardPixelSize
+        let decoded = await Task.detached(priority: .utility) {
+            missing.compactMap { name -> (String, UIImage)? in
+                Self.downsample(at: directory.appendingPathComponent(name), maxPixelSize: size).map { (name, $0) }
+            }
+        }.value
+        for (name, image) in decoded {
+            thumbnails.setObject(image, forKey: "\(name)@\(Int(size))" as NSString)
+            _ = dominantColor(named: name)
+        }
+    }
+
+    /// ImageIO ile doğrudan küçük boyutta çözer (tam görüntüyü belleğe açmaz).
+    nonisolated static func downsample(at url: URL, maxPixelSize: CGFloat) -> UIImage? {
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, [kCGImageSourceShouldCache: false] as CFDictionary) else {
+            return nil
+        }
+        return downsample(source, maxPixelSize: maxPixelSize)
+    }
+
+    nonisolated static func downsample(data: Data, maxPixelSize: CGFloat) -> UIImage? {
+        guard let source = CGImageSourceCreateWithData(data as CFData, [kCGImageSourceShouldCache: false] as CFDictionary) else {
+            return nil
+        }
+        return downsample(source, maxPixelSize: maxPixelSize)
+    }
+
+    private nonisolated static func downsample(_ source: CGImageSource, maxPixelSize: CGFloat) -> UIImage? {
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceShouldCacheImmediately: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: maxPixelSize,
+        ]
+        guard let image = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else { return nil }
+        return UIImage(cgImage: image)
     }
 
     nonisolated static var defaultDirectory: URL {
@@ -61,11 +122,19 @@ final class CoverImageStore {
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         try? FileManager.default.copyItem(at: source, to: target)
         images.removeObject(forKey: name as NSString)
+        removeThumbnails(named: name)
         colors[name] = nil
+    }
+
+    private func removeThumbnails(named name: String) {
+        for size in [Self.cardPixelSize, 64] {
+            thumbnails.removeObject(forKey: "\(name)@\(Int(size))" as NSString)
+        }
     }
 
     func delete(named name: String) {
         images.removeObject(forKey: name as NSString)
+        removeThumbnails(named: name)
         colors[name] = nil
         try? FileManager.default.removeItem(at: directory.appendingPathComponent(name))
     }
@@ -73,7 +142,8 @@ final class CoverImageStore {
     /// Fotoğrafın ortalama renginden, kart üzerinde okunabilir kalacak şekilde doygunlaştırılmış bir ton.
     func dominantColor(named name: String) -> Color? {
         if let cached = colors[name] { return cached }
-        guard let image = image(named: name), let input = CIImage(image: image) else { return nil }
+        // Ortalama renk için 64 piksellik görüntü yeter; tam boy açmaya gerek yok.
+        guard let image = thumbnail(named: name, maxPixelSize: 64), let input = CIImage(image: image) else { return nil }
 
         let filter = CIFilter.areaAverage()
         filter.inputImage = input
