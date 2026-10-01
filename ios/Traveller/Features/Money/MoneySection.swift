@@ -400,7 +400,8 @@ struct ExpenseRow: View {
     private var subtitle: String {
         let payer = trip.member(expense.paidBy)?.name ?? "?"
         if expense.isTransfer { return "Hesaplaşma · \(AppFormat.shortDate(expense.date))" }
-        return "\(payer) ödedi · \(expense.splitAmong.count) kişi · \(AppFormat.shortDate(expense.date))"
+        let split = expense.shares == nil ? "\(expense.splitAmong.count) kişi" : "kalem kalem"
+        return "\(payer) ödedi · \(split) · \(AppFormat.shortDate(expense.date))"
     }
 }
 

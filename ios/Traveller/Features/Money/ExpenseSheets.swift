@@ -30,6 +30,9 @@ struct AddExpenseSheet: View {
     @State private var isShowingLibrary = false
     @State private var libraryItem: PhotosPickerItem?
     @State private var scan: ReceiptScan = .idle
+    @State private var receiptItems: [ReceiptItem] = []
+    @State private var itemAssignments: [Int: [UUID]]?
+    @State private var isSplittingItems = false
 
     enum ReceiptScan: Equatable {
         case idle, reading, notFound
@@ -99,6 +102,14 @@ struct AddExpenseSheet: View {
                 ToolbarItem(placement: .confirmationAction) {
                     DatePicker("Tarih", selection: $date, displayedComponents: .date)
                         .labelsHidden()
+                }
+            }
+            .sheet(isPresented: $isSplittingItems) {
+                ItemSplitSheet(trip: trip, items: receiptItems, currency: currency,
+                               initial: itemAssignments ?? Dictionary(uniqueKeysWithValues: receiptItems.map {
+                                   ($0.id, trip.members.map(\.id).filter { splitAmong.contains($0) })
+                               })) { assignments in
+                    itemAssignments = assignments
                 }
             }
             .onAppear {
@@ -185,6 +196,22 @@ struct AddExpenseSheet: View {
 
             scanBanner
                 .animation(.spring(duration: 0.3), value: scan)
+
+            if receiptItems.count >= 2 {
+                Button {
+                    isSplittingItems = true
+                } label: {
+                    Label(itemAssignments == nil ? "Kalem kalem böl · \(receiptItems.count) kalem" : "Kalem dağılımını düzenle",
+                          systemImage: "list.bullet.rectangle.portrait")
+                        .font(.system(.footnote, weight: .semibold))
+                        .foregroundStyle(Color.ink)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.tray, in: Capsule())
+                        .softShadow()
+                }
+                .buttonStyle(.plain)
+            }
         }
     }
 
@@ -241,7 +268,10 @@ struct AddExpenseSheet: View {
     private func scanReceipt(_ image: UIImage) {
         scan = .reading
         Task {
-            guard let result = await ReceiptReader.read(image) else {
+            let output = await ReceiptReader.read(image)
+            receiptItems = output.items
+            itemAssignments = nil
+            guard let result = output.total else {
                 scan = .notFound
                 return
             }
@@ -358,6 +388,8 @@ struct AddExpenseSheet: View {
                     receiptImage = nil
                     receiptData = nil
                     scan = .idle
+                    receiptItems = []
+                    itemAssignments = nil
                 }
             }
         }
@@ -384,6 +416,10 @@ struct AddExpenseSheet: View {
     }
 
     private var shareText: String {
+        if let itemAssignments {
+            let people = Set(itemAssignments.values.flatMap { $0 }).count
+            return "Kalem kalem bölündü · \(people) kişi"
+        }
         let count = splitAmong.count
         guard let amount = tripAmount, amount > 0, count > 0 else { return "\(count) kişi arasında bölünecek" }
         let share = Settlement.split(amount, into: count).first ?? 0
@@ -450,13 +486,21 @@ struct AddExpenseSheet: View {
         guard let paidBy, let amount = tripAmount, isValid else { return }
         let trimmed = title.trimmingCharacters(in: .whitespaces)
         // Üye sırasını koru ki artan kuruşların kime düştüğü tutarlı olsun.
-        let split = trip.members.map(\.id).filter { splitAmong.contains($0) }
+        var split = trip.members.map(\.id).filter { splitAmong.contains($0) }
+        var shares: [UUID: Int]?
+        if let itemAssignments {
+            let computed = ItemSplit.shares(items: receiptItems, assignments: itemAssignments, total: amount)
+            if !computed.isEmpty {
+                shares = computed
+                split = trip.members.map(\.id).filter { (computed[$0] ?? 0) > 0 }
+            }
+        }
         let receipt = receiptData.flatMap { try? CoverImageStore.receipts.save($0) }
         let expense = Expense(title: trimmed.isEmpty ? category.title : trimmed, amount: amount,
                               category: category, paidBy: paidBy, splitAmong: split, date: date,
                               originalAmount: isForeign ? entry.minorUnits : nil,
                               originalCurrency: isForeign ? currency : nil,
-                              receiptPhoto: receipt)
+                              receiptPhoto: receipt, shares: shares)
         store.update(trip.id) { $0.expenses.append(expense) }
         dismiss()
     }
@@ -586,5 +630,110 @@ struct EditBudgetSheet: View {
         }
         store.update(trip.id) { $0.budget = lines }
         dismiss()
+    }
+}
+
+/// Makbuz kalemlerini kişilere atar; her kalem atandığı kişiler arasında eşit bölünür.
+struct ItemSplitSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let trip: Trip
+    let items: [ReceiptItem]
+    let currency: String
+    let onSave: ([Int: [UUID]]) -> Void
+    @State private var assignments: [Int: [UUID]]
+
+    init(trip: Trip, items: [ReceiptItem], currency: String, initial: [Int: [UUID]],
+         onSave: @escaping ([Int: [UUID]]) -> Void) {
+        self.trip = trip
+        self.items = items
+        self.currency = currency
+        self.onSave = onSave
+        _assignments = State(initialValue: initial)
+    }
+
+    private var totals: [UUID: Int] {
+        ItemSplit.shares(items: items, assignments: assignments, total: items.reduce(0) { $0 + $1.amount })
+    }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    ForEach(items) { item in
+                        VStack(alignment: .leading, spacing: 10) {
+                            HStack {
+                                Text(item.name).font(.tBodyStrong).foregroundStyle(Color.ink).lineLimit(2)
+                                Spacer()
+                                Text(AppFormat.money(item.amount, currency)).font(.tBodyStrong).foregroundStyle(Color.ink)
+                            }
+                            HStack(spacing: 8) {
+                                ForEach(trip.members) { member in
+                                    let isOn = assignments[item.id, default: []].contains(member.id)
+                                    Button {
+                                        toggle(member.id, item: item.id)
+                                    } label: {
+                                        AvatarView(member: member, size: 32)
+                                            .overlay(Circle().strokeBorder(isOn ? Color.ink : .clear, lineWidth: 2).padding(-3))
+                                            .opacity(isOn ? 1 : 0.3)
+                                            .saturation(isOn ? 1 : 0)
+                                            .padding(3)
+                                    }
+                                    .buttonStyle(.plain)
+                                    .accessibilityLabel(Text(member.name))
+                                    .accessibilityAddTraits(isOn ? .isSelected : [])
+                                }
+                                Spacer()
+                                if assignments[item.id, default: []].isEmpty {
+                                    Tag(text: "Kimse yok", accent: .orange)
+                                }
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                } header: {
+                    Text("Kim ne aldı?")
+                } footer: {
+                    Text("Kimseye atanmayan kalemler hesaba katılmaz. Vergi, servis ve kur farkı kişilere oransal dağıtılır.")
+                }
+
+                Section("Kişi başı") {
+                    ForEach(trip.members) { member in
+                        if let amount = totals[member.id], amount > 0 {
+                            HStack {
+                                AvatarView(member: member, size: 28)
+                                Text(member.name)
+                                Spacer()
+                                Text(AppFormat.money(amount, currency)).font(.tBodyStrong)
+                            }
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Kalem kalem böl")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Vazgeç") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Uygula") {
+                        onSave(assignments)
+                        dismiss()
+                    }
+                    .disabled(totals.isEmpty)
+                }
+            }
+        }
+    }
+
+    private func toggle(_ member: UUID, item: Int) {
+        var people = assignments[item, default: []]
+        if let index = people.firstIndex(of: member) {
+            people.remove(at: index)
+        } else {
+            // Üye sırasını koru ki artan kuruşların dağılımı tutarlı olsun.
+            people = trip.members.map(\.id).filter { people.contains($0) || $0 == member }
+        }
+        assignments[item] = people
     }
 }

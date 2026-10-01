@@ -115,7 +115,8 @@ struct PlanSection: View {
                 if index > 0 {
                     HopRow(from: stops[index - 1], to: stop)
                 }
-                StopRow(stop: stop, number: index + 1, hours: trip.hoursStatus(of: stop))
+                StopRow(stop: stop, number: index + 1, hours: trip.hoursStatus(of: stop),
+                        fix: trip.hoursFix(for: stop)) { fix in apply(fix, to: stop) }
                     .overlay(alignment: .top) {
                         Capsule()
                             .fill(tint)
@@ -139,6 +140,16 @@ struct PlanSection: View {
                         if targeted { dropTarget = stop.id } else if dropTarget == stop.id { dropTarget = nil }
                     }
                     .contextMenu { menu(for: stop, index: index) }
+            }
+
+            if stops.contains(where: { $0.openingHours != nil }) {
+                Link(destination: Attribution.openStreetMap.url) {
+                    Text("Açılış saatleri: \(Attribution.openStreetMap.notice)")
+                        .font(.caption2)
+                        .foregroundStyle(Color.ink3)
+                        .underline()
+                }
+                .padding(.top, 10)
             }
 
             if stops.count > 1 {
@@ -249,6 +260,21 @@ struct PlanSection: View {
         }
     }
 
+    private func apply(_ fix: Trip.HoursFix, to stop: Stop) {
+        switch fix {
+        case let .setStart(minutes):
+            withAnimation(.spring(duration: 0.3)) {
+                store.update(trip.id) { trip in
+                    if let index = trip.stops.firstIndex(where: { $0.id == stop.id }) {
+                        trip.stops[index].startMinutes = minutes
+                    }
+                }
+            }
+        case let .moveTo(day):
+            moveStop(stop.id, before: nil, on: day)
+        }
+    }
+
     private func moveStop(_ id: Stop.ID, before target: Stop.ID?, on targetDay: Date) {
         dropTarget = nil
         lastOrderBeforeOptimize = nil
@@ -305,6 +331,8 @@ struct StopRow: View {
     let stop: Stop
     let number: Int
     var hours: OpeningHours.Status?
+    var fix: Trip.HoursFix?
+    var onFix: (Trip.HoursFix) -> Void = { _ in }
 
     var body: some View {
         let accent = Accent.cycle(number - 1)
@@ -316,6 +344,20 @@ struct StopRow: View {
                 Text(detail).font(.tBody).foregroundStyle(Color.ink2)
                 if let hours {
                     HoursLabel(status: hours)
+                }
+                if let fix {
+                    Button {
+                        onFix(fix)
+                    } label: {
+                        Label(fixTitle(fix), systemImage: fixSymbol(fix))
+                            .font(.system(.caption, weight: .bold))
+                            .foregroundStyle(Color.onInk)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(Color.ink, in: Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.top, 2)
                 }
             }
             Spacer(minLength: 8)
@@ -330,6 +372,20 @@ struct StopRow: View {
         }
         .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
+    }
+
+    private func fixTitle(_ fix: Trip.HoursFix) -> String {
+        switch fix {
+        case let .setStart(minutes): "Saati \(AppFormat.time(minutes: minutes)) yap"
+        case let .moveTo(day): "Taşı: \(AppFormat.dayPill(day))"
+        }
+    }
+
+    private func fixSymbol(_ fix: Trip.HoursFix) -> String {
+        switch fix {
+        case .setStart: "clock.arrow.circlepath"
+        case .moveTo: "calendar.badge.plus"
+        }
     }
 
     private var detail: String {
@@ -443,7 +499,7 @@ struct OpeningHoursEditor: View {
                 } header: {
                     Text(stop.name)
                 } footer: {
-                    Text("Günler: Mo Tu We Th Fr Sa Su. Kapalı günler için \"off\". Saatler OpenStreetMap'ten otomatik gelir; yanlışsa buradan düzeltebilirsin.")
+                    Text("Günler: Mo Tu We Th Fr Sa Su. Kapalı günler için \"off\". Saatler OpenStreetMap'ten otomatik gelir; yanlışsa buradan düzeltebilirsin. \(Attribution.openStreetMap.notice)")
                 }
 
                 Section("Önizleme") {

@@ -39,6 +39,34 @@ public enum ReceiptParser {
         return Result(amount: largest, currency: currency, isConfident: false)
     }
 
+    /// Toplam ve vergi satırları dışındaki "ad ... tutar" satırları. Adet önekleri ("2x", "2 x") korunur.
+    public static func items(lines: [String]) -> [ReceiptItem] {
+        var result: [ReceiptItem] = []
+        for line in lines {
+            let folded = fold(line)
+            if totalKeywords.contains(where: { folded.contains($0) }) || excludedKeywords.contains(where: { folded.contains($0) }) {
+                continue
+            }
+            guard let amount = Self.amounts(in: line, requireDecimals: true).last, amount > 0 else { continue }
+            let name = itemName(line)
+            guard name.count >= 2, name.contains(where: \.isLetter) else { continue }
+            result.append(ReceiptItem(id: result.count, name: name, amount: amount))
+        }
+        return result
+    }
+
+    /// Satırdan tutarı, para birimi işaretlerini ve dolgu karakterlerini atıp adı bırakır.
+    static func itemName(_ line: String) -> String {
+        var text = line
+        text = text.replacingOccurrences(of: #"\d{1,3}(?:[.,]\d{3})*[.,]\d{2}\s*$"#, with: "", options: .regularExpression)
+        for sign in ["€", "£", "$", "₺", "TL", "EUR", "*", "#"] {
+            text = text.replacingOccurrences(of: sign, with: " ")
+        }
+        text = text.replacingOccurrences(of: #"[.\-_]{2,}"#, with: " ", options: .regularExpression)
+        text = text.replacingOccurrences(of: #"\s{2,}"#, with: " ", options: .regularExpression)
+        return text.trimmingCharacters(in: .whitespacesAndNewlines.union(.punctuationCharacters))
+    }
+
     /// Satırdaki tutarlar (kuruş). Tarih ve saatler önce ayıklanır.
     static func amounts(in line: String, requireDecimals: Bool) -> [Int] {
         var text = line

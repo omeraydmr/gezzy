@@ -117,6 +117,7 @@ extension ButtonStyle where Self == PrimaryButtonStyle {
 
 extension ButtonStyle where Self == CircleIconButtonStyle {
     static var circleIcon: CircleIconButtonStyle { CircleIconButtonStyle() }
+    static func circleIcon(size: CGFloat) -> CircleIconButtonStyle { CircleIconButtonStyle(size: size) }
 }
 
 // MARK: - Tags & segmented

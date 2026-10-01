@@ -26,7 +26,15 @@ public enum Settlement {
     /// Her üyenin net bakiyesi. Pozitif: alacaklı, negatif: borçlu.
     public static func balances(expenses: [Expense], members: [UUID]) -> [UUID: Int] {
         var balances = Dictionary(uniqueKeysWithValues: members.map { ($0, 0) })
-        for expense in expenses where !expense.splitAmong.isEmpty {
+        for expense in expenses {
+            if let custom = expense.shares, !custom.isEmpty {
+                balances[expense.paidBy, default: 0] += expense.amount
+                for (member, share) in custom {
+                    balances[member, default: 0] -= share
+                }
+                continue
+            }
+            guard !expense.splitAmong.isEmpty else { continue }
             balances[expense.paidBy, default: 0] += expense.amount
             let shares = split(expense.amount, into: expense.splitAmong.count)
             for (member, share) in zip(expense.splitAmong, shares) {

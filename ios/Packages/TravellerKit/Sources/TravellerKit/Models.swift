@@ -194,10 +194,12 @@ public struct Expense: Codable, Hashable, Identifiable, Sendable {
     public var originalCurrency: String?
     /// Makbuz fotoğrafının dosya adı.
     public var receiptPhoto: String?
+    /// Eşit bölünmeyen harcamalarda kişi başı paylar (kuruş, seyahat para birimi); toplamı `amount`'a eşittir.
+    public var shares: [UUID: Int]?
 
     public init(id: UUID = UUID(), title: String, amount: Int, category: SpendCategory, paidBy: UUID, splitAmong: [UUID],
                 date: Date, isTransfer: Bool = false, originalAmount: Int? = nil, originalCurrency: String? = nil,
-                receiptPhoto: String? = nil) {
+                receiptPhoto: String? = nil, shares: [UUID: Int]? = nil) {
         self.id = id
         self.title = title
         self.amount = amount
@@ -209,6 +211,7 @@ public struct Expense: Codable, Hashable, Identifiable, Sendable {
         self.originalAmount = originalAmount
         self.originalCurrency = originalCurrency
         self.receiptPhoto = receiptPhoto
+        self.shares = shares
     }
 }
 
@@ -327,6 +330,49 @@ public struct Trip: Codable, Hashable, Identifiable, Sendable {
         guard let raw = stop.openingHours, let hours = OpeningHours(raw) else { return nil }
         let day = OpeningHours.dayIndex(calendarWeekday: calendar.component(.weekday, from: stop.day))
         return hours.status(day: day, startMinutes: stop.startMinutes, duration: stop.durationMinutes)
+    }
+
+    /// Açılış saatine takılan bir durak için önerilen düzeltme.
+    public enum HoursFix: Hashable, Sendable {
+        /// Aynı gün, açık olduğu bir saate al.
+        case setStart(minutes: Int)
+        /// Durağın aynı saatte açık olduğu en yakın seyahat gününe taşı.
+        case moveTo(day: Date)
+    }
+
+    /// Önce aynı gün içinde saat kaydırmayı, olmazsa en yakın uygun günü önerir; çözüm yoksa nil.
+    public func hoursFix(for stop: Stop, calendar: Calendar = .current) -> HoursFix? {
+        guard let raw = stop.openingHours, let hours = OpeningHours(raw),
+              let status = hoursStatus(of: stop, calendar: calendar), status.isWarning else { return nil }
+
+        let weekday = OpeningHours.dayIndex(calendarWeekday: calendar.component(.weekday, from: stop.day))
+        switch status {
+        case let .opensLater(at):
+            return .setStart(minutes: at)
+        case let .closesDuringVisit(at):
+            if let interval = hours.intervals(onDay: weekday).first(where: { $0.end == at }),
+               at - stop.durationMinutes >= interval.start {
+                return .setStart(minutes: at - stop.durationMinutes)
+            }
+        default:
+            break
+        }
+
+        let current = calendar.startOfDay(for: stop.day)
+        let candidates = days(calendar: calendar)
+            .filter { $0 != current }
+            .sorted { lhs, rhs in
+                let l = abs(lhs.timeIntervalSince(current))
+                let r = abs(rhs.timeIntervalSince(current))
+                return l != r ? l < r : lhs > rhs
+            }
+        for day in candidates {
+            let index = OpeningHours.dayIndex(calendarWeekday: calendar.component(.weekday, from: day))
+            if !hours.status(day: index, startMinutes: stop.startMinutes, duration: stop.durationMinutes).isWarning {
+                return .moveTo(day: day)
+            }
+        }
+        return nil
     }
 
     // MARK: Stop ordering

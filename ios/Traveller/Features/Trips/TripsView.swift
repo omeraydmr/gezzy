@@ -15,6 +15,7 @@ struct TripsView: View {
     @State private var path: [TripRoute] = []
     @State private var coverTarget: Trip.ID?
     @State private var pendingDelete: Trip?
+    @State private var isShowingAbout = false
 
     enum Scope: Hashable { case upcoming, past }
 
@@ -82,6 +83,7 @@ struct TripsView: View {
                 }
             }
             .coverPhotoPicker(for: $coverTarget)
+            .sheet(isPresented: $isShowingAbout) { AboutView() }
             .confirmationDialog("Seyahat silinsin mi?", isPresented: Binding(
                 get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } }
             ), titleVisibility: .visible, presenting: pendingDelete) { trip in
@@ -103,6 +105,13 @@ struct TripsView: View {
                 .foregroundStyle(Color.ink2)
             Spacer()
             PillPicker(selection: $scope, options: [.upcoming, .past]) { $0 == .upcoming ? "Yaklaşan" : "Geçmiş" }
+            Button {
+                isShowingAbout = true
+            } label: {
+                Image(systemName: "info")
+            }
+            .buttonStyle(.circleIcon(size: 40))
+            .accessibilityLabel("Hakkında")
         }
     }
 
