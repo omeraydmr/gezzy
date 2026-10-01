@@ -35,6 +35,10 @@ Görsel maket: [`design/screens.html`](../design/screens.html)
 | Bildirimler | — | Önceki akşam valiz, uçuştan 3 saat önce kapı/koltuk, her sabah günün planı, notlu duraklardan 45 dk önce |
 | Anlık güncelleme | Açılışta eşitleme | CloudKit abonelikleri sessiz push gönderir; değişiklik hemen birleşir ve "Elif bir harcama ekledi: Kahvaltı · €27,75" gibi bildirim düşer; kendi değişikliklerin bildirilmez |
 | Fotoğraf eşitleme | Yalnızca bu cihazda | Kapak ve makbuz fotoğrafları CKAsset olarak yüklenir; her fotoğraf bir kez gönderilir, ekipteki diğer telefonlara iner |
+| Uçuş durumu | Elle girilen kapı | AeroDataBox'tan rötar, kapı, terminal ve aşama; bilet koçanında "Rötarlı +40 dk" ve üstü çizili eski saat; kapı değişince, rötar olunca, biniş başlayınca bildirim; uygulama açılınca ve arka planda yenilenir |
+| Ana ekran widget'ı | — | Küçük: sıradaki seyahate kalan gün; seyahatteyken "3. gün / 7" ve günün sıradaki durağı. Orta: ek olarak uçuş ve tarihler. Dokununca ilgili seyahat açılır |
+| Bildirimden geçiş | Ana ekran açılır | Bildirime dokununca ilgili seyahatin ilgili sekmesi: harcama → Bütçe, valiz → Valiz, durak/uçuş → Plan, katılım → Ekip; widget ve canlı kart da aynı bağlantıyı kullanır |
+| Seyahat onayı | Düz damga inişi | Bilet perspektifle masaya yatar, 3B ahşap mühür gölgesiyle süzülüp bastırır, iz kalır, mühür kalkar; bilet doğrulup desteye uçar |
 | Canlı uçuş kartı | — | Uçuştan 6 saat önce kilit ekranı ve Dynamic Island'da bilet: rota, kapı, koltuk, kalkışa geri sayım, durum (Zamanında/Biniş/Havada); 24 saat içinde elle de açılır, inişte kapanır |
 | Durak ekle | Yalnızca metin sonuç listesi | Numaralı sonuçlar ve aynı numaralarla harita önizlemesi; seçilen yer yeşil işaretle |
 | Yeni seyahat | Düz form | Yazdıkça güncellenen canlı bilet kartı + fotoğraf ekleme |
@@ -44,6 +48,7 @@ Görsel maket: [`design/screens.html`](../design/screens.html)
 - **Open-Meteo**: hava tahmini ve arşiv, anahtarsız; ticari kullanımda lisans koşulları kontrol edilmeli.
 - **Apple CLGeocoder**: koordinatı olmayan seyahatlerin şehri bir kez konuma çevrilip kaydedilir.
 - **OpenStreetMap Overpass API**: durak çevresindeki (80 m) aynı adlı yerin `opening_hours` etiketi; her durak bir kez sorgulanır, istekler arasında 1 sn beklenir. Yoğun kullanımda kendi Overpass sunucusu ya da önbellek gerekir. Veri ODbL lisanslı; uygulamada atıf gösterilmeli.
+- **AeroDataBox** (RapidAPI): uçuş durumu, kapı, terminal, tahmini saatler; anahtarlı, ücretsiz katmanı aylık kotalı.
 - **Apple Vision**: makbuz metni tamamen cihazda okunur, görüntü hiçbir yere gönderilmez.
 
 ## Atıflar
@@ -51,10 +56,11 @@ Lisans gereği görünür atıf gereken yerler: plan listesinin altında (açıl
 
 ## Bilinen sınırlar
 - Anlık güncelleme sessiz push'a dayanır; iOS bunları geciktirebilir ya da düşük güç modunda atlayabilir, uygulama öne gelince yine eşitlenir.
-- Canlı uçuş kartındaki kapı/koltuk kullanıcının girdiği bilgidir; havayolundan canlı kapı değişikliği alınmaz.
+- Uçuş durumu için AeroDataBox (RapidAPI) anahtarı gerekir; anahtar yoksa kapı/saat elle girilen bilgidir. Ücretsiz kota düşük olduğundan aynı uçuş en fazla 5 dakikada bir, yalnızca kalkışa 36 saat kala sorulur.
+- Kilit ekranı kartı uygulama açıkken ya da arka plan yenilemesinde güncellenir; iOS arka plan yenilemesini seyrekleştirebilir. Anında güncelleme için sunucudan Live Activity push'u gerekir.
 - Çevrimdışı harita yakınlaştırılamayan bir görüntüdür; adım adım yol tarifi için Apple Haritalar'ın çevrimdışı haritaları önerilir.
 
 ## Sonraki adaylar
-- Uçuş durumunu bir servisten (rötar, kapı değişikliği) çekip canlı kartı push ile güncellemek.
-- Ana ekran widget'ı: sıradaki seyahate kalan gün ve günün ilk durağı.
-- Bildirimden ilgili seyahatin ilgili sekmesine doğrudan gitmek.
+- Canlı kartı sunucudan push ile güncellemek (uygulama kapalıyken bile anında rötar/kapı).
+- Etkileşimli widget: valiz maddesini widget'tan işaretlemek.
+- Kilit ekranı widget'ı (saatin altındaki küçük alan): kalan gün.

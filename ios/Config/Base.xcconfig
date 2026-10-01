@@ -1,0 +1,5 @@
+// Ortak derleme ayarları. Gizli değerler Secrets.xcconfig'te (git'e girmez):
+//   FLIGHT_STATUS_API_KEY = <RapidAPI anahtarın>
+FLIGHT_STATUS_API_KEY =
+
+#include? "Secrets.xcconfig"

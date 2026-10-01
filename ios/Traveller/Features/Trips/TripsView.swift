@@ -103,8 +103,27 @@ struct TripsView: View {
                 Text("Plan, harcamalar ve valiz listesi de silinir.")
             }
             .onChange(of: scope) { _, _ in index = 0 }
+            .onChange(of: AppRouter.shared.pending) { _, _ in openPendingLink() }
+            .onAppear { openPendingLink() }
             .animation(.easeInOut(duration: 0.25), value: focused?.id)
         }
+    }
+
+    /// Bildirim ya da widget'tan gelen bağlantı: seyahati destede öne al ve sekmesini aç.
+    private func openPendingLink() {
+        guard let link = AppRouter.shared.pending else { return }
+        AppRouter.shared.pending = nil
+        guard let trip = store.trip(link.tripID) else { return }
+        isCreating = false
+        isShowingAbout = false
+        let target: Scope = trip.isPast() ? .past : .upcoming
+        let list = target == .past ? store.past : store.upcoming
+        scope = target
+        // Kapsam değişince index sıfırlanır; konumu ondan sonra ver.
+        if let position = list.firstIndex(where: { $0.id == trip.id }) {
+            Task { @MainActor in index = position }
+        }
+        path = [TripRoute(id: trip.id, section: TripDetailView.TripSection(link: link))]
     }
 
     private var header: some View {

@@ -147,6 +147,7 @@ final class TripStore {
 
     private func save() {
         NotificationScheduler.shared.tripsChanged(trips)
+        WidgetBridge.shared.tripsChanged(trips)
         saveToDisk()
     }
 

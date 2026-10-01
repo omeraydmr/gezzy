@@ -43,6 +43,7 @@ final class NotificationScheduler {
         content.body = summary.body
         content.sound = .default
         content.threadIdentifier = "cloud-\(summary.title)"
+        content.userInfo = summary.link.userInfo
         let request = UNNotificationRequest(identifier: "cloud-\(UUID().uuidString)", content: content, trigger: nil)
         try? await UNUserNotificationCenter.current().add(request)
     }
@@ -72,6 +73,7 @@ final class NotificationScheduler {
             content.title = item.title
             content.body = item.body
             content.sound = .default
+            content.userInfo = item.link.userInfo
             let components = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: item.date)
             let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
             try? await center.add(UNNotificationRequest(identifier: item.id, content: content, trigger: trigger))
