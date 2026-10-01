@@ -3,12 +3,19 @@ import TravellerKit
 
 struct VisaSection: View {
     let trip: Trip
-    @State private var selected: Member?
+    @State private var focusedID: Member.ID?
+    @State private var checkedDocuments: [Member.ID: Set<String>] = [:]
 
-    private var assessments: [(member: Member, result: VisaAssessment)] {
+    private struct Row {
+        let member: Member
+        let result: VisaAssessment
+    }
+
+    private var assessments: [Row] {
         trip.members.map { member in
-            (member, VisaAdvisor.assess(countryCode: trip.destination.countryCode, passport: member.passport,
-                                        tripStart: trip.startDate, tripEnd: trip.endDate))
+            Row(member: member,
+                result: VisaAdvisor.assess(countryCode: trip.destination.countryCode, passport: member.passport,
+                                           tripStart: trip.startDate, tripEnd: trip.endDate))
         }
     }
 
@@ -18,18 +25,49 @@ struct VisaSection: View {
         ModuleCard("Vize", symbol: "person.text.rectangle.fill") {
             StoryHeadline(text: headline(ready: readyCount, total: rows.count))
 
-            VStack(spacing: 0) {
-                ForEach(Array(rows.enumerated()), id: \.element.member.id) { index, row in
-                    if index > 0 { Divider().overlay(Color.line) }
-                    Button {
-                        selected = row.member
-                    } label: {
-                        VisaMemberRow(member: row.member, result: row.result)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(rows, id: \.member.id) { row in
+                        Button {
+                            withAnimation(.spring(duration: 0.35)) { focusedID = row.member.id }
+                        } label: {
+                            PassportCard(member: row.member, result: row.result,
+                                         countryCode: trip.destination.countryCode)
+                                .scaleEffect(row.member.id == focusedRow(rows)?.member.id ? 1 : 0.94)
+                                .opacity(row.member.id == focusedRow(rows)?.member.id ? 1 : 0.7)
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
                 }
+                .scrollTargetLayout()
+                .padding(.vertical, 6)
             }
-            .tray(padding: 16)
+            .scrollTargetBehavior(.viewAligned)
+            .scrollPosition(id: $focusedID)
+            .scrollClipDisabled()
+            .animation(.spring(duration: 0.35), value: focusedID)
+
+            if rows.count > 1 {
+                HStack(spacing: 6) {
+                    ForEach(rows, id: \.member.id) { row in
+                        let isFocused = row.member.id == focusedRow(rows)?.member.id
+                        Capsule()
+                            .fill(isFocused ? Color.ink : Color.ink3.opacity(0.4))
+                            .frame(width: isFocused ? 18 : 6, height: 6)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .animation(.spring(duration: 0.3), value: focusedID)
+                .accessibilityHidden(true)
+            }
+
+            if let row = focusedRow(rows) {
+                VisaDetailPanel(member: row.member, result: row.result,
+                                checked: Binding(get: { checkedDocuments[row.member.id] ?? [] },
+                                                 set: { checkedDocuments[row.member.id] = $0 }))
+                    .id(row.member.id)
+                    .transition(.opacity.combined(with: .move(edge: .trailing)))
+            }
 
             VStack(alignment: .leading, spacing: 8) {
                 Text("\(Countries.flag(trip.destination.countryCode)) \(Countries.name(trip.destination.countryCode))")
@@ -42,9 +80,10 @@ struct VisaSection: View {
             }
             .tray()
         }
-        .sheet(item: $selected) { member in
-            VisaDetailSheet(trip: trip, member: member)
-        }
+    }
+
+    private func focusedRow(_ rows: [Row]) -> Row? {
+        rows.first { $0.member.id == focusedID } ?? rows.first
     }
 
     private func headline(ready: Int, total: Int) -> String {
@@ -55,24 +94,96 @@ struct VisaSection: View {
     }
 }
 
-struct VisaMemberRow: View {
+/// Bordo T.C. pasaportu görünümünde kart; üzerinde seyahatin vize durumu damga olarak basılı.
+struct PassportCard: View {
     let member: Member
     let result: VisaAssessment
+    let countryCode: String
+
+    private static let burgundy = [Color(hex: 0x8A2433), Color(hex: 0x5A1420)]
+    private static let gold = Color(hex: 0xE2C27A)
 
     var body: some View {
-        HStack(spacing: 14) {
-            AvatarView(member: member, size: 44)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(member.name).font(.tBodyStrong).foregroundStyle(Color.ink)
-                Text(VisaText.subtitle(result)).font(.tBody).foregroundStyle(Color.ink2).lineLimit(2)
+        let tag = VisaText.tag(result)
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("TÜRKİYE CUMHURİYETİ")
+                        .font(.system(size: 9, weight: .semibold))
+                        .tracking(1.2)
+                    Text("PASAPORT")
+                        .font(.system(size: 13, weight: .bold))
+                        .tracking(2.5)
+                }
+                .foregroundStyle(Self.gold)
+                Spacer()
+                Image(systemName: "moon.stars.fill")
+                    .font(.system(size: 18))
+                    .foregroundStyle(Self.gold.opacity(0.85))
             }
-            Spacer(minLength: 8)
-            let tag = VisaText.tag(result)
-            Tag(text: tag.text, accent: tag.accent)
+            Spacer(minLength: 10)
+            HStack(spacing: 10) {
+                AvatarView(member: member, size: 40)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(member.name)
+                        .font(.system(.headline, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                    Text(passportLine)
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.75))
+                        .lineLimit(1)
+                }
+            }
         }
-        .padding(.vertical, 12)
-        .contentShape(Rectangle())
-        .accessibilityElement(children: .combine)
+        .padding(16)
+        .frame(width: 250, height: 156)
+        .background(
+            LinearGradient(colors: Self.burgundy, startPoint: .topLeading, endPoint: .bottomTrailing)
+                .overlay(Hatch(spacing: 7).stroke(Color.white.opacity(0.04), lineWidth: 1))
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(alignment: .topTrailing) {
+            VisaStamp(text: tag.text, countryCode: countryCode, accent: tag.accent)
+                .rotationEffect(.degrees(-12))
+                .offset(x: -14, y: 46)
+        }
+        .shadow(color: Color(hex: 0x5A1420).opacity(0.3), radius: 12, y: 8)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("\(member.name), \(VisaText.subtitle(result))"))
+        .accessibilityAddTraits(.isButton)
+    }
+
+    private var passportLine: String {
+        guard let passport = member.passport else { return "Pasaport bilgisi yok" }
+        return "Geçerlilik \(AppFormat.longDate(passport.expiresOn))"
+    }
+}
+
+/// Mürekkep damgası görünümünde durum etiketi.
+struct VisaStamp: View {
+    let text: String
+    let countryCode: String
+    let accent: Accent
+
+    var body: some View {
+        let color = accent == .gray ? Color.white.opacity(0.8) : accent.base
+        VStack(spacing: 1) {
+            Text(Countries.flag(countryCode)).font(.system(size: 14))
+            Text(text.uppercased(with: AppFormat.locale))
+                .font(.system(size: 11, weight: .heavy))
+                .tracking(0.8)
+                .lineLimit(1)
+        }
+        .foregroundStyle(color)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 5)
+        .background(Color.white.opacity(0.92), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .strokeBorder(color, style: StrokeStyle(lineWidth: 2, dash: [5, 2]))
+                .padding(2)
+        )
     }
 }
 
@@ -116,76 +227,78 @@ struct SourceFootnote: View {
 
 // MARK: - Detail
 
-struct VisaDetailSheet: View {
-    @Environment(\.dismiss) private var dismiss
-    let trip: Trip
+/// Odaktaki pasaportun detayı: pasaport bitişi, uyarılar ve gerekiyorsa belge listesi.
+struct VisaDetailPanel: View {
     let member: Member
-
-    @State private var checked: Set<String> = []
+    let result: VisaAssessment
+    @Binding var checked: Set<String>
 
     var body: some View {
-        let result = VisaAdvisor.assess(countryCode: trip.destination.countryCode, passport: member.passport,
-                                        tripStart: trip.startDate, tripEnd: trip.endDate)
-        NavigationStack {
-            List {
-                Section {
-                    HStack(spacing: 14) {
-                        AvatarView(member: member, size: 44)
-                        VStack(alignment: .leading) {
-                            Text(member.name).font(.headline)
-                            Text(VisaText.subtitle(result)).font(.subheadline).foregroundStyle(Color.ink2)
-                        }
-                        Spacer()
-                        let tag = VisaText.tag(result)
-                        Tag(text: tag.text, accent: tag.accent)
-                    }
-                    if let passport = member.passport {
-                        LabeledContent("Pasaport bitişi", value: AppFormat.longDate(passport.expiresOn))
-                    }
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 12) {
+                AvatarView(member: member, size: 36)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(member.name).font(.tBodyStrong).foregroundStyle(Color.ink)
+                    Text(VisaText.subtitle(result)).font(.tBody).foregroundStyle(Color.ink2)
                 }
-
-                if !result.warnings.isEmpty {
-                    Section("Uyarılar") {
-                        ForEach(result.warnings, id: \.self) { warning in
-                            Label(VisaText.warning(warning), systemImage: "exclamationmark.triangle.fill")
-                                .foregroundStyle(Color.food)
-                        }
-                    }
-                }
-
-                if case let .required(zone) = result.status {
-                    Section {
-                        ForEach(VisaText.documents(for: zone), id: \.self) { document in
-                            Button {
-                                if checked.contains(document) { checked.remove(document) } else { checked.insert(document) }
-                            } label: {
-                                Label {
-                                    Text(document).foregroundStyle(checked.contains(document) ? Color.ink3 : Color.ink)
-                                } icon: {
-                                    Image(systemName: checked.contains(document) ? "checkmark.square.fill" : "square")
-                                        .foregroundStyle(checked.contains(document) ? Color.success : Color.ink3)
-                                }
-                            }
-                        }
-                    } header: {
-                        Text("Genel belge listesi")
-                    } footer: {
-                        Text("Konsolosluğa ve başvuru amacına göre değişir. Randevu ve güncel liste için yetkili aracı kurumu kontrol et.")
-                    }
-                }
-
-                Section {
-                    SourceFootnote()
-                }
+                Spacer(minLength: 8)
+                let tag = VisaText.tag(result)
+                Tag(text: tag.text, accent: tag.accent)
             }
-            .navigationTitle("Vize durumu")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Tamam") { dismiss() }
+
+            if !result.warnings.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(result.warnings, id: \.self) { warning in
+                        Label(VisaText.warning(warning), systemImage: "exclamationmark.triangle.fill")
+                            .font(.subheadline)
+                            .foregroundStyle(Color.food)
+                    }
+                }
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.foodTint, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            }
+
+            if case let .required(zone) = result.status {
+                let documents = VisaText.documents(for: zone)
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text("Belge listesi").font(.tCaption).foregroundStyle(Color.ink3)
+                        Spacer()
+                        Text("\(checked.intersection(documents).count)/\(documents.count)")
+                            .font(.tCaption)
+                            .foregroundStyle(Color.ink3)
+                    }
+                    ForEach(documents, id: \.self) { document in
+                        let isDone = checked.contains(document)
+                        Button {
+                            withAnimation(.spring(duration: 0.2)) {
+                                if isDone { checked.remove(document) } else { checked.insert(document) }
+                            }
+                        } label: {
+                            HStack(spacing: 12) {
+                                Image(systemName: isDone ? "checkmark.square.fill" : "square")
+                                    .font(.system(size: 20))
+                                    .foregroundStyle(isDone ? Color.success : Color.ink3)
+                                Text(document)
+                                    .font(.subheadline)
+                                    .foregroundStyle(isDone ? Color.ink3 : Color.ink)
+                                    .multilineTextAlignment(.leading)
+                                Spacer(minLength: 0)
+                            }
+                            .padding(.vertical, 6)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    Text("Konsolosluğa ve başvuru amacına göre değişir; randevu ve güncel liste için yetkili aracı kurumu kontrol et.")
+                        .font(.caption)
+                        .foregroundStyle(Color.ink3)
+                        .padding(.top, 4)
                 }
             }
         }
+        .tray()
     }
 }
 

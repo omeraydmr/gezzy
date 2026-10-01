@@ -4,9 +4,15 @@ import TravellerKit
 /// Seyahatin kapağı: kullanıcının fotoğrafı, yoksa pastel yer tutucu.
 struct TripCover: View {
     let trip: Trip
+    @Environment(\.coverOverride) private var override
 
     var body: some View {
-        if let name = trip.coverPhoto, let image = CoverImageStore.shared.image(named: name) {
+        if let override {
+            Color.clear
+                .overlay(Image(uiImage: override).resizable().scaledToFill())
+                .clipped()
+                .accessibilityHidden(true)
+        } else if let name = trip.coverPhoto, let image = CoverImageStore.shared.image(named: name) {
             Color.clear
                 .overlay(Image(uiImage: image).resizable().scaledToFill())
                 .clipped()
@@ -14,6 +20,18 @@ struct TripCover: View {
         } else {
             CoverArt(seed: trip.coverSeed)
         }
+    }
+}
+
+/// Henüz kaydedilmemiş bir kapak fotoğrafını önizlemek için (yeni seyahat formu).
+private struct CoverOverrideKey: EnvironmentKey {
+    static let defaultValue: UIImage? = nil
+}
+
+extension EnvironmentValues {
+    var coverOverride: UIImage? {
+        get { self[CoverOverrideKey.self] }
+        set { self[CoverOverrideKey.self] = newValue }
     }
 }
 

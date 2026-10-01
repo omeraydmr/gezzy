@@ -20,6 +20,7 @@ struct AddStopSheet: View {
     @State private var time = Calendar.current.date(bySettingHour: 10, minute: 0, second: 0, of: .now) ?? .now
     @State private var duration = 60
     @State private var note = ""
+    @State private var mapPosition: MapCameraPosition = .automatic
 
     var body: some View {
         NavigationStack {
@@ -31,14 +32,25 @@ struct AddStopSheet: View {
                     if isSearching {
                         ProgressView()
                     }
-                    ForEach(results, id: \.self) { item in
+                    if !mapPins.isEmpty {
+                        previewMap
+                            .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
+                    }
+                    ForEach(Array(results.enumerated()), id: \.element) { index, item in
                         Button {
                             select(item)
                         } label: {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(item.name ?? "Adsız yer").foregroundStyle(Color.ink)
-                                if let address = item.placemark.title {
-                                    Text(address).font(.footnote).foregroundStyle(Color.ink2).lineLimit(1)
+                            HStack(spacing: 12) {
+                                Text("\(index + 1)")
+                                    .font(.system(.caption, weight: .bold))
+                                    .foregroundStyle(.white)
+                                    .frame(width: 22, height: 22)
+                                    .background(Accent.cycle(index).base, in: Circle())
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(item.name ?? "Adsız yer").foregroundStyle(Color.ink)
+                                    if let address = item.placemark.title {
+                                        Text(address).font(.footnote).foregroundStyle(Color.ink2).lineLimit(1)
+                                    }
                                 }
                             }
                         }
@@ -80,6 +92,45 @@ struct AddStopSheet: View {
                 }
             }
             .onDisappear { searchTask?.cancel() }
+        }
+    }
+
+    // MARK: Map preview
+
+    private struct MapPin: Identifiable {
+        let id: String
+        let title: String
+        let coordinate: CLLocationCoordinate2D
+        let label: String
+        let color: Color
+    }
+
+    /// Arama sonuçları numaralı, seçilen yer yeşil onay işaretiyle.
+    private var mapPins: [MapPin] {
+        var pins = results.enumerated().map { index, item in
+            MapPin(id: "r\(index)", title: item.name ?? "", coordinate: item.placemark.coordinate,
+                   label: "\(index + 1)", color: Accent.cycle(index).base)
+        }
+        if let coordinate {
+            pins.append(MapPin(id: "selected", title: name,
+                               coordinate: CLLocationCoordinate2D(latitude: coordinate.latitude, longitude: coordinate.longitude),
+                               label: "✓", color: .success))
+        }
+        return pins
+    }
+
+    private var previewMap: some View {
+        Map(position: $mapPosition) {
+            ForEach(mapPins) { pin in
+                Marker(pin.title, monogram: Text(pin.label), coordinate: pin.coordinate)
+                    .tint(pin.color)
+            }
+        }
+        .mapStyle(.standard(elevation: .flat, pointsOfInterest: .excludingAll))
+        .frame(height: 190)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .onChange(of: mapPins.map(\.id)) { _, _ in
+            withAnimation(.easeInOut(duration: 0.4)) { mapPosition = .automatic }
         }
     }
 

@@ -22,44 +22,39 @@ struct PlanSection: View {
     private var totalMeters: Double { Geo.routeDistance(coordinates) }
 
     var body: some View {
-        ModuleCard("Gün planı", symbol: "map.fill") {
-            VStack(alignment: .leading, spacing: 16) {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    PillPicker(selection: Binding(get: { day }, set: { selectedDay = $0 }), options: days) {
-                        AppFormat.dayPill($0)
-                    }
+        VStack(alignment: .leading, spacing: 16) {
+            DayChips(days: days, selection: Binding(get: { day }, set: { selectedDay = $0 }),
+                     stopCount: { trip.stops(on: $0).count })
+
+            if !coordinates.isEmpty {
+                map
+            }
+
+            stopList
+
+            HStack(spacing: 12) {
+                Button {
+                    isAddingStop = true
+                } label: {
+                    Label("Durak ekle", systemImage: "plus")
                 }
+                .buttonStyle(.primary)
 
-                stopList
-
-                if !coordinates.isEmpty {
-                    map
-                }
-
-                HStack(spacing: 12) {
+                if let lastOrderBeforeOptimize {
                     Button {
-                        isAddingStop = true
+                        restore(lastOrderBeforeOptimize)
                     } label: {
-                        Label("Durak ekle", systemImage: "plus")
+                        Image(systemName: "arrow.uturn.backward")
                     }
-                    .buttonStyle(.primary)
-
-                    if let lastOrderBeforeOptimize {
-                        Button {
-                            restore(lastOrderBeforeOptimize)
-                        } label: {
-                            Image(systemName: "arrow.uturn.backward")
-                        }
-                        .buttonStyle(.circleIcon)
-                        .accessibilityLabel("Sıralamayı geri al")
-                    } else {
-                        Button(action: optimize) {
-                            Image(systemName: "point.topleft.down.to.point.bottomright.curvepath.fill")
-                        }
-                        .buttonStyle(.circleIcon)
-                        .disabled(coordinates.count < 3)
-                        .accessibilityLabel("Rotayı en kısa sıraya diz")
+                    .buttonStyle(.circleIcon)
+                    .accessibilityLabel("Sıralamayı geri al")
+                } else {
+                    Button(action: optimize) {
+                        Image(systemName: "point.topleft.down.to.point.bottomright.curvepath.fill")
                     }
+                    .buttonStyle(.circleIcon)
+                    .disabled(coordinates.count < 3)
+                    .accessibilityLabel("Rotayı en kısa sıraya diz")
                 }
             }
         }
@@ -77,10 +72,18 @@ struct PlanSection: View {
     @ViewBuilder
     private var stopList: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Text(trip.destination.city).font(.tBodyStrong).foregroundStyle(Color.ink)
-                Spacer()
-                Text(summary).font(.tBody).foregroundStyle(Color.ink3)
+            VStack(alignment: .leading, spacing: 10) {
+                Text(dayTitle)
+                    .font(.tBodyStrong)
+                    .foregroundStyle(Color.ink)
+                HStack(spacing: 6) {
+                    StatChip(symbol: "mappin", text: "\(stops.count) durak")
+                    if totalMeters > 0 {
+                        StatChip(symbol: "point.topleft.down.to.point.bottomright.curvepath",
+                                 text: AppFormat.distance(meters: totalMeters))
+                        StatChip(symbol: "figure.walk", text: "\(Geo.walkingMinutes(meters: totalMeters)) dk")
+                    }
+                }
             }
             .padding(.bottom, 14)
 
@@ -99,10 +102,9 @@ struct PlanSection: View {
         .tray()
     }
 
-    private var summary: String {
-        var parts = ["\(stops.count) durak"]
-        if totalMeters > 0 { parts.append(AppFormat.distance(meters: totalMeters)) }
-        return parts.joined(separator: " · ")
+    private var dayTitle: String {
+        let number = (days.firstIndex(of: day) ?? 0) + 1
+        return "\(number). gün · \(AppFormat.dayPill(day)) · \(trip.destination.city)"
     }
 
     @ViewBuilder
@@ -131,7 +133,6 @@ struct PlanSection: View {
             return PinnedStop(stop: stop, number: index + 1,
                               coordinate: CLLocationCoordinate2D(latitude: coordinate.latitude, longitude: coordinate.longitude))
         }
-        let walking = Geo.walkingMinutes(meters: totalMeters)
         return Map(position: $cameraPosition) {
             MapPolyline(coordinates: pinned.map(\.coordinate))
                 .stroke(Color.ink, style: StrokeStyle(lineWidth: 3, lineCap: .round, dash: [0.5, 8]))
@@ -142,20 +143,9 @@ struct PlanSection: View {
             }
         }
         .mapStyle(.standard(elevation: .flat, pointsOfInterest: .excludingAll))
-        .frame(height: 300)
+        .frame(height: 240)
         .clipShape(RoundedRectangle(cornerRadius: Radius.tray, style: .continuous))
-        .overlay(alignment: .topLeading) {
-            if pinned.count > 1 {
-                Label("\(walking) dk yürüyüş", systemImage: "figure.walk")
-                    .font(.system(.subheadline, weight: .medium))
-                    .foregroundStyle(Color.ink)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 8)
-                    .background(Color.tray, in: Capsule())
-                    .softShadow()
-                    .padding(12)
-            }
-        }
+        .softShadow()
     }
 
     private struct PinnedStop: Identifiable {

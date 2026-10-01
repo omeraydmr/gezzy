@@ -1,3 +1,4 @@
+import PhotosUI
 import SwiftUI
 import TravellerKit
 
@@ -13,12 +14,22 @@ struct NewTripSheet: View {
     @State private var endDate = Calendar.current.date(byAdding: .day, value: 35, to: .now) ?? .now
     @State private var currency = "EUR"
     @State private var isDraft = false
+    @State private var coverSeed = Int.random(in: 0..<100)
+    @State private var photoItem: PhotosPickerItem?
+    @State private var photoData: Data?
+    @State private var previewImage: UIImage?
 
     static let currencies = ["EUR", "USD", "GBP", "TRY", "JPY", "CHF", "GEL", "AZN", "RSD", "MAD", "AMD", "BRL"]
 
     var body: some View {
         NavigationStack {
             Form {
+                Section {
+                    preview
+                        .frame(maxWidth: .infinity)
+                        .listRowBackground(Color.clear)
+                        .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
+                }
                 Section {
                     TextField("Seyahat adı (ör. Lizbon Kaçamağı)", text: $name)
                     NavigationLink {
@@ -58,24 +69,64 @@ struct NewTripSheet: View {
             .onChange(of: startDate) { _, newValue in
                 if endDate < newValue { endDate = newValue }
             }
+            .onChange(of: photoItem) { _, item in
+                guard let item else { return }
+                Task {
+                    if let data = try? await item.loadTransferable(type: Data.self), let image = UIImage(data: data) {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            photoData = data
+                            previewImage = image
+                        }
+                    }
+                }
+            }
+            .scrollContentBackground(.hidden)
+            .background(TintGlow(tint: Accent.cycle(coverSeed).base, offsetY: -200))
         }
     }
 
     private var trimmedName: String { name.trimmingCharacters(in: .whitespacesAndNewlines) }
 
-    private func create() {
+    /// Formdaki değerlerle canlı önizleme kartı.
+    private var preview: some View {
+        TripTicketCard(trip: draftTrip, side: 230)
+            .environment(\.coverOverride, previewImage)
+            .overlay(alignment: .topLeading) {
+                PhotosPicker(selection: $photoItem, matching: .images) {
+                    Label(previewImage == nil ? "Fotoğraf ekle" : "Değiştir", systemImage: "camera.fill")
+                        .font(.system(.footnote, weight: .semibold))
+                        .foregroundStyle(Color.ink)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(.regularMaterial, in: Capsule())
+                }
+                .padding(12)
+            }
+            .rotationEffect(.degrees(-2))
+            .padding(.vertical, 6)
+    }
+
+    private var draftTrip: Trip {
         var owner = store.me
         owner.role = .owner
         let trimmedCity = city.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trip = Trip(name: trimmedName,
-                        destination: Destination(countryCode: countryCode,
-                                                 city: trimmedCity.isEmpty ? Countries.name(countryCode) : trimmedCity),
-                        startDate: Calendar.current.startOfDay(for: startDate),
-                        endDate: Calendar.current.startOfDay(for: endDate),
-                        status: isDraft ? .draft : .planned,
-                        currency: currency,
-                        coverSeed: Int.random(in: 0..<100),
-                        members: [owner])
+        return Trip(name: trimmedName.isEmpty ? "Yeni seyahat" : trimmedName,
+                    destination: Destination(countryCode: countryCode,
+                                             city: trimmedCity.isEmpty ? Countries.name(countryCode) : trimmedCity),
+                    startDate: Calendar.current.startOfDay(for: startDate),
+                    endDate: Calendar.current.startOfDay(for: endDate),
+                    status: isDraft ? .draft : .planned,
+                    currency: currency,
+                    coverSeed: coverSeed,
+                    members: [owner])
+    }
+
+    private func create() {
+        var trip = draftTrip
+        trip.name = trimmedName
+        if let photoData {
+            trip.coverPhoto = try? CoverImageStore.shared.save(photoData)
+        }
         onCreate(trip)
         dismiss()
     }

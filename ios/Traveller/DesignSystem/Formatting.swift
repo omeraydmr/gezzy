@@ -15,6 +15,15 @@ enum AppFormat {
         )
     }
 
+    /// Para birimi sembolü: "EUR" → "€", "TRY" → "₺".
+    static func currencySymbol(_ code: String) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.locale = locale
+        formatter.currencyCode = code
+        return formatter.currencySymbol ?? code
+    }
+
     /// Kullanıcının yazdığı tutarı ("1.600", "12,50") kuruşa çevirir.
     static func parseMinor(_ text: String) -> Int? {
         MoneyParser.minorUnits(from: text)
