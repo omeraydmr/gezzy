@@ -40,6 +40,11 @@ struct MoneySection: View {
             get: { pendingTransfer != nil }, set: { if !$0 { pendingTransfer = nil } }
         ), presenting: pendingTransfer) { transfer in
             Button("Ödendi olarak işaretle") { settle(transfer) }
+            if let recipient = trip.member(transfer.to), let iban = recipient.iban, IBAN.isValid(iban) {
+                Button("IBAN'ı kopyala · \(recipient.name)") {
+                    UIPasteboard.general.string = IBAN.normalized(iban)
+                }
+            }
         } message: { transfer in
             Text("\(name(transfer.from)) → \(name(transfer.to)) · \(money(transfer.amount))")
         }
@@ -131,6 +136,14 @@ struct MoneySection: View {
                 }
             }
 
+            if !transfers.isEmpty {
+                ShareLink(item: settlementSummary(transfers)) {
+                    Label("Özeti paylaş", systemImage: "square.and.arrow.up")
+                        .font(.system(.subheadline, weight: .semibold))
+                        .foregroundStyle(Color.ink2)
+                }
+            }
+
             if !settled.isEmpty {
                 HStack(spacing: 10) {
                     AvatarStack(members: settled, size: 28, limit: 5)
@@ -150,6 +163,21 @@ struct MoneySection: View {
             }
             .buttonStyle(.primary)
         }
+    }
+
+    /// Mesajlaşma uygulamalarına gönderilecek düz metin hesaplaşma özeti.
+    private func settlementSummary(_ transfers: [Transfer]) -> String {
+        var lines = ["\(trip.name) · hesaplaşma"]
+        for transfer in transfers {
+            var line = "• \(name(transfer.from)) → \(name(transfer.to)): \(money(transfer.amount))"
+            if let iban = trip.member(transfer.to)?.iban, IBAN.isValid(iban) {
+                line += " (IBAN: \(IBAN.formatted(iban)))"
+            }
+            lines.append(line)
+        }
+        let total = trip.expenses.filter { !$0.isTransfer }.reduce(0) { $0 + $1.amount }
+        lines.append("Toplam harcama: \(money(total))")
+        return lines.joined(separator: "\n")
     }
 
     private func settledMembers(_ transfers: [Transfer]) -> [Member] {

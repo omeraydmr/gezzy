@@ -14,7 +14,7 @@ struct TripDetailView: View {
     }
 
     enum TripSection: String, CaseIterable, Hashable {
-        case plan, money, packing, visa, crew
+        case plan, money, packing, visa, crew, memories
 
         var title: String {
             switch self {
@@ -23,6 +23,7 @@ struct TripDetailView: View {
             case .packing: "Valiz"
             case .visa: "Vize"
             case .crew: "Ekip"
+            case .memories: "Anılar"
             }
         }
 
@@ -33,6 +34,7 @@ struct TripDetailView: View {
             case .packing: "bag.fill"
             case .visa: "person.text.rectangle.fill"
             case .crew: "person.2.fill"
+            case .memories: "photo.on.rectangle.angled"
             }
         }
     }
@@ -42,6 +44,7 @@ struct TripDetailView: View {
     var body: some View {
         if let trip = store.trip(tripID) {
             let tint = trip.tint
+            let canEdit = store.canEdit(trip)
             ScrollView {
                 VStack(spacing: 0) {
                     TripHero(trip: trip, height: Self.heroHeight, isCollapsed: $isHeroCollapsed)
@@ -49,6 +52,16 @@ struct TripDetailView: View {
                     TripStub(trip: trip)
                         .padding(.horizontal, 16)
                         .padding(.top, -44)
+
+                    if !canEdit {
+                        Label("Bu seyahati yalnızca görüntüleyebilirsin", systemImage: "eye")
+                            .font(.system(.footnote, weight: .semibold))
+                            .foregroundStyle(Color.ink2)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 8)
+                            .background(Color.track, in: Capsule())
+                            .padding(.top, 12)
+                    }
 
                     SectionTabs(selection: $section)
                         .padding(.top, 16)
@@ -60,8 +73,11 @@ struct TripDetailView: View {
                         case .packing: PackingSection(trip: trip)
                         case .visa: VisaSection(trip: trip)
                         case .crew: CrewSection(trip: trip)
+                        case .memories: MemoriesSection(trip: trip)
                         }
                     }
+                    // Görüntüleyici: düğmeler ve alanlar kapalı (anılar yalnızca okuma olduğu için açık kalır).
+                    .disabled(!canEdit && section != .memories)
                     .padding(.horizontal, 16)
                     .padding(.top, 16)
                     .padding(.bottom, 32)

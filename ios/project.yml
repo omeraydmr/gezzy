@@ -64,7 +64,8 @@ targets:
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
         INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
         INFOPLIST_KEY_NSSupportsLiveActivities: YES
-        INFOPLIST_KEY_NSCameraUsageDescription: "Harcama makbuzlarının fotoğrafını çekmek için kamerayı kullanır."
+        INFOPLIST_KEY_NSCameraUsageDescription: "Harcama makbuzlarının ve belgelerin fotoğrafını çekmek için kamerayı kullanır."
+        INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "Seyahat tarihlerindeki fotoğraflarını anlara ayırıp haritada göstermek için fotoğraf arşivini okur; fotoğraflar cihazdan çıkmaz."
         DEVELOPMENT_LANGUAGE: tr
         ENABLE_PREVIEWS: YES
 

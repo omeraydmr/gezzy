@@ -65,6 +65,27 @@ public enum NotificationPlanner {
             }
         }
 
+        // Vize randevusu: önceki akşam ve randevudan 2 saat önce.
+        for application in trip.visaApplications ?? [] {
+            guard let appointment = application.appointment,
+                  application.status == .preparing || application.status == .appointmentBooked else { continue }
+            let name = trip.member(application.memberID)?.name ?? "Vize"
+            let place = application.center.isEmpty ? "" : " · \(application.center)"
+            let clock = String(format: "%02d:%02d", calendar.component(.hour, from: appointment),
+                               calendar.component(.minute, from: appointment))
+            if let eve = at(hour: 20, minute: 0, on: calendar.date(byAdding: .day, value: -1, to: appointment), calendar) {
+                result.append(PlannedNotification(id: "\(prefix)-visa-eve-\(application.id.uuidString)", date: eve,
+                                                  title: "Yarın vize randevusu: \(name)",
+                                                  body: "Saat \(clock)\(place). Belge listesini kontrol et.",
+                                                  link: TripLink(tripID: trip.id, section: "visa")))
+            }
+            if let before = calendar.date(byAdding: .hour, value: -2, to: appointment) {
+                result.append(PlannedNotification(id: "\(prefix)-visa-\(application.id.uuidString)", date: before,
+                                                  title: "Vize randevusu 2 saat sonra", body: "\(name) · \(clock)\(place)",
+                                                  link: TripLink(tripID: trip.id, section: "visa")))
+            }
+        }
+
         // Her sabah günün planı.
         for (index, day) in days.enumerated() {
             let stops = trip.stops(on: day, calendar: calendar)

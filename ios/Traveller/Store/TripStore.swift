@@ -16,6 +16,11 @@ final class TripStore {
     private let fileURL: URL
     private static let meKey = "traveller.me"
     private static let manualStaysKey = "traveller.schengen.manualStays"
+    private static let visitedKey = "traveller.profile.visitedCountries"
+
+    /// Uygulamada seyahati olmayan, elle eklenen gezilmiş ülkeler.
+    private(set) var extraVisitedCountries: Set<String> =
+        Set(UserDefaults.standard.stringArray(forKey: TripStore.visitedKey) ?? [])
 
     init(fileURL: URL = TripStore.defaultFileURL, seedIfEmpty: Bool = true) {
         self.fileURL = fileURL
@@ -92,9 +97,42 @@ final class TripStore {
         CoverImageStore.shared.delete(named: old)
     }
 
-    /// Bir seyahati yerinde değiştirir ve kaydeder.
+    // MARK: Roles
+
+    /// Bu cihazın kullanıcısının seyahatteki rolü. Ekipte yoksa: paylaşılan seyahatte düzenleyici, kendi seyahatinde sahip.
+    func role(in trip: Trip) -> MemberRole {
+        if let member = trip.members.first(where: { $0.id == me.id }) { return member.role }
+        return CloudSync.shared.sharedWithMe.contains(trip.id) ? .editor : .owner
+    }
+
+    /// "Sadece görür" yetkisindeki kişi seyahati değiştiremez.
+    func canEdit(_ trip: Trip) -> Bool { role(in: trip) != .viewer }
+
+    // MARK: Activity
+
+    /// Ekipten gelen değişikliklerin kısa geçmişi (seyahat başına en fazla 50; yalnızca bu cihazda).
+    private(set) var activity: [UUID: [ActivityEntry]] = TripStore.loadActivity()
+    private static let activityKey = "traveller.activity"
+
+    func recordActivity(_ summary: TripChanges.Summary, at date: Date = .now) {
+        let entry = ActivityEntry(date: date, title: summary.title, lines: summary.lines, section: summary.link.section)
+        var list = activity[summary.link.tripID] ?? []
+        list.insert(entry, at: 0)
+        activity[summary.link.tripID] = Array(list.prefix(50))
+        if let data = try? JSONEncoder().encode(activity) {
+            UserDefaults.standard.set(data, forKey: Self.activityKey)
+        }
+    }
+
+    private static func loadActivity() -> [UUID: [ActivityEntry]] {
+        guard let data = UserDefaults.standard.data(forKey: activityKey),
+              let decoded = try? JSONDecoder().decode([UUID: [ActivityEntry]].self, from: data) else { return [:] }
+        return decoded
+    }
+
+    /// Bir seyahati yerinde değiştirir ve kaydeder. Görüntüleyici yetkisindeyse değişiklik yapılmaz.
     func update(_ id: Trip.ID, _ change: (inout Trip) -> Void) {
-        guard let index = trips.firstIndex(where: { $0.id == id }) else { return }
+        guard let index = trips.firstIndex(where: { $0.id == id }), canEdit(trips[index]) else { return }
         let before = trips[index]
         change(&trips[index])
         guard trips[index] != before else { return }
@@ -165,6 +203,28 @@ final class TripStore {
         if let data = try? JSONEncoder().encode(manualStays) {
             UserDefaults.standard.set(data, forKey: Self.manualStaysKey)
         }
+    }
+
+    /// Profil kaydedilince ad, pasaport ve IBAN, kendi kopyanın bulunduğu tüm seyahatlere de yansır.
+    func saveProfile(_ profile: Member) {
+        updateMe { me in
+            me.name = profile.name
+            me.passport = profile.passport
+            me.iban = profile.iban
+        }
+        for trip in trips where trip.members.contains(where: { $0.id == profile.id }) {
+            update(trip.id) { trip in
+                guard let index = trip.members.firstIndex(where: { $0.id == profile.id }) else { return }
+                trip.members[index].name = profile.name
+                trip.members[index].passport = profile.passport
+                trip.members[index].iban = profile.iban
+            }
+        }
+    }
+
+    func setVisited(_ code: String, _ visited: Bool) {
+        if visited { extraVisitedCountries.insert(code.uppercased()) } else { extraVisitedCountries.remove(code.uppercased()) }
+        UserDefaults.standard.set(Array(extraVisitedCountries), forKey: Self.visitedKey)
     }
 
     func updateMe(_ change: (inout Member) -> Void) {
@@ -249,4 +309,13 @@ final class TripStore {
         decoder.dateDecodingStrategy = .iso8601
         return decoder
     }()
+}
+
+/// Ekip aktivite akışındaki bir satır grubu ("Elif bir harcama ekledi: …").
+struct ActivityEntry: Codable, Hashable, Identifiable {
+    var id = UUID()
+    var date: Date
+    var title: String
+    var lines: [String]
+    var section: String?
 }

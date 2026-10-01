@@ -51,6 +51,8 @@ struct CrewSection: View {
 
             InviteCard(trip: trip)
 
+            ActivityFeed(entries: store.activity[trip.id] ?? [])
+
             if CloudSync.shared.sharedWithMe.contains(trip.id), !trip.members.contains(where: { $0.id == store.me.id }) {
                 HStack(spacing: 12) {
                     AvatarView(member: store.me, size: 40)
@@ -73,7 +75,7 @@ struct CrewSection: View {
             }
         }
         .sheet(item: $editing) { member in
-            MemberEditor(member: member) { updated in
+            MemberEditor(member: member, canChangeRole: store.role(in: trip) == .owner) { updated in
                 store.update(trip.id) { trip in
                     if let index = trip.members.firstIndex(where: { $0.id == updated.id }) {
                         trip.members[index] = updated
@@ -156,6 +158,8 @@ struct MemberEditor: View {
     @Environment(\.dismiss) private var dismiss
     @State var member: Member
     var isNew = false
+    /// Yetkiyi yalnızca seyahatin sahibi değiştirebilir.
+    var canChangeRole = true
     let onSave: (Member) -> Void
 
     var body: some View {
@@ -163,7 +167,7 @@ struct MemberEditor: View {
             Form {
                 Section {
                     TextField("Ad", text: $member.name)
-                    if member.role != .owner {
+                    if member.role != .owner && canChangeRole {
                         Picker("Yetki", selection: $member.role) {
                             Text(MemberRole.editor.title).tag(MemberRole.editor)
                             Text(MemberRole.viewer.title).tag(MemberRole.viewer)
@@ -181,6 +185,26 @@ struct MemberEditor: View {
                     }
                 } header: {
                     Text("Pasaport (T.C.)")
+                }
+
+                Section {
+                    TextField("TR00 0000 0000 0000 0000 0000 00", text: Binding(
+                        get: { member.iban ?? "" },
+                        set: { member.iban = $0.isEmpty ? nil : IBAN.formatted($0) }
+                    ))
+                    .font(.system(.body, design: .monospaced))
+                    .textInputAutocapitalization(.characters)
+                    .autocorrectionDisabled()
+                    .keyboardType(.asciiCapable)
+                    if let iban = member.iban, !iban.isEmpty, !IBAN.isValid(iban) {
+                        Label("IBAN geçersiz görünüyor", systemImage: "exclamationmark.triangle.fill")
+                            .font(.footnote)
+                            .foregroundStyle(Color.food)
+                    }
+                } header: {
+                    Text("IBAN")
+                } footer: {
+                    Text("Hesaplaşmada bu kişiye borcu olanlar IBAN'ı tek dokunuşla kopyalayabilir.")
                 }
 
                 if member.passport != nil {
@@ -289,5 +313,45 @@ struct InviteCard: View {
         case let .synced(date): return "Değişiklikler herkesin telefonunda görünür · son eşitleme \(AppFormat.time(date))"
         case let .failed(message): return "Eşitleme sorunu: \(message)"
         }
+    }
+}
+
+/// Ekipten gelen son değişiklikler ("Elif bir harcama ekledi").
+struct ActivityFeed: View {
+    let entries: [ActivityEntry]
+    @State private var isExpanded = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label("Son hareketler", systemImage: "clock.arrow.circlepath")
+                .font(.tBodyStrong)
+                .foregroundStyle(Color.ink)
+            if entries.isEmpty {
+                Text("Ekipten biri bir şey eklediğinde burada görünür.")
+                    .font(.footnote)
+                    .foregroundStyle(Color.ink3)
+            }
+            ForEach(entries.prefix(isExpanded ? 50 : 4)) { entry in
+                HStack(alignment: .top, spacing: 10) {
+                    Circle().fill(Color.ink3).frame(width: 6, height: 6).padding(.top, 7)
+                    VStack(alignment: .leading, spacing: 2) {
+                        ForEach(entry.lines, id: \.self) { line in
+                            Text(line).font(.subheadline).foregroundStyle(Color.ink)
+                        }
+                        Text(entry.date, style: .relative)
+                            .font(.caption)
+                            .foregroundStyle(Color.ink3)
+                    }
+                }
+            }
+            if entries.count > 4 {
+                Button(isExpanded ? "Daha az göster" : "Tümünü göster (\(entries.count))") {
+                    withAnimation { isExpanded.toggle() }
+                }
+                .font(.system(.footnote, weight: .semibold))
+                .foregroundStyle(Color.transport)
+            }
+        }
+        .tray()
     }
 }
