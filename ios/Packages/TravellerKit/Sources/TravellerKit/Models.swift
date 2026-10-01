@@ -69,15 +69,19 @@ public struct Member: Codable, Hashable, Identifiable, Sendable {
     public var passport: Passport?
     /// Hesaplaşmada para gönderilecek IBAN (isteğe bağlı).
     public var iban: String?
+    /// Kişinin iCloud kullanıcı kaydı adı; paylaşımdaki katılımcıyla eşleştirip yetkiyi iCloud'a da uygulamak için.
+    /// Paylaşıma katılan kişi kendini ekibe eklerken yazılır; elle eklenen kişilerde nil'dir.
+    public var cloudUserID: String?
 
     public init(id: UUID = UUID(), name: String, role: MemberRole = .editor, colorIndex: Int = 0, passport: Passport? = nil,
-                iban: String? = nil) {
+                iban: String? = nil, cloudUserID: String? = nil) {
         self.id = id
         self.name = name
         self.role = role
         self.colorIndex = colorIndex
         self.passport = passport
         self.iban = iban
+        self.cloudUserID = cloudUserID
     }
 
     public var initial: String {
@@ -147,6 +151,28 @@ public struct FlightSegment: Codable, Hashable, Identifiable, Sendable {
 
     public var durationMinutes: Int {
         max(0, Int(arrival.timeIntervalSince(departure) / 60))
+    }
+}
+
+/// Uçuş saatleri havalimanının yerel saatiyle girilir ve gösterilir; cihazın saat dilimi farklı olabilir.
+public enum FlightClock {
+    /// Tarih seçicide görünen "duvar saatini" (cihaz takviminde) havalimanı saat diliminde gerçek ana çevirir.
+    /// Örn. cihaz İstanbul'da, seçicide 10:15 → Lizbon'da 10:15 olan an.
+    public static func instant(wallClock: Date, timeZone: String?, device: Calendar = .current) -> Date {
+        guard let identifier = timeZone, let zone = TimeZone(identifier: identifier) else { return wallClock }
+        let parts = device.dateComponents([.year, .month, .day, .hour, .minute], from: wallClock)
+        var airport = Calendar(identifier: .gregorian)
+        airport.timeZone = zone
+        return airport.date(from: parts) ?? wallClock
+    }
+
+    /// `instant`'ın tersi: gerçek anı, havalimanı saatini gösteren cihaz-takvimi tarihine çevirir (seçici için).
+    public static func wallClock(for instant: Date, timeZone: String?, device: Calendar = .current) -> Date {
+        guard let identifier = timeZone, let zone = TimeZone(identifier: identifier) else { return instant }
+        var airport = Calendar(identifier: .gregorian)
+        airport.timeZone = zone
+        let parts = airport.dateComponents([.year, .month, .day, .hour, .minute], from: instant)
+        return device.date(from: parts) ?? instant
     }
 }
 
@@ -558,6 +584,7 @@ public struct Trip: Codable, Hashable, Identifiable, Sendable {
         ids += (ideas ?? []).map(\.id)
         ids += (visaApplications ?? []).map(\.id)
         ids += (documents ?? []).map(\.id)
+        ids += flights.map(\.id)
         return Set(ids)
     }
 
@@ -585,6 +612,7 @@ public struct Trip: Codable, Hashable, Identifiable, Sendable {
         result.stops = union(result.stops, older.stops)
         result.expenses = union(result.expenses, older.expenses)
         result.packing = union(result.packing, older.packing)
+        result.flights = union(result.flights, older.flights).sorted { $0.departure < $1.departure }
         let lodgings = union(result.lodgings ?? [], older.lodgings ?? [])
         result.lodgings = lodgings.isEmpty ? nil : lodgings
         let ideas = union(result.ideas ?? [], older.ideas ?? [])

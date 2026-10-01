@@ -25,12 +25,24 @@ Gerçek cihazda çalıştırmak için bir kez:
 3. İlk çalıştırmada CloudKit geliştirme şeması kendiliğinden oluşur (`Trip` kaydı: `payload`, `name`, `updatedAt`).
    Yayından önce CloudKit Console'da şemayı **Production**'a taşı.
 
+Ekipteki "Sadece görür" / "Düzenleyebilir" yetkisi, paylaşım katılımcısının iCloud iznine de uygulanır
+(`SharePermissions`): katılan kişi kendini ekibe eklerken iCloud kullanıcı kimliği (`Member.cloudUserID`) yazılır;
+sahip yetkiyi değiştirince `CloudSync.applyPermissions` `CKShare` katılımcısını salt okunur/okuma-yazma yapar.
+Kimliği bilinmeyen (elle eklenmiş) kişilerde yetki yalnızca uygulamada uygulanır.
+
 iCloud'a giriş yapılmamış cihazda uygulama yalnızca yerel çalışır. Eşitleme iki kopyayı öğe bazında birleştirir;
 silinen öğeler `tombstones` ile işaretlenir ve geri gelmez. Kapak fotoğrafı `Trip` kaydında `cover` varlığı,
 makbuzlar ise seyahate bağlı `Photo` kayıtları (`name`, `kind`, `asset`) olarak eşitlenir.
 
 Anlık güncelleme için *Push Notifications* yeteneği (`aps-environment`) ve *Background Modes → Remote notifications*
 gerekir; ikisi de `project.yml`'de tanımlı. Uygulama CloudKit veritabanı aboneliklerini ilk açılışta kurar.
+
+## İlk açılış ve hesap
+
+İlk açılışta `OnboardingView` tanıtımı, profil oluşturmayı, kısa anketi (`TravelPreferences`) ve iCloud durumunu gösterir.
+Ayrı bir kullanıcı adı/şifre yoktur: hesap, cihazdaki profil (`TripStore.me`) ile cihazın iCloud kimliğidir; iCloud
+açıksa kimlik profile (`Member.cloudUserID`) yazılır ve ekip paylaşımında yetki eşlemesi bunu kullanır.
+Profil > "Tanıtımı ve anketi yeniden göster" ile tekrar açılır.
 
 ## Canlı uçuş kartı (Live Activity)
 
@@ -75,7 +87,7 @@ ios/
 │   └── MoneyParser, TurkishGrammar, Countdown
 └── Traveller                   Uygulama
     ├── DesignSystem            Kartpostal token'ları ve bileşenleri
-    ├── Store                   TripStore (cihazda JSON) + örnek veri
+    ├── Store                   TripStore (cihazda JSON)
     └── Features                Trips, TripDetail, Plan, Money, Packing, Visa, Crew
 ```
 

@@ -139,7 +139,8 @@ struct AboutView: View {
                 }
 
                 Section {
-                    Button("Örnek seyahatleri yeniden yükle", role: .destructive) { confirmReset = true }
+                    Button("Tüm seyahatleri sil", role: .destructive) { confirmReset = true }
+                        .disabled(store.trips.isEmpty)
                 }
             }
             .navigationTitle("Hakkında")
@@ -149,12 +150,13 @@ struct AboutView: View {
                     Button("Tamam") { dismiss() }
                 }
             }
-            .confirmationDialog("Tüm seyahatler silinip örnek veriler yüklensin mi?", isPresented: $confirmReset,
-                                titleVisibility: .visible) {
-                Button("Sıfırla", role: .destructive) {
-                    store.resetToSamples()
+            .confirmationDialog("Tüm seyahatler silinsin mi?", isPresented: $confirmReset, titleVisibility: .visible) {
+                Button("\(store.trips.count) seyahati sil", role: .destructive) {
+                    store.deleteAllTrips()
                     dismiss()
                 }
+            } message: {
+                Text("Kendi seyahatlerin iCloud'dan da silinir; sana paylaşılanlardan ayrılırsın. Geri alınamaz.")
             }
         }
     }

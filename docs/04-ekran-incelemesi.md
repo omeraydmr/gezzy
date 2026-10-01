@@ -28,7 +28,7 @@ Görsel maket: [`design/screens.html`](../design/screens.html)
 | Açılış saatleri | — | OpenStreetMap'ten otomatik; durak saatine göre "O gün kapalı", "Henüz kapalı · açılış 10:00", "Kapanış 17:30 · süre yetmeyebilir"; elle düzenlenebilir |
 | Saat düzeltme | Yalnızca uyarı | Uyarının altında tek dokunuşla çözüm: "Saati 10:00 yap" ya da "Taşı: Sal 13" (aynı saatte açık en yakın gün; eşitlikte sonraki gün) |
 | Kalem kalem bölme | Herkese eşit | Makbuz kalemleri okunur, her kalem kişilere atanır; vergi/servis/kur farkı oransal dağıtılır; bakiyeler kişi başı paylarla hesaplanır |
-| Hakkında | — | Veri kaynakları ve lisans atıfları, gizlilik notları, vize verisi uyarısı, örnek verileri sıfırlama |
+| Hakkında | — | Veri kaynakları ve lisans atıfları, gizlilik notları, vize verisi uyarısı, tüm seyahatleri silme |
 | Harcama düzenleme | Yalnızca silme | Harcamaya dokununca aynı ekran düzenleme modunda açılır; tutar/para birimi aynıysa kayıtlı karşılık korunur, özel paylar yeni tutara oranlanır, makbuz değiştirilebilir |
 | Ekip paylaşımı | Elle kişi ekleme | iCloud daveti Mesajlar/Mail ile; seyahat herkesin telefonunda eşitlenir, çakışmalar öğe bazında birleşir, silinenler geri gelmez; katılan kişi kendini ekibe ekler |
 | Çevrimdışı harita | — | Günlerin rotası numaralı pinleriyle görüntü olarak kaydedilir; internet yokken canlı haritanın yerine gösterilir |

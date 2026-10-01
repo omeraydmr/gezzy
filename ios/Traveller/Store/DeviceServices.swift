@@ -140,7 +140,9 @@ final class OfflineMapStore {
     func image(tripID: UUID, day: Date) -> UIImage? {
         let url = fileURL(tripID: tripID, day: day)
         if let cached = images.object(forKey: url.path as NSString) { return cached }
-        guard let image = UIImage(contentsOfFile: url.path) else { return nil }
+        // Eski sürümün kaydettiği düşük çözünürlüklü PNG'ler de okunur.
+        let legacy = url.deletingPathExtension().appendingPathExtension("png")
+        guard let image = UIImage(contentsOfFile: url.path) ?? UIImage(contentsOfFile: legacy.path) else { return nil }
         images.setObject(image, forKey: url.path as NSString)
         return image
     }
@@ -162,7 +164,7 @@ final class OfflineMapStore {
             states[trip.id] = .saving(done: index, total: days.count)
             do {
                 let image = try await Self.render(stops: trip.stops(on: day))
-                try image.pngData()?.write(to: fileURL(tripID: trip.id, day: day), options: .atomic)
+                try image.jpegData(compressionQuality: 0.82)?.write(to: fileURL(tripID: trip.id, day: day), options: .atomic)
             } catch {
                 states[trip.id] = .failed("Harita kaydedilemedi: \(error.localizedDescription)")
                 return
@@ -189,20 +191,27 @@ final class OfflineMapStore {
 
     private func fileURL(tripID: UUID, day: Date) -> URL {
         let key = Int(Calendar.current.startOfDay(for: day).timeIntervalSince1970)
-        return directory.appendingPathComponent(tripID.uuidString).appendingPathComponent("\(key).png")
+        return directory.appendingPathComponent(tripID.uuidString).appendingPathComponent("\(key).jpg")
     }
 
     /// MKMapSnapshotter ile haritayı çizer, üstüne rota ve numaralı pinleri ekler.
+    /// Görüntü, yakınlaştırınca sokak adları okunabilsin diye geniş (1800 pt, 2x) çizilir;
+    /// MapKit büyük boyutta daha ayrıntılı bir yakınlık seviyesi kullanır.
     private static func render(stops: [Stop]) async throws -> UIImage {
         let points = stops.compactMap { stop in stop.coordinate.map { (stop, $0) } }
         let coordinates = points.map { CLLocationCoordinate2D(latitude: $0.1.latitude, longitude: $0.1.longitude) }
         let options = MKMapSnapshotter.Options()
         options.region = region(fitting: coordinates)
-        options.size = CGSize(width: 900, height: 600)
+        options.size = CGSize(width: 1800, height: 1200)
+        options.traitCollection = UITraitCollection(displayScale: 2)
         options.pointOfInterestFilter = .excludingAll
         let snapshot = try await MKMapSnapshotter(options: options).start()
+        // Pinler ve rota, 900 pt genişliğindeki eski görüntüdekiyle aynı göreli boyutta kalsın.
+        let unit = options.size.width / 900
 
-        return UIGraphicsImageRenderer(size: options.size).image { context in
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 2
+        return UIGraphicsImageRenderer(size: options.size, format: format).image { context in
             snapshot.image.draw(at: .zero)
             let positions = coordinates.map { snapshot.point(for: $0) }
 
@@ -211,24 +220,24 @@ final class OfflineMapStore {
                 let path = UIBezierPath()
                 path.move(to: positions[0])
                 positions.dropFirst().forEach { path.addLine(to: $0) }
-                path.lineWidth = 4
+                path.lineWidth = 4 * unit
                 path.lineCapStyle = .round
-                path.setLineDash([1, 10], count: 2, phase: 0)
+                path.setLineDash([1 * unit, 10 * unit], count: 2, phase: 0)
                 UIColor(Color.ink).setStroke()
                 path.stroke()
             }
 
             // Numaralı pinler
             for (index, position) in positions.enumerated() {
-                let radius: CGFloat = 17
+                let radius: CGFloat = 17 * unit
                 let circle = CGRect(x: position.x - radius, y: position.y - radius, width: radius * 2, height: radius * 2)
                 UIColor.white.setFill()
-                UIBezierPath(ovalIn: circle.insetBy(dx: -3, dy: -3)).fill()
+                UIBezierPath(ovalIn: circle.insetBy(dx: -3 * unit, dy: -3 * unit)).fill()
                 UIColor(Accent.cycle(index).base).setFill()
                 UIBezierPath(ovalIn: circle).fill()
                 let label = "\(index + 1)" as NSString
                 let attributes: [NSAttributedString.Key: Any] = [
-                    .font: UIFont.systemFont(ofSize: 16, weight: .bold), .foregroundColor: UIColor.white,
+                    .font: UIFont.systemFont(ofSize: 16 * unit, weight: .bold), .foregroundColor: UIColor.white,
                 ]
                 let size = label.size(withAttributes: attributes)
                 label.draw(at: CGPoint(x: position.x - size.width / 2, y: position.y - size.height / 2), withAttributes: attributes)

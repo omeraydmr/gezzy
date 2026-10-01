@@ -35,6 +35,18 @@ targets:
             CFBundleURLSchemes:
               - traveller
         FlightStatusAPIKey: $(FLIGHT_STATUS_API_KEY)
+        # Wallet biniş kartları (.pkpass) içe aktarılabilsin; Wallet'ı olmayan ortamda da tür tanınsın.
+        UTImportedTypeDeclarations:
+          - UTTypeIdentifier: com.apple.pkpass
+            UTTypeDescription: Wallet Pass
+            UTTypeConformsTo:
+              - public.data
+              - public.content
+            UTTypeTagSpecification:
+              public.filename-extension:
+                - pkpass
+              public.mime-type:
+                - application/vnd.apple.pkpass
     entitlements:
       path: Support/Traveller.entitlements
       properties:
@@ -52,6 +64,8 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.traveller.ios
+        DEVELOPMENT_TEAM: 4BAD86T55H
+        CODE_SIGN_STYLE: Automatic
         PRODUCT_NAME: Traveller
         MARKETING_VERSION: "0.1.0"
         CURRENT_PROJECT_VERSION: "1"
@@ -91,6 +105,8 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.traveller.ios.widgets
+        DEVELOPMENT_TEAM: 4BAD86T55H
+        CODE_SIGN_STYLE: Automatic
         PRODUCT_NAME: TravellerWidgets
         MARKETING_VERSION: "0.1.0"
         CURRENT_PROJECT_VERSION: "1"

@@ -13,8 +13,9 @@ Hiçbir özellik henüz gerçek cihazda denenmedi.
 | Yeni seyahat | Canlı bilet önizlemesi, 3B "PASSED" mühür animasyonu | ✅ | |
 | Plan | Gün çipleri, harita, numaralı duraklar, sürükle-bırak, başka güne taşıma | ✅ | |
 | Plan | Yer arama + harita önizleme | ✅ | |
+| Plan | Uçuşlar kartı: elle ekleme/düzenleme/silme, biletten içe aktarma | ✅ | Saatler havalimanının yerel saatiyle girilir; tanınan kodda şehir ve saat dilimi kendiliğinden dolar. Uçuş silmeleri eşitlemede geri gelmez |
 | Plan | Açılış saatleri (OSM), uyarı ve tek dokunuşla düzeltme | ✅ | |
-| Plan | Çevrimdışı harita görüntüleri | ✅ | Yakınlaştırılamaz |
+| Plan | Çevrimdışı harita görüntüleri | ✅ | Yüksek çözünürlüklü kayıt; tam ekranda iki parmakla 4 kata kadar yakınlaştırma, çift dokunuş; internet varken de "göz" düğmesiyle önizleme |
 | Bütçe | Masraf ekleme/düzenleme, hesap makinesi tuşları, kategoriler, donut | ✅ | |
 | Bütçe | Döviz (ECB kuru), para birimi dağılımı | ✅ | |
 | Bütçe | Makbuz fotoğrafı, tutar okuma (OCR), kalem kalem bölme | ✅ | |
@@ -28,7 +29,8 @@ Hiçbir özellik henüz gerçek cihazda denenmedi.
 | Uçuş | Rötar/kapı/terminal (AeroDataBox), değişiklik bildirimi | ✅ | API anahtarı gerekir |
 | Uçuş | Kilit ekranı ve Dynamic Island canlı kartı | ✅ | Push'suz güncelleme |
 | Widget | Sıradaki seyahate kalan gün, günün sıradaki durağı | ✅ | |
-| Diğer | Hakkında, atıflar, örnek verileri sıfırlama | ✅ | |
+| İlk açılış | Tanıtım, profil ("hesap") oluşturma, 3 soruluk anket, iCloud bağlantı durumu ve hatırlatma izni | ✅ | Ayrı şifre yok: hesap = cihazdaki profil + iCloud kimliği (`Member.cloudUserID`). Anketteki ilk ilgi alanı seyahat açılınca ilk sekmeyi belirler. Profil'den yeniden gösterilebilir |
+| Diğer | Hakkında, atıflar, tüm seyahatleri silme | ✅ | Uygulama boş başlar; örnek veri yok |
 
 ## 2. İlk plandan eksik kalanlar (02 · Özellik Seti'ne göre)
 
@@ -36,14 +38,14 @@ Hiçbir özellik henüz gerçek cihazda denenmedi.
 |---|---|---|
 | Anılar: fotoğrafları tarih/konuma göre toplama, öbekleme, haritada gösterme | ✅ | Yeni "Anılar" sekmesi: anlar, durakla eşleme, harita, kartpostal paylaşma; tamamen cihazda |
 | Konaklama (otel) kayıtları | ✅ | Plan sekmesinde kart; gün planı ve harita otelden başlar; giriş/çıkış bildirimi; konaklamasız gece uyarısı |
-| Rezervasyon içe aktarma (PDF, ekran görüntüsü, Wallet biniş kartı) | 🟡 | PDF ve ekran görüntüsünden uçuş + otel (cihazda); Wallet .pkpass yok |
+| Rezervasyon içe aktarma (PDF, ekran görüntüsü, Wallet biniş kartı) | ✅ | PDF ve ekran görüntüsünden uçuş + otel; Wallet `.pkpass` biniş kartından uçuş, saat ve koltuk (anlamsal etiketler, yoksa kart alanları). Hepsi cihazda |
 | Duraklar arası ulaşım satırı (yürüme/tram/taksi süreleri) | ✅ | Apple Haritalar'dan yürüme ve toplu taşıma süresi; otelden ilk durağa da |
-| Rota optimizasyonu | 🟡 | En kısa yürüyüş sırası, sabah oteli başlangıç; açılış saatlerini henüz dikkate almıyor |
+| Rota optimizasyonu | ✅ | Önce açılış saatleri ve durağa verilmiş saatler (kapalıyken/geç varılan durak en aza), sonra en kısa yürüyüş; sabah oteli başlangıç. Saatler değiştirilmez, yalnızca sıra |
 | "Fikirler" havuzu (güne atanmamış yerler) | ✅ | Plan sekmesinde; "Güne ekle", duraktan "Fikirlere taşı" |
 | Vize başvuru takibi: randevu, belge listesi, durum | ✅ | Durum hapları, randevu tarihi ve yeri, kalıcı belge listesi; randevu öncesi bildirim; ekiple eşitlenir |
 | Belge kasası (pasaport, sigorta, bilet PDF'leri) | ✅ | Vize sekmesinde; dosya/fotoğraf/kamera, önizleme, kişiye bağlama, "yalnızca bu cihazda"; diğerleri iCloud ile eşitlenir |
 | Settle up: IBAN kopyala, "ödendi" işaretle, özet paylaş | ✅ | Kişi kartında IBAN (doğrulamalı), ödeme sorusunda "IBAN'ı kopyala", metin özeti paylaşma |
-| Roller (düzenleyebilir / yalnızca görüntüler) | ✅ | "Sadece görür" yetkisinde seyahat salt okunur; yetkiyi yalnızca sahip değiştirir. iCloud paylaşım izni henüz ayrıca ayarlanmıyor |
+| Roller (düzenleyebilir / yalnızca görüntüler) | ✅ | "Sadece görür" yetkisinde seyahat salt okunur; yetkiyi yalnızca sahip değiştirir. Yetki iCloud paylaşım iznine de yansır (sunucu tarafında zorlanır); kişi davetle katılıp kendini eklediyse eşleşir. İki iCloud hesabıyla gerçek cihazda henüz denenmedi |
 | Aktivite akışı ("Elif durak ekledi") | ✅ | Ekip sekmesinde "Son hareketler" (ekipten gelen değişiklikler, cihazda) |
 | Profil: gezilen ülkeler | ✅ | Ana sayfada avatar → profil: kendi bilgilerin, IBAN, gezilen ülkeler (otomatik + elle), dünya yüzdesi; Hakkında buraya taşındı |
 

@@ -29,6 +29,12 @@ final class CloudSync {
     private(set) var sharedWithMe: Set<UUID> = []
     /// Bizim paylaşıma açtığımız seyahatler.
     private(set) var sharedByMe: Set<UUID> = []
+    /// Bize paylaşılan seyahatlerde iCloud'daki iznimiz (sahip "sadece görür" yaptıysa salt okunur).
+    private(set) var myAccess: [UUID: ShareAccess] = [:]
+    /// Bu cihazdaki iCloud kullanıcısının kayıt adı; ekipte kendimizi paylaşım katılımcısıyla eşleştirmek için.
+    private(set) var currentUserID: String?
+    /// Son uygulanan rol → izin eşlemesi; aynıysa paylaşım kaydı yeniden okunmaz.
+    @ObservationIgnored private var appliedPermissions: [UUID: [String: ShareAccess]] = [:]
 
     var isAvailable: Bool {
         switch status {
@@ -58,6 +64,7 @@ final class CloudSync {
                 return
             }
             _ = try await container.privateCloudDatabase.modifyRecordZones(saving: [CKRecordZone(zoneID: zoneID)], deleting: [])
+            currentUserID = try? await container.userRecordID().recordName
             await ensureSubscriptions()
             await pull()
             // İlk açılışta yerel seyahatleri buluta gönder.
@@ -144,9 +151,11 @@ final class CloudSync {
                 if notifyChanges { summaries.append(summary) }
             }
             // Kendi seyahatlerimiz.
+            var ownShares: [UUID: CKShare] = [:]
             for trip in try await fetchTrips(in: container.privateCloudDatabase, zone: zoneID) {
                 merge(trip.trip)
                 if trip.isShared { sharedByMe.insert(trip.trip.id) }
+                if let share = trip.share { ownShares[trip.trip.id] = share }
             }
             // Bize paylaşılanlar.
             var seenShared: Set<UUID> = []
@@ -154,6 +163,11 @@ final class CloudSync {
                 for trip in try await fetchTrips(in: container.sharedCloudDatabase, zone: zone.zoneID) {
                     sharedZones[trip.trip.id] = zone.zoneID
                     seenShared.insert(trip.trip.id)
+                    var share = trip.share
+                    if share == nil, let shareID = trip.shareID {
+                        share = try? await container.sharedCloudDatabase.record(for: shareID) as? CKShare
+                    }
+                    myAccess[trip.trip.id] = share.flatMap { Self.access(of: $0.currentUserParticipant) }
                     merge(trip.trip)
                 }
             }
@@ -164,8 +178,13 @@ final class CloudSync {
             for removed in sharedWithMe.subtracting(seenShared) {
                 store.removeFromCloud(removed)
                 sharedZones[removed] = nil
+                myAccess[removed] = nil
             }
             sharedWithMe = seenShared
+            // Sahibi olduğumuz paylaşımlarda iCloud izinlerini ekipteki rollere uydur.
+            for tripID in sharedByMe {
+                if let trip = store.trip(tripID) { await applyPermissions(of: trip, to: ownShares[tripID]) }
+            }
             status = .synced(.now)
             if !needsPush.isEmpty {
                 pending.formUnion(needsPush)
@@ -179,10 +198,14 @@ final class CloudSync {
     private struct FetchedTrip {
         let trip: Trip
         let isShared: Bool
+        /// Seyahat kaydının paylaşım kaydı (aynı bölgede geldiyse).
+        var share: CKShare?
+        var shareID: CKRecord.ID?
     }
 
     private func fetchTrips(in database: CKDatabase, zone: CKRecordZone.ID) async throws -> [FetchedTrip] {
         var result: [FetchedTrip] = []
+        var shares: [CKRecord.ID: CKShare] = [:]
         var token: CKServerChangeToken?
         var moreComing = true
         while moreComing {
@@ -190,6 +213,10 @@ final class CloudSync {
             for (_, change) in changes.modificationResultsByID {
                 guard let modification = try? change.get() else { continue }
                 let record = modification.record
+                if let share = record as? CKShare {
+                    shares[share.recordID] = share
+                    continue
+                }
                 if record.recordType == Self.photoType {
                     importPhoto(record)
                     continue
@@ -199,12 +226,16 @@ final class CloudSync {
                     CoverImageStore.shared.importFile(at: url, named: name)
                     uploadedPhotos.insert("cover-\(name)")
                 }
-                result.append(FetchedTrip(trip: trip, isShared: record.share != nil))
+                result.append(FetchedTrip(trip: trip, isShared: record.share != nil, share: nil, shareID: record.share?.recordID))
             }
             token = changes.changeToken
             moreComing = changes.moreComing
         }
-        return result
+        return result.map { fetched in
+            var fetched = fetched
+            fetched.share = fetched.shareID.flatMap { shares[$0] }
+            return fetched
+        }
     }
 
     // MARK: Push
@@ -227,6 +258,13 @@ final class CloudSync {
             guard let trip = store.trip(id) else { continue }
             do {
                 try await save(trip)
+                if sharedByMe.contains(id) { await applyPermissions(of: trip) }
+            } catch let error as CKError where error.code == .permissionFailure {
+                // Sahip yetkimizi "sadece görür" yaptı: değişiklik sunucuya yazılamaz, tekrar denenmez.
+                myAccess[id] = .readOnly
+                status = .failed("Bu seyahatte yalnızca görüntüleme yetkin var; değişiklik kaydedilmedi.")
+                await pull()
+                return
             } catch {
                 status = .failed(error.localizedDescription)
                 pending.insert(id)
@@ -322,6 +360,51 @@ final class CloudSync {
         _ = try await database.modifyRecords(saving: [record, share], deleting: [])
         sharedByMe.insert(tripID)
         return share
+    }
+
+    /// Ekipteki "sadece görür" / "düzenleyebilir" rollerini paylaşım katılımcılarının iCloud iznine yansıtır.
+    /// Yalnızca sahip çağırır; iCloud kimliği bilinmeyen kişilere ve ekipte olmayan katılımcılara dokunulmaz.
+    func applyPermissions(of trip: Trip, to knownShare: CKShare? = nil) async {
+        let desired = SharePermissions.desired(for: trip.members)
+        guard sharedWithMe.contains(trip.id) == false, appliedPermissions[trip.id] != desired else { return }
+        let database = container.privateCloudDatabase
+        let share: CKShare
+        if let knownShare {
+            share = knownShare
+        } else {
+            guard let record = try? await database.record(for: recordID(for: trip.id)), let reference = record.share,
+                  let fetched = try? await database.record(for: reference.recordID) as? CKShare else { return }
+            share = fetched
+        }
+        var current: [String: ShareAccess] = [:]
+        var participants: [String: CKShare.Participant] = [:]
+        for participant in share.participants where participant.role != .owner {
+            guard let name = participant.userIdentity.userRecordID?.recordName,
+                  let access = Self.access(of: participant) else { continue }
+            current[name] = access
+            participants[name] = participant
+        }
+        let changes = SharePermissions.changes(members: trip.members, participants: current)
+        if !changes.isEmpty {
+            for (name, access) in changes {
+                participants[name]?.permission = access == .readOnly ? .readOnly : .readWrite
+            }
+            do {
+                _ = try await database.modifyRecords(saving: [share], deleting: [])
+            } catch {
+                status = .failed("Paylaşım yetkileri güncellenemedi: \(error.localizedDescription)")
+                return
+            }
+        }
+        appliedPermissions[trip.id] = desired
+    }
+
+    private static func access(of participant: CKShare.Participant?) -> ShareAccess? {
+        switch participant?.permission {
+        case .readOnly: .readOnly
+        case .readWrite: .readWrite
+        default: nil
+        }
     }
 
     /// Davet bağlantısına dokunulduğunda (SceneDelegate) çağrılır.
