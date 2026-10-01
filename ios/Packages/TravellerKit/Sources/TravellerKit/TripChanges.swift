@@ -51,6 +51,12 @@ public enum TripChanges {
             lines.append("Plana \(addedStops.count) durak eklendi")
         }
 
+        let oldLodgings = Set(old.lodgingList.map(\.id))
+        for lodging in new.lodgingList where !oldLodgings.contains(lodging.id) {
+            sections.append("plan")
+            lines.append("Konaklama eklendi: \(lodging.name)")
+        }
+
         let oldMembers = Set(old.members.map(\.id))
         for member in new.members where !oldMembers.contains(member.id) && member.id != me {
             sections.append("crew")

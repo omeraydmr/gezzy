@@ -7,6 +7,14 @@ struct AddStopSheet: View {
     @Environment(\.dismiss) private var dismiss
     let trip: Trip
     let day: Date
+    /// true ise durak bir güne değil "Fikirler" havuzuna eklenir.
+    @State private var asIdea: Bool
+
+    init(trip: Trip, day: Date, asIdea: Bool = false) {
+        self.trip = trip
+        self.day = day
+        _asIdea = State(initialValue: asIdea)
+    }
 
     @State private var query = ""
     @State private var results: [MKMapItem] = []
@@ -70,14 +78,17 @@ struct AddStopSheet: View {
                             Label(kind.title, systemImage: kind.symbol).tag(kind)
                         }
                     }
-                    Toggle("Saat belirle", isOn: $hasTime)
-                    if hasTime {
+                    Toggle("Fikirler havuzuna ekle (gün seçmeden)", isOn: $asIdea)
+                    if !asIdea {
+                        Toggle("Saat belirle", isOn: $hasTime)
+                    }
+                    if hasTime && !asIdea {
                         DatePicker("Başlangıç", selection: $time, displayedComponents: .hourAndMinute)
                     }
                     Stepper("Süre: \(AppFormat.duration(minutes: duration))", value: $duration, in: 15...600, step: 15)
                     TextField("Not (ör. Rezervasyon gerekli)", text: $note)
                 } header: {
-                    Text("\(AppFormat.dayPill(day)) için durak")
+                    Text(asIdea ? "Fikir" : "\(AppFormat.dayPill(day)) için durak")
                 }
             }
             .navigationTitle("Durak ekle")
@@ -179,7 +190,15 @@ struct AddStopSheet: View {
                         startMinutes: hasTime ? (components.hour ?? 0) * 60 + (components.minute ?? 0) : nil,
                         durationMinutes: duration, coordinate: coordinate,
                         note: note.trimmingCharacters(in: .whitespaces))
-        store.update(trip.id) { $0.stops.append(stop) }
+        store.update(trip.id) { trip in
+            if asIdea {
+                var idea = stop
+                idea.startMinutes = nil
+                trip.ideas = (trip.ideas ?? []) + [idea]
+            } else {
+                trip.stops.append(stop)
+            }
+        }
         dismiss()
     }
 

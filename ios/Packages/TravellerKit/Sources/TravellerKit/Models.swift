@@ -244,6 +244,38 @@ public struct PackingItem: Codable, Hashable, Identifiable, Sendable {
     }
 }
 
+// MARK: - Lodging
+
+/// Otel, ev ya da hostel kaydı.
+public struct Lodging: Codable, Hashable, Identifiable, Sendable {
+    public var id: UUID
+    public var name: String
+    public var address: String
+    public var coordinate: Coordinate?
+    /// Giriş tarihi ve saati (konaklama yerinin yerel saatiyle girilir).
+    public var checkIn: Date
+    public var checkOut: Date
+    public var confirmation: String
+    public var note: String
+
+    public init(id: UUID = UUID(), name: String, address: String = "", coordinate: Coordinate? = nil,
+                checkIn: Date, checkOut: Date, confirmation: String = "", note: String = "") {
+        self.id = id
+        self.name = name
+        self.address = address
+        self.coordinate = coordinate
+        self.checkIn = checkIn
+        self.checkOut = max(checkIn, checkOut)
+        self.confirmation = confirmation
+        self.note = note
+    }
+
+    public func nights(calendar: Calendar = .current) -> Int {
+        max(0, calendar.dateComponents([.day], from: calendar.startOfDay(for: checkIn),
+                                       to: calendar.startOfDay(for: checkOut)).day ?? 0)
+    }
+}
+
 // MARK: - Trip
 
 public struct Trip: Codable, Hashable, Identifiable, Sendable {
@@ -269,6 +301,10 @@ public struct Trip: Codable, Hashable, Identifiable, Sendable {
     public var updatedAt: Date?
     /// Silinen üye/durak/harcama/valiz kimlikleri; eşitlemede silinenlerin geri gelmesini önler.
     public var tombstones: Set<UUID>?
+    /// Konaklamalar (eski kayıtlarda yok).
+    public var lodgings: [Lodging]?
+    /// Henüz bir güne atanmamış yerler ("Fikirler" havuzu); `day` alanı anlamsızdır.
+    public var ideas: [Stop]?
 
     public init(id: UUID = UUID(), name: String, destination: Destination, startDate: Date, endDate: Date,
                 status: TripStatus = .planned, currency: String = "EUR", coverSeed: Int = 0, coverPhoto: String? = nil,
@@ -320,6 +356,26 @@ public struct Trip: Codable, Hashable, Identifiable, Sendable {
     public func member(_ id: UUID?) -> Member? {
         guard let id else { return nil }
         return members.first { $0.id == id }
+    }
+
+    public var lodgingList: [Lodging] { (lodgings ?? []).sorted { $0.checkIn < $1.checkIn } }
+    public var ideaList: [Stop] { ideas ?? [] }
+
+    /// Günün başladığı konaklama: önceki gece kalınan yer, yoksa o gün girilen yer.
+    public func lodging(forMorningOf day: Date, calendar: Calendar = .current) -> Lodging? {
+        let target = calendar.startOfDay(for: day)
+        let list = lodgingList
+        return list.first { calendar.startOfDay(for: $0.checkIn) < target && target <= calendar.startOfDay(for: $0.checkOut) }
+            ?? list.first { calendar.startOfDay(for: $0.checkIn) == target }
+    }
+
+    /// Bir günün tarihlerinde gecesi konaklama kaydıyla karşılanmayan geceler (son gün hariç).
+    public func nightsWithoutLodging(calendar: Calendar = .current) -> [Date] {
+        let nights = days(calendar: calendar).dropLast()
+        let list = lodgingList
+        return nights.filter { night in
+            !list.contains { calendar.startOfDay(for: $0.checkIn) <= night && night < calendar.startOfDay(for: $0.checkOut) }
+        }
     }
 
     /// İlk uçuş; ana ekrandaki biniş kartı için.
@@ -418,7 +474,8 @@ public struct Trip: Codable, Hashable, Identifiable, Sendable {
 
     /// Bu seyahatteki tüm alt öğelerin kimlikleri.
     public var itemIDs: Set<UUID> {
-        Set(members.map(\.id) + stops.map(\.id) + expenses.map(\.id) + packing.map(\.id))
+        Set(members.map(\.id) + stops.map(\.id) + expenses.map(\.id) + packing.map(\.id)
+            + (lodgings ?? []).map(\.id) + (ideas ?? []).map(\.id))
     }
 
     /// Önceki halde olup bu halde olmayan öğeleri silindi olarak işaretler.
@@ -445,6 +502,10 @@ public struct Trip: Codable, Hashable, Identifiable, Sendable {
         result.stops = union(result.stops, older.stops)
         result.expenses = union(result.expenses, older.expenses)
         result.packing = union(result.packing, older.packing)
+        let lodgings = union(result.lodgings ?? [], older.lodgings ?? [])
+        result.lodgings = lodgings.isEmpty ? nil : lodgings
+        let ideas = union(result.ideas ?? [], older.ideas ?? [])
+        result.ideas = ideas.isEmpty ? nil : ideas
         result.tombstones = deleted.isEmpty ? nil : deleted
         return result
     }

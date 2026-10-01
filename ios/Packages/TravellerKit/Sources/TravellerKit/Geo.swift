@@ -52,6 +52,12 @@ public enum Geo {
 
 /// Yapay zekâ kullanmayan basit rota sıralayıcı.
 public enum RouteOptimizer {
+    /// Başlangıç noktası (ör. otel) sabitken noktaları sıralar; dönen dizi `points` indeksleridir.
+    public static func order(_ points: [Coordinate], from start: Coordinate) -> [Int] {
+        guard !points.isEmpty else { return [] }
+        return order([start] + points).dropFirst().map { $0 - 1 }
+    }
+
     /// İlk noktayı sabit tutarak en yakın komşu sezgiseli + 2-opt iyileştirmesiyle ziyaret sırası döndürür.
     /// Dönen dizi, giriş dizisinin indekslerinden oluşur.
     public static func order(_ points: [Coordinate]) -> [Int] {
