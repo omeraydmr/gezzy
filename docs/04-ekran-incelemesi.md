@@ -44,6 +44,9 @@ Görsel maket: [`design/screens.html`](../design/screens.html)
 | Belgeler | — | Vize sekmesinde belge kasası: PDF, fotoğraf ya da kamera; tür ve kişi; önizleme ve paylaşma; pasaport/vize varsayılan olarak yalnızca cihazda |
 | Hesaplaşma | Yalnızca "ödendi" | Kişi kartında IBAN; ödeme sorusunda "IBAN'ı kopyala"; hesaplaşma özetini mesajla paylaş |
 | Profil | — | Ana sayfa başlığındaki avatar: ad, pasaport, vizeler, IBAN (tüm seyahatlerdeki kendi kopyana yansır), gezilen ülkeler ve dünya yüzdesi; Hakkında buraya taşındı |
+| Anılar | — | Yeni sekme: seyahat tarihlerindeki fotoğraflar zaman (2 saat) ve konuma (300 m) göre anlara ayrılır, aynı gündeki en yakın durakla adlandırılır; haritada fotoğraf sayılı pinler, günlere göre liste, genişleyen ızgara; "Kartpostal oluştur" ile kapak fotoğraflı, istatistikli ve PASSED damgalı görsel paylaşılır. Fotoğraflar cihazdan çıkmaz |
+| Roller | Yalnızca etiket | "Sadece görür" yetkisindeki kişi için seyahat salt okunur (bant + kapalı düğmeler + kayıt engeli); yetkiyi yalnızca sahip değiştirir |
+| Son hareketler | — | Ekip sekmesinde ekipten gelen değişikliklerin listesi |
 | Uçuş durumu | Elle girilen kapı | AeroDataBox'tan rötar, kapı, terminal ve aşama; bilet koçanında "Rötarlı +40 dk" ve üstü çizili eski saat; kapı değişince, rötar olunca, biniş başlayınca bildirim; uygulama açılınca ve arka planda yenilenir |
 | Ana ekran widget'ı | — | Küçük: sıradaki seyahate kalan gün; seyahatteyken "3. gün / 7" ve günün sıradaki durağı. Orta: ek olarak uçuş ve tarihler. Dokununca ilgili seyahat açılır |
 | Bildirimden geçiş | Ana ekran açılır | Bildirime dokununca ilgili seyahatin ilgili sekmesi: harcama → Bütçe, valiz → Valiz, durak/uçuş → Plan, katılım → Ekip; widget ve canlı kart da aynı bağlantıyı kullanır |

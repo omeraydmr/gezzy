@@ -34,7 +34,7 @@ Hiçbir özellik henüz gerçek cihazda denenmedi.
 
 | Özellik | Durum | Not |
 |---|---|---|
-| Anılar: fotoğrafları tarih/konuma göre toplama, öbekleme, haritada gösterme | ⬜ | İlk hedeflerden biriydi |
+| Anılar: fotoğrafları tarih/konuma göre toplama, öbekleme, haritada gösterme | ✅ | Yeni "Anılar" sekmesi: anlar, durakla eşleme, harita, kartpostal paylaşma; tamamen cihazda |
 | Konaklama (otel) kayıtları | ✅ | Plan sekmesinde kart; gün planı ve harita otelden başlar; giriş/çıkış bildirimi; konaklamasız gece uyarısı |
 | Rezervasyon içe aktarma (PDF, ekran görüntüsü, Wallet biniş kartı) | 🟡 | PDF ve ekran görüntüsünden uçuş + otel (cihazda); Wallet .pkpass yok |
 | Duraklar arası ulaşım satırı (yürüme/tram/taksi süreleri) | ✅ | Apple Haritalar'dan yürüme ve toplu taşıma süresi; otelden ilk durağa da |
@@ -43,8 +43,8 @@ Hiçbir özellik henüz gerçek cihazda denenmedi.
 | Vize başvuru takibi: randevu, belge listesi, durum | ✅ | Durum hapları, randevu tarihi ve yeri, kalıcı belge listesi; randevu öncesi bildirim; ekiple eşitlenir |
 | Belge kasası (pasaport, sigorta, bilet PDF'leri) | ✅ | Vize sekmesinde; dosya/fotoğraf/kamera, önizleme, kişiye bağlama, "yalnızca bu cihazda"; diğerleri iCloud ile eşitlenir |
 | Settle up: IBAN kopyala, "ödendi" işaretle, özet paylaş | ✅ | Kişi kartında IBAN (doğrulamalı), ödeme sorusunda "IBAN'ı kopyala", metin özeti paylaşma |
-| Roller (düzenleyebilir / yalnızca görüntüler) | ⬜ | iCloud paylaşımı izin veriyor ama arayüz yok |
-| Aktivite akışı ("Elif durak ekledi") | 🟡 | Bildirim olarak var, uygulama içi liste yok |
+| Roller (düzenleyebilir / yalnızca görüntüler) | ✅ | "Sadece görür" yetkisinde seyahat salt okunur; yetkiyi yalnızca sahip değiştirir. iCloud paylaşım izni henüz ayrıca ayarlanmıyor |
+| Aktivite akışı ("Elif durak ekledi") | ✅ | Ekip sekmesinde "Son hareketler" (ekipten gelen değişiklikler, cihazda) |
 | Profil: gezilen ülkeler | ✅ | Ana sayfada avatar → profil: kendi bilgilerin, IBAN, gezilen ülkeler (otomatik + elle), dünya yüzdesi; Hakkında buraya taşındı |
 
 ## 3. Yeni adaylar

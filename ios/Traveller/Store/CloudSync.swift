@@ -136,10 +136,12 @@ final class CloudSync {
             func merge(_ remote: Trip) {
                 let before = store.trip(remote.id)
                 if store.mergeFromCloud(remote) { needsPush.insert(remote.id) }
-                if notifyChanges, let after = store.trip(remote.id),
-                   let summary = TripChanges.summarize(old: before, new: after, me: store.me.id, money: AppFormat.money) {
-                    summaries.append(summary)
-                }
+                guard let after = store.trip(remote.id),
+                      let summary = TripChanges.summarize(old: before, new: after, me: store.me.id, money: AppFormat.money)
+                else { return }
+                // Akışa yalnızca var olan seyahatteki değişiklikler yazılır (ilk indirme değil).
+                if before != nil { store.recordActivity(summary) }
+                if notifyChanges { summaries.append(summary) }
             }
             // Kendi seyahatlerimiz.
             for trip in try await fetchTrips(in: container.privateCloudDatabase, zone: zoneID) {

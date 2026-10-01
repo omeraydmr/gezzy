@@ -97,9 +97,42 @@ final class TripStore {
         CoverImageStore.shared.delete(named: old)
     }
 
-    /// Bir seyahati yerinde değiştirir ve kaydeder.
+    // MARK: Roles
+
+    /// Bu cihazın kullanıcısının seyahatteki rolü. Ekipte yoksa: paylaşılan seyahatte düzenleyici, kendi seyahatinde sahip.
+    func role(in trip: Trip) -> MemberRole {
+        if let member = trip.members.first(where: { $0.id == me.id }) { return member.role }
+        return CloudSync.shared.sharedWithMe.contains(trip.id) ? .editor : .owner
+    }
+
+    /// "Sadece görür" yetkisindeki kişi seyahati değiştiremez.
+    func canEdit(_ trip: Trip) -> Bool { role(in: trip) != .viewer }
+
+    // MARK: Activity
+
+    /// Ekipten gelen değişikliklerin kısa geçmişi (seyahat başına en fazla 50; yalnızca bu cihazda).
+    private(set) var activity: [UUID: [ActivityEntry]] = TripStore.loadActivity()
+    private static let activityKey = "traveller.activity"
+
+    func recordActivity(_ summary: TripChanges.Summary, at date: Date = .now) {
+        let entry = ActivityEntry(date: date, title: summary.title, lines: summary.lines, section: summary.link.section)
+        var list = activity[summary.link.tripID] ?? []
+        list.insert(entry, at: 0)
+        activity[summary.link.tripID] = Array(list.prefix(50))
+        if let data = try? JSONEncoder().encode(activity) {
+            UserDefaults.standard.set(data, forKey: Self.activityKey)
+        }
+    }
+
+    private static func loadActivity() -> [UUID: [ActivityEntry]] {
+        guard let data = UserDefaults.standard.data(forKey: activityKey),
+              let decoded = try? JSONDecoder().decode([UUID: [ActivityEntry]].self, from: data) else { return [:] }
+        return decoded
+    }
+
+    /// Bir seyahati yerinde değiştirir ve kaydeder. Görüntüleyici yetkisindeyse değişiklik yapılmaz.
     func update(_ id: Trip.ID, _ change: (inout Trip) -> Void) {
-        guard let index = trips.firstIndex(where: { $0.id == id }) else { return }
+        guard let index = trips.firstIndex(where: { $0.id == id }), canEdit(trips[index]) else { return }
         let before = trips[index]
         change(&trips[index])
         guard trips[index] != before else { return }
@@ -276,4 +309,13 @@ final class TripStore {
         decoder.dateDecodingStrategy = .iso8601
         return decoder
     }()
+}
+
+/// Ekip aktivite akışındaki bir satır grubu ("Elif bir harcama ekledi: …").
+struct ActivityEntry: Codable, Hashable, Identifiable {
+    var id = UUID()
+    var date: Date
+    var title: String
+    var lines: [String]
+    var section: String?
 }
