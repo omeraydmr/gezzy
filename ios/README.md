@@ -36,7 +36,27 @@ gerekir; ikisi de `project.yml`'de tanımlı. Uygulama CloudKit veritabanı abon
 
 `TravellerWidgets` uzantısı (`Widgets/`) kilit ekranı ve Dynamic Island görünümünü çizer; ortak
 `FlightActivityAttributes` tipi `Shared/` klasöründedir. Uzantının paket kimliği `app.traveller.ios.widgets`;
-imzalarken uygulamayla aynı ekibi seç. Kart push'suz, uygulama içinden güncellenir.
+imzalarken uygulamayla aynı ekibi seç. Kart push'suz, uygulama içinden ve arka plan yenilemesiyle güncellenir.
+
+Aynı uzantıda ana ekran widget'ı (`TripCountdownWidget`) da var. Uygulama özeti App Group klasörüne
+(`group.app.traveller.ios`) yazar, widget oradan okur; iki hedefte de *App Groups* yeteneği açık olmalı.
+
+## Uçuş durumu (rötar, kapı)
+
+[AeroDataBox](https://rapidapi.com/aedbx-aedbx/api/aerodatabox) üzerinden alınır. RapidAPI'den bir anahtar al ve
+`ios/Config/Secrets.xcconfig` dosyasına yaz (git'e girmez):
+
+```
+FLIGHT_STATUS_API_KEY = anahtarın
+```
+
+Anahtar yoksa servis kapalıdır, uygulama elle girilen kapı/saatle çalışır. Arka plan yenilemesi
+`app.traveller.ios.flightstatus` görevidir (`BGTaskSchedulerPermittedIdentifiers`).
+
+## Bağlantılar
+
+`traveller://trip/<seyahat-id>?section=money` biçimindeki adres ilgili seyahatin sekmesini açar
+(`plan`, `money`, `packing`, `visa`, `crew`). Bildirimler aynı bilgiyi `userInfo` içinde taşır.
 
 `Support/Info.plist` ve `Support/Traveller.entitlements` `xcodegen generate` ile üretilir.
 

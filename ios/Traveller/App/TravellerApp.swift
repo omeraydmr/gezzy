@@ -1,5 +1,6 @@
 import CloudKit
 import SwiftUI
+import TravellerKit
 import UIKit
 import UserNotifications
 
@@ -16,16 +17,28 @@ struct TravellerApp: App {
                 .environment(\.locale, AppFormat.locale)
                 .tint(Color.ink)
                 .task {
+                    FlightStatusService.shared.attach(store)
+                    WidgetBridge.shared.tripsChanged(store.trips)
                     await CloudSync.shared.start(with: store)
                     NotificationScheduler.shared.tripsChanged(store.trips)
                     LiveActivityController.refresh(trips: store.trips)
+                    await FlightStatusService.shared.refreshAll()
+                }
+                .onOpenURL { url in
+                    if let link = TripLink(url: url) { AppRouter.shared.open(link) }
                 }
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
-                Task { await CloudSync.shared.refresh() }
+                Task {
+                    await CloudSync.shared.refresh()
+                    await FlightStatusService.shared.refreshAll()
+                }
                 LiveActivityController.refresh(trips: store.trips)
             }
+        }
+        .backgroundTask(.appRefresh(FlightStatusService.backgroundTaskID)) {
+            _ = await FlightStatusService.shared.refreshAll()
         }
     }
 }
@@ -53,6 +66,12 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         [.banner, .sound, .list]
     }
 
+    /// Bildirime dokunuldu: ilgili seyahatin ilgili sekmesini aç.
+    func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
+        guard let link = TripLink(userInfo: response.notification.request.content.userInfo) else { return }
+        await MainActor.run { AppRouter.shared.open(link) }
+    }
+
     func application(_ application: UIApplication, configurationForConnecting connectingSceneSession: UISceneSession,
                      options: UIScene.ConnectionOptions) -> UISceneConfiguration {
         let configuration = UISceneConfiguration(name: nil, sessionRole: connectingSceneSession.role)
@@ -66,5 +85,11 @@ final class SceneDelegate: NSObject, UIWindowSceneDelegate {
         Task { @MainActor in
             await CloudSync.shared.accept(cloudKitShareMetadata)
         }
+    }
+
+    /// Widget ve canlı karttan gelen `traveller://` bağlantıları.
+    func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
+        guard let link = URLContexts.lazy.compactMap({ TripLink(url: $0.url) }).first else { return }
+        Task { @MainActor in AppRouter.shared.open(link) }
     }
 }

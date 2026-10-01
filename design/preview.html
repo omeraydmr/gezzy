@@ -244,17 +244,33 @@ footer{margin-top:64px;color:var(--ink-3);font-size:14px}
 .cer-card .ttl{position:absolute;left:16px;bottom:12px;z-index:1;color:#fff}.cer-card .ttl b{display:block;font-size:19px}.cer-card .ttl span{font-size:13px;opacity:.9}
 .cer-card .st{flex:1;border-top:1.5px dashed var(--line);padding:14px 18px;background:linear-gradient(rgba(91,120,238,.1),rgba(91,120,238,.02))}
 .cer-card .st b{font-size:22px}.cer-card .st small{display:block;color:var(--ink-3);font-size:12px}
-.imprint{position:absolute;left:50%;top:50%;transform:translate(-50%,calc(-50% + 52px)) rotate(-12deg) scale(1.35);opacity:0;color:#C2343F;
+.cer-stage{perspective:700px}
+.cer-card{transform-style:preserve-3d}
+.cer-plane{position:absolute;inset:0;transform-style:preserve-3d;transform-origin:50% 50%}
+.cer-plane .tk{position:absolute;inset:0}
+.imprint{position:absolute;left:50%;top:50%;transform:translate(-50%,calc(-50% + 50px)) rotate(-12deg) scale(1.12);opacity:0;color:#C2343F;filter:blur(3px);
   border:3px solid currentColor;border-radius:9px;padding:8px 16px;text-align:center;outline:1px solid currentColor;outline-offset:-8px;
   -webkit-mask:radial-gradient(circle,#000 70%,transparent 72%) 0 0/5px 5px,linear-gradient(#000,#000);-webkit-mask-composite:source-over}
 .imprint b{display:block;font:900 30px/1 ui-rounded,system-ui;letter-spacing:4px}
 .imprint small{font:700 10px/1.4 ui-monospace,monospace;letter-spacing:1px}
-.stamp{position:absolute;left:50%;top:50%;width:140px;margin-left:-70px;opacity:0;transform-origin:50% 100%;filter:drop-shadow(0 8px 10px rgba(0,0,0,.25))}
-.stamp .knob{width:74px;height:50px;margin:0 auto -2px;border-radius:50%;background:radial-gradient(ellipse at 35% 30%,#E9B57A,#D49A5C 40%,#AD6E36)}
-.stamp .neck{width:32px;height:42px;margin:0 auto -2px;border-radius:6px;background:linear-gradient(90deg,#7A4A22,#AD6E36,#D49A5C,#AD6E36)}
-.stamp .collar{width:122px;height:24px;margin:0 auto -2px;border-radius:8px;background:linear-gradient(#AD6E36,#7A4A22)}
-.stamp .body{width:140px;height:22px;margin:0 auto -2px;border-radius:5px;background:linear-gradient(#7A4A22,#5A3418)}
-.stamp .rubber{width:132px;height:8px;margin:0 auto;border-radius:3px;background:#8E2730}
+.st-shadow{position:absolute;left:50%;top:50%;width:188px;height:88px;margin:-44px 0 0 -94px;border-radius:20px;background:#000;opacity:0}
+/* 3B mühür: kapak + yan yüzler, biletin düzleminde translateZ ile yükselir */
+.box{position:absolute;left:50%;top:50%;width:188px;height:88px;margin:-44px 0 0 -94px;transform-style:preserve-3d;opacity:0}
+.box>i{position:absolute;display:block}
+.box .top{inset:0;border-radius:20px;transform:translateZ(40px);display:grid;place-items:center;text-align:center;color:rgba(122,74,34,.62);
+  background:linear-gradient(135deg,#E2B27A,#D49A5C 55%,#AD6E36);box-shadow:inset 0 0 0 1px rgba(255,255,255,.35)}
+.box .top::before{content:"";position:absolute;inset:7px;border-radius:13px;border:1.5px solid rgba(122,74,34,.35)}
+.box .top b{display:block;font:900 26px/1 ui-rounded,system-ui;letter-spacing:4px;text-shadow:0 1px 0 rgba(255,255,255,.45)}
+.box .top small{font:700 10px/1.4 ui-monospace,monospace;letter-spacing:1px;text-shadow:0 1px 0 rgba(255,255,255,.45)}
+.box .front{left:10px;right:10px;top:88px;height:40px;transform-origin:50% 0;transform:translateZ(40px) rotateX(-90deg);
+  background:linear-gradient(90deg,#7A4A22,#AD6E36,#D49A5C,#AD6E36,#7A4A22);border-bottom:7px solid #8E2730}
+.box .left,.box .right{top:10px;bottom:10px;width:40px;transform-origin:0 50%;background:linear-gradient(#7A4A22,#5A3418);border-left:7px solid #8E2730}
+.box .left{left:0;transform:translateZ(40px) rotateY(90deg)}
+.box .right{left:188px;transform:translateZ(40px) rotateY(90deg)}
+.box .back{left:10px;right:10px;top:0;height:40px;transform-origin:50% 0;transform:translateZ(40px) rotateX(-90deg);background:#5A3418}
+.box .bottom{inset:4px;border-radius:16px;background:#8E2730}
+.cer-toast{position:absolute;left:50%;top:calc(50% + 150px);transform:translate(-50%,12px);opacity:0;padding:9px 14px;border-radius:99px;
+  background:var(--tray);box-shadow:var(--shadow);font:600 13px system-ui;display:flex;gap:6px;align-items:center;white-space:nowrap}
 .cer-btn{position:absolute;left:50%;bottom:20px;transform:translateX(-50%);z-index:3}
 .mini-deck{position:absolute;top:16px;left:50%;transform:translateX(-50%);display:flex;gap:6px;opacity:.5}
 .mini-deck i{width:46px;height:46px;border-radius:12px;background:var(--tray);box-shadow:var(--shadow)}
@@ -344,11 +360,16 @@ footer{margin-top:64px;color:var(--ink-3);font-size:14px}
     <div class="mini-deck"><i></i><i></i><i></i></div>
     <div class="cer-stage" id="cerStage">
       <div class="cer-card" id="cerCard">
-        <div class="tk"><div class="ph"><div class="illo ill-lisbon"></div><div class="ttl"><b>Porto hafta sonu</b><span>🇵🇹 Porto · 31 Eki – 5 Kas</span></div></div>
-        <div class="st"><b>Porto</b><small>Uçuş eklenmedi · 5 gece</small></div></div>
-        <div class="imprint" id="cerImprint"><b>PASSED</b><small>01 EKİ 2026 · POR</small></div>
-        <div class="stamp" id="cerStamp"><div class="knob"></div><div class="neck"></div><div class="collar"></div><div class="body"></div><div class="rubber"></div></div>
+        <div class="cer-plane" id="cerPlane">
+          <div class="tk"><div class="ph"><div class="illo ill-lisbon"></div><div class="ttl"><b>Porto hafta sonu</b><span>🇵🇹 Porto · 31 Eki – 5 Kas</span></div></div>
+          <div class="st"><b>Porto</b><small>Uçuş eklenmedi · 5 gece</small></div></div>
+          <div class="st-shadow" id="cerShadow"></div>
+          <div class="imprint" id="cerImprint"><b>PASSED</b><small>01 EKİ 2026 · POR</small></div>
+          <div class="box" id="cerStamp"><i class="bottom"></i><i class="back"></i><i class="left"></i><i class="right"></i><i class="front"></i>
+            <i class="top"><span><b>PASSED</b><small>01 EKİ 2026 · POR</small></span></i></div>
+        </div>
       </div>
+      <div class="cer-toast" id="cerToast">✓ Onaylandı · 01 EKİ 2026 · POR</div>
     </div>
     <button class="btn cer-btn" id="cerPlay" style="flex:none;width:auto;padding:0 24px"><svg><use href="#i-plus"/></svg>Oluştur</button>
   </section>
@@ -551,27 +572,50 @@ footer{margin-top:64px;color:var(--ink-3);font-size:14px}
 </div>
 <script>
 (function(){
-  var stage=document.getElementById('cerStage'),card=document.getElementById('cerCard'),stamp=document.getElementById('cerStamp'),
-      imp=document.getElementById('cerImprint'),btn=document.getElementById('cerPlay');
-  var H=138, imprintY=52, touch=imprintY-H/2+6;
-  function set(el,tr,op,dur,ease){el.style.transition=dur?('transform '+dur+'ms '+(ease||'ease')+',opacity '+dur+'ms'):'none';el.style.transform=tr;el.style.opacity=op}
-  function reset(){stage.classList.remove('dim');set(card,'scale(.85)',0);set(stamp,'translateY(-360px) rotate(-14deg)',0);
-    set(imp,'translate(-50%,calc(-50% + 52px)) rotate(-12deg) scale(1.35)',0)}
+  // SwiftUI'deki StampCeremony ile aynı aşamalar ve süreler.
+  var $=function(id){return document.getElementById(id)};
+  var stage=$('cerStage'),card=$('cerCard'),plane=$('cerPlane'),stamp=$('cerStamp'),shadow=$('cerShadow'),
+      imp=$('cerImprint'),toast=$('cerToast'),btn=$('cerPlay');
+  var SPRING='cubic-bezier(.2,.9,.25,1.08)',BOUNCE='cubic-bezier(.3,1.6,.5,1)';
   var wait=function(ms){return new Promise(function(r){setTimeout(r,ms)})};
-  async function play(){
-    btn.disabled=true;reset();await wait(30);
-    stage.classList.add('dim');set(card,'scale(1)',1,350,'cubic-bezier(.2,.9,.3,1.1)');set(stamp,'translateY(-360px) rotate(-14deg)',1);
-    await wait(320);
-    set(stamp,'translateY('+(touch-H/2)+'px) rotate(-4deg)',1,260,'ease-in');await wait(260);
-    set(stamp,'translateY('+(touch-H/2)+'px) rotate(-4deg) scaleY(.9)',1,120,'cubic-bezier(.3,1.6,.5,1)');
-    set(imp,'translate(-50%,calc(-50% + 52px)) rotate(-12deg) scale(1)',.9,220,'cubic-bezier(.3,1.6,.5,1)');
-    if(navigator.vibrate)navigator.vibrate(30);
-    await wait(480);
-    set(stamp,'translateY(-380px) rotate(8deg)',0,350,'ease-out');await wait(420);
-    stage.classList.remove('dim');set(card,'translateY(-720px) scale(.45) rotate(-8deg)',1,420,'ease-in');await wait(700);
-    reset();btn.disabled=false;
+  function tr(el,css,dur,ease){el.style.transition=dur?('transform '+dur+'ms '+(ease||'ease')+',opacity '+dur+'ms '+(ease||'ease')+',filter '+dur+'ms'):'none';
+    for(var k in css)el.style[k]=css[k]}
+  var phases={
+    appearing:{card:'translateY(0) scale(.85)',cardOp:0,tilt:0,lift:520,box:0,sh:[0,22,1.4,40],ink:0,toast:0},
+    presented:{card:'translateY(0) scale(1)',cardOp:1,tilt:0,lift:520,box:0,sh:[0,22,1.4,40],ink:0,toast:0},
+    hovering:{card:'translateY(40px) scale(1)',cardOp:1,tilt:52,lift:120,box:1,sh:[.16,16,1.25,26],ink:0,toast:0},
+    pressing:{card:'translateY(40px) scale(.975)',cardOp:1,tilt:52,lift:0,box:1,squash:1,sh:[.38,3,.98,2],ink:0,toast:0},
+    inked:{card:'translateY(40px) scale(1)',cardOp:1,tilt:52,lift:0,box:1,sh:[.3,4,1,3],ink:1,toast:0},
+    lifted:{card:'translateY(40px) scale(1)',cardOp:1,tilt:52,lift:140,box:1,sh:[.14,18,1.3,30],ink:1,toast:1},
+    leaving:{card:'translateY(0) scale(1)',cardOp:1,tilt:0,lift:640,box:0,sh:[0,22,1.4,40],ink:1,toast:1},
+    flying:{card:'translateY(-720px) scale(.45) rotate(-8deg)',cardOp:1,tilt:0,lift:640,box:0,sh:[0,22,1.4,40],ink:1,toast:0}
+  };
+  function go(name,dur,ease){
+    var p=phases[name];
+    tr(card,{transform:p.card,opacity:p.cardOp},dur,ease);
+    tr(plane,{transform:'rotateX('+p.tilt+'deg)'},dur,ease);
+    // Yükseklik düzlemin normali boyunca: translateZ. Bastırınca hafifçe ezilir.
+    tr(stamp,{transform:'translateZ('+(p.lift*0.55)+'px)'+(p.squash?' scale3d(1.03,1.03,.9)':''),opacity:p.box},dur,ease);
+    tr(shadow,{opacity:p.sh[0],filter:'blur('+p.sh[1]+'px)',transform:'translateY('+(50+p.sh[3])+'px) scale('+p.sh[2]+')'},dur,ease);
+    tr(imp,{opacity:p.ink?.9:0,filter:'blur('+(p.ink?0:3)+'px)',transform:'translate(-50%,calc(-50% + 50px)) rotate(-12deg) scale('+(p.ink?1:1.12)+')'},dur,ease);
+    tr(toast,{opacity:p.toast,transform:'translate(-50%,'+(p.toast?0:12)+'px)'},dur,ease);
+    stage.classList.toggle('dim',name!=='appearing'&&name!=='flying');
   }
-  btn.addEventListener('click',play);reset();
+  // Mühür kutusu düzlemin içinde: imprint merkezine (50px aşağı) taşı.
+  stamp.style.top='calc(50% + 50px)';shadow.style.top='50%';
+  async function play(){
+    btn.disabled=true;go('appearing',0);await wait(30);
+    go('presented',400,SPRING);await wait(200);
+    go('hovering',620,SPRING);await wait(650);
+    go('pressing',170,'ease-in');if(navigator.vibrate)navigator.vibrate(30);await wait(170);
+    go('inked',300,BOUNCE);await wait(300);
+    go('lifted',500,SPRING);await wait(650);
+    go('leaving',550,SPRING);await wait(450);
+    go('flying',420,'ease-in');await wait(800);
+    go('appearing',0);btn.disabled=false;
+  }
+  window.cerGo=go;
+  btn.addEventListener('click',play);go('appearing',0);
 })();
 
 (function(){

@@ -6,6 +6,10 @@ options:
   developmentLanguage: tr
   createIntermediateGroups: true
 
+configFiles:
+  Debug: Config/Base.xcconfig
+  Release: Config/Base.xcconfig
+
 packages:
   TravellerKit:
     path: Packages/TravellerKit
@@ -23,6 +27,14 @@ targets:
         CKSharingSupported: true
         UIBackgroundModes:
           - remote-notification
+          - fetch
+        BGTaskSchedulerPermittedIdentifiers:
+          - app.traveller.ios.flightstatus
+        CFBundleURLTypes:
+          - CFBundleURLName: app.traveller.ios
+            CFBundleURLSchemes:
+              - traveller
+        FlightStatusAPIKey: $(FLIGHT_STATUS_API_KEY)
     entitlements:
       path: Support/Traveller.entitlements
       properties:
@@ -31,6 +43,8 @@ targets:
         com.apple.developer.icloud-services:
           - CloudKit
         aps-environment: development
+        com.apple.security.application-groups:
+          - group.app.traveller.ios
     dependencies:
       - package: TravellerKit
       - target: TravellerWidgets
@@ -66,6 +80,13 @@ targets:
         CFBundleDisplayName: Traveller
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    entitlements:
+      path: Support/Widgets.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.app.traveller.ios
+    dependencies:
+      - package: TravellerKit
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.traveller.ios.widgets

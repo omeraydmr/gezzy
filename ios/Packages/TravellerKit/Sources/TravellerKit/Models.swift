@@ -121,6 +121,8 @@ public struct FlightSegment: Codable, Hashable, Identifiable, Sendable {
     public var arrivalTimeZone: String?
     public var gate: String?
     public var seat: String?
+    /// Uçuş servisinden alınan son durum (rötar, kapı, aşama); servis yoksa nil.
+    public var live: FlightLiveStatus?
 
     public init(id: UUID = UUID(), flightNumber: String, fromCode: String, fromCity: String, toCode: String, toCity: String,
                 departure: Date, arrival: Date, departureTimeZone: String? = nil, arrivalTimeZone: String? = nil,

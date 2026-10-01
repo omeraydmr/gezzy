@@ -6,6 +6,14 @@ public enum TripChanges {
     public struct Summary: Hashable, Sendable {
         public var title: String
         public var lines: [String]
+        /// Dokununca açılacak seyahat ve ilk değişikliğin sekmesi.
+        public var link: TripLink
+
+        public init(title: String, lines: [String], link: TripLink) {
+            self.title = title
+            self.lines = lines
+            self.link = link
+        }
 
         public var body: String { lines.joined(separator: "\n") }
     }
@@ -17,22 +25,26 @@ public enum TripChanges {
     ///   - money: tutar biçimlendirici (kuruş, para birimi).
     public static func summarize(old: Trip?, new: Trip, me: UUID?, money: (Int, String) -> String) -> Summary? {
         guard let old else {
-            return Summary(title: new.name, lines: ["Seyahat seninle paylaşıldı."])
+            return Summary(title: new.name, lines: ["Seyahat seninle paylaşıldı."], link: TripLink(tripID: new.id, section: "plan"))
         }
         var lines: [String] = []
+        var sections: [String] = []
         let name = { (id: UUID) in new.member(id)?.name ?? "Biri" }
 
         let oldExpenses = Set(old.expenses.map(\.id))
         for expense in new.expenses where !oldExpenses.contains(expense.id) && !expense.isTransfer && expense.paidBy != me {
+            sections.append("money")
             lines.append("\(name(expense.paidBy)) bir harcama ekledi: \(expense.title) · \(money(expense.amount, new.currency))")
         }
         for expense in new.expenses where !oldExpenses.contains(expense.id) && expense.isTransfer && expense.paidBy != me {
             let to = expense.splitAmong.first.map(name) ?? "Biri"
+            sections.append("money")
             lines.append("\(name(expense.paidBy)) → \(to) ödemesi yapıldı · \(money(expense.amount, new.currency))")
         }
 
         let oldStops = Set(old.stops.map(\.id))
         let addedStops = new.stops.filter { !oldStops.contains($0.id) }
+        if !addedStops.isEmpty { sections.append("plan") }
         if addedStops.count == 1 {
             lines.append("Plana eklendi: \(addedStops[0].name)")
         } else if addedStops.count > 1 {
@@ -41,22 +53,25 @@ public enum TripChanges {
 
         let oldMembers = Set(old.members.map(\.id))
         for member in new.members where !oldMembers.contains(member.id) && member.id != me {
+            sections.append("crew")
             lines.append("\(member.name) ekibe katıldı")
         }
 
         let oldPacked = Set(old.packing.filter(\.isPacked).map(\.id))
         let newlyPacked = new.packing.filter { $0.isPacked && !oldPacked.contains($0.id) && $0.assignee != me }
         if !newlyPacked.isEmpty {
+            sections.append("packing")
             let titles = newlyPacked.prefix(2).map(\.title).joined(separator: ", ")
             let more = newlyPacked.count > 2 ? " ve \(newlyPacked.count - 2) madde daha" : ""
             lines.append("Valize konuldu: \(titles)\(more)")
         }
 
         if old.startDate != new.startDate || old.endDate != new.endDate {
+            sections.append("plan")
             lines.append("Seyahat tarihleri değişti")
         }
 
         guard !lines.isEmpty else { return nil }
-        return Summary(title: new.name, lines: lines)
+        return Summary(title: new.name, lines: lines, link: TripLink(tripID: new.id, section: sections.first))
     }
 }

@@ -7,6 +7,8 @@ public struct PlannedNotification: Hashable, Sendable {
     public var date: Date
     public var title: String
     public var body: String
+    /// Dokununca açılacak seyahat ve sekme (`TripLink`).
+    public var link: TripLink
 }
 
 public enum NotificationPlanner {
@@ -26,7 +28,8 @@ public enum NotificationPlanner {
             let body = missing == 0
                 ? "Valiz hazır görünüyor. İyi yolculuklar!"
                 : "Valizde \(missing) madde eksik. Son kontrol için iyi bir zaman."
-            result.append(PlannedNotification(id: "\(prefix)-eve", date: eve, title: "Yarın \(trip.destination.city)!", body: body))
+            result.append(PlannedNotification(id: "\(prefix)-eve", date: eve, title: "Yarın \(trip.destination.city)!", body: body,
+                                              link: TripLink(tripID: trip.id, section: "packing")))
         }
 
         // Uçuştan 3 saat önce.
@@ -37,7 +40,8 @@ public enum NotificationPlanner {
             if let seat = flight.seat { details.append("koltuk \(seat)") }
             result.append(PlannedNotification(id: "\(prefix)-flight", date: reminder,
                                               title: "Uçuş \(flight.flightNumber) · 3 saat kaldı",
-                                              body: details.joined(separator: " · ")))
+                                              body: details.joined(separator: " · "),
+                                              link: TripLink(tripID: trip.id, section: "plan")))
         }
 
         // Her sabah günün planı.
@@ -52,7 +56,8 @@ public enum NotificationPlanner {
                 body += " · ilk durak \(first.name)"
             }
             result.append(PlannedNotification(id: "\(prefix)-day\(index)", date: morning,
-                                              title: "\(index + 1). gün · \(trip.destination.city)", body: body))
+                                              title: "\(index + 1). gün · \(trip.destination.city)", body: body,
+                                              link: TripLink(tripID: trip.id, section: "plan")))
         }
 
         // Rezervasyonlu ya da saatli duraklardan 45 dk önce (yalnızca notu olanlar: "bilet", "rezervasyon" vb.).
@@ -60,7 +65,8 @@ public enum NotificationPlanner {
             guard let start = stop.startMinutes,
                   let time = calendar.date(byAdding: .minute, value: start - 45, to: calendar.startOfDay(for: stop.day)) else { continue }
             result.append(PlannedNotification(id: "\(prefix)-stop-\(stop.id.uuidString)", date: time,
-                                              title: "45 dk sonra: \(stop.name)", body: stop.note))
+                                              title: "45 dk sonra: \(stop.name)", body: stop.note,
+                                              link: TripLink(tripID: trip.id, section: "plan")))
         }
 
         return Array(result.filter { $0.date > now }.sorted { $0.date < $1.date }.prefix(perTripLimit))
