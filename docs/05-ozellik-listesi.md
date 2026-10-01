@@ -1,7 +1,7 @@
 # 05 · Özellik listesi: ne var, ne eksik, sırada ne var
 
 Durum: ✅ yapıldı (CI'da derleniyor, testli mantık) · 🟡 kısmen · ⬜ yok.
-Hiçbir özellik henüz gerçek cihazda denenmedi.
+Gerçek cihaz (iPhone 15) testi sürüyor; iCloud paylaşım/yetki akışları iki hesapla henüz denenmedi.
 
 ## 1. Yapılanlar
 
@@ -62,7 +62,10 @@ Listedeki tüm adaylar yapıldı:
 | M | Canlı kartı sunucu push'u ile güncelleme | `server/` Cloudflare Worker + APNs; kurulum ve anahtarlar gerekli, henüz canlıya alınmadı |
 | N | İngilizce yerelleştirme | Arayüz String Catalog ile İngilizce; TravellerKit'in ürettiği metinler (vize notları, öneriler, bildirimler) henüz Türkçe |
 
-Daha önce yapılanlar: B, C, D, E, H, I, J. A (cihazda test + TestFlight) iPhone 15'te sürüyor.
+Daha önce yapılanlar (ayrıntı §1 ve §2'de): B Anılar · C Biletten doldurma (PDF, ekran görüntüsü, Wallet `.pkpass`) ·
+D Schengen 90/180 · E Vize randevu ve belge takibi · H Hesaplaşma (IBAN, ödendi, özet) ·
+I Konaklama ve giriş/çıkış bildirimleri · J Duraklar arası toplu taşıma süreleri.
+A (cihazda test turu + TestFlight) listeden çıkarıldı: iPhone 15'te sürüyor.
 
 ## 4. Teknik borç / kalite
 
