@@ -66,13 +66,7 @@ struct BookingImportSheet: View {
                                 toggleRow(isOn: selectedLodgings.contains(index)) {
                                     toggle(&selectedLodgings, index)
                                 } content: {
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text(lodging.name).foregroundStyle(Color.ink)
-                                        Text("\(AppFormat.dayPill(lodging.checkIn)) → \(AppFormat.dayPill(lodging.checkOut))"
-                                             + (lodging.confirmation.isEmpty ? "" : " · \(lodging.confirmation)"))
-                                            .font(.footnote)
-                                            .foregroundStyle(Color.ink2)
-                                    }
+                                    lodgingSummary(lodging)
                                 }
                             }
                         }
@@ -109,13 +103,25 @@ struct BookingImportSheet: View {
         }
     }
 
+    private func lodgingSummary(_ lodging: BookingParser.LodgingCandidate) -> some View {
+        var detail = "\(AppFormat.dayPill(lodging.checkIn)) → \(AppFormat.dayPill(lodging.checkOut))"
+        if !lodging.confirmation.isEmpty { detail += " · \(lodging.confirmation)" }
+        return VStack(alignment: .leading, spacing: 2) {
+            Text(lodging.name).foregroundStyle(Color.ink)
+            Text(detail).font(.footnote).foregroundStyle(Color.ink2)
+        }
+    }
+
     private func flightSummary(_ flight: BookingParser.FlightCandidate) -> some View {
         let from = Airports.airport(flight.fromCode)
         let to = Airports.airport(flight.toCode)
+        let departure = AppFormat.time(flight.departure, timeZone: from?.timeZone)
+        let arrival = AppFormat.time(flight.arrival, timeZone: to?.timeZone)
+        var detail = "\(AppFormat.dayPill(flight.departure)) · \(departure) → \(arrival)"
+        if let seat = flight.seat { detail += " · koltuk \(seat)" }
         return VStack(alignment: .leading, spacing: 2) {
             Text("\(flight.flightNumber) · \(flight.fromCode) → \(flight.toCode)").foregroundStyle(Color.ink)
-            Text("\(AppFormat.dayPill(flight.departure)) · \(AppFormat.time(flight.departure, timeZone: from?.timeZone)) → \(AppFormat.time(flight.arrival, timeZone: to?.timeZone))"
-                 + (flight.seat.map { " · koltuk \($0)" } ?? ""))
+            Text(detail)
                 .font(.footnote)
                 .foregroundStyle(Color.ink2)
             if !flight.hasTimes {

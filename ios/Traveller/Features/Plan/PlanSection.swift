@@ -274,9 +274,14 @@ struct PlanSection: View {
                               coordinate: CLLocationCoordinate2D(latitude: coordinate.latitude, longitude: coordinate.longitude))
         }
         let hotel = trip.lodging(forMorningOf: plan.day)
-        let hotelCoordinate = hotel?.coordinate.map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) }
+        let hotelCoordinate: CLLocationCoordinate2D? = hotel?.coordinate.map {
+            CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude)
+        }
+        var route: [CLLocationCoordinate2D] = []
+        if let hotelCoordinate { route.append(hotelCoordinate) }
+        route += pinned.map(\.coordinate)
         return Map(position: $cameraPosition) {
-            MapPolyline(coordinates: (hotelCoordinate.map { [$0] } ?? []) + pinned.map(\.coordinate))
+            MapPolyline(coordinates: route)
                 .stroke(Color.ink, style: StrokeStyle(lineWidth: 3, lineCap: .round, dash: [0.5, 8]))
             if let hotel, let hotelCoordinate {
                 Annotation(hotel.name, coordinate: hotelCoordinate, anchor: .center) {
