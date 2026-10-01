@@ -21,6 +21,7 @@ Hiçbir özellik henüz gerçek cihazda denenmedi.
 | Bütçe | Borç sadeleştirme, transferler | ✅ | |
 | Valiz | Kişiye atama, ilerleme, hava durumuna göre öneriler | ✅ | |
 | Vize | Pasaport kartları, vize durumu, pasaport geçerlilik uyarısı | ✅ | Kural tablosu elle tutuluyor |
+| Vize | Schengen 90/180 hesaplayıcı: kullanılan gün, 180 günlük şerit, aşım uyarısı, en geç çıkış ve en erken giriş önerisi | ✅ | |
 | Ekip | iCloud ile paylaşım, eşitleme, anlık güncelleme, değişiklik bildirimi | ✅ | |
 | Ekip | Kapak/makbuz fotoğrafı eşitleme | ✅ | |
 | Bildirim | Valiz, uçuş, günün planı, durak hatırlatmaları; dokununca ilgili sekme | ✅ | |
@@ -53,7 +54,7 @@ Hiçbir özellik henüz gerçek cihazda denenmedi.
 | A | Cihazda test turu + TestFlight | Çok yüksek | Orta | İlk açılış, izin akışları, ikon, gizlilik etiketleri |
 | B | Anılar (fotoğraf öbekleme + kartpostal özet) | Yüksek | Büyük | PhotoKit, cihazda öbekleme |
 | C | Biletten otomatik doldurma (PDF/ekran görüntüsü/.pkpass) | Yüksek | Orta | Vision ile cihazda okuma |
-| D | Schengen 90/180 gün hesaplayıcı | Yüksek (TR) | Küçük | Saf mantık, test edilebilir |
+| D | Schengen 90/180 gün hesaplayıcı | Yüksek (TR) | Küçük | ✅ Vize sekmesinde; seyahatler + elle eklenen ziyaretler |
 | E | Vize randevu ve belge takibi | Yüksek (TR) | Orta | |
 | F | Tax-free iade takibi | Orta | Küçük | |
 | G | Gidiş öncesi kontrol listesi (harç, roaming/eSIM, sigorta, kart) | Orta | Küçük | Valize benzer |
