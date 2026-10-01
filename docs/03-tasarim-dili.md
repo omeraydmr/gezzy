@@ -66,6 +66,8 @@ Referans görseller: [`design/references/`](../design/references/) · Token dosy
 | **Modül kartı** | `surface` zemin, sol üstte gri ikon + `title`, isteğe bağlı segment kontrol sağda; içinde bir veya daha fazla `tray`. | Hepsi |
 | **Segment kontrol** | Gri hap kap, seçili öğe beyaz hap + gölge. Upcoming/Past, gün seçici, Can edit/View only. | 1, 3, 4 |
 | **Biniş kartı** | Kapak illüstrasyonu + bayraklı başlık hapı + IATA satırı + yay şeklinde kesikli uçuş yolu + 4 sütunlu meta + yan çentikler ve kesikli perforasyon + ekip/barkod alt bölümü. | 1 |
+| **Seyahat destesi** | Ana ekran. Kare bilet kartları dairesel bir yörüngede (R≈560pt, adım ≈7,5°) üst üste dizilir; yandaki kartlar ~5° eğik, küçülmüş ve 2,5–5pt bulanık. Yatay sürüklemeyle bir seferde bir kart ilerler; arkadaki karta dokunmak onu öne getirir. Arka plandaki ışık ve sayfa noktası odaktaki seyahatin rengini alır. Altında vize · bütçe · valiz kısa göstergeleri. | — (yeni) |
+| **Kare bilet kartı** | Üst %60 kapak (kullanıcı fotoğrafı ya da pastel yer tutucu, alt kenarda koyu degrade üzerinde ad + şehir · tarih, sağ üstte cam efektli geri sayım hapı). Yan çentiklerle ayrılan koçanda IATA rotası ya da şehir, avatarlar, gece/kişi sayısı, barkod. Koçan ve gölge kapak renginden (fotoğrafın baskın tonu) hafifçe boyanır. | — (yeni) |
 | **Seyahat satırı** | Kolaj kapak (üst üste 2 kart + bayrak) + ad + tarih + avatar yığını + durum etiketi. | 1 |
 | **Kategori çubuğu** | İkonlu kare rozet + ad + harcanan (kategori rengi) + `/ limit` (`ink-3`) + taralı çubuk. | 2 |
 | **Kişi satırı** | Avatar + ad + "pays 🙂 Yuri" ikincil satır + sağda tutar (turuncu) veya ✓. | 2 |

@@ -4,7 +4,13 @@ import TravellerKit
 struct TripDetailView: View {
     @Environment(TripStore.self) private var store
     let tripID: Trip.ID
-    @State private var section: TripSection = .plan
+    @State private var section: TripSection
+    @State private var coverTarget: Trip.ID?
+
+    init(tripID: Trip.ID, initialSection: TripSection = .plan) {
+        self.tripID = tripID
+        _section = State(initialValue: initialSection)
+    }
 
     enum TripSection: String, CaseIterable, Hashable {
         case plan, money, packing, visa, crew
@@ -42,6 +48,7 @@ struct TripDetailView: View {
                 .background(Color.canvas.ignoresSafeArea())
                 .navigationTitle(trip.name)
                 .navigationBarTitleDisplayMode(.inline)
+                .coverPhotoPicker(for: $coverTarget)
             } else {
                 ContentUnavailableView("Seyahat bulunamadı", systemImage: "suitcase")
             }
@@ -51,11 +58,29 @@ struct TripDetailView: View {
     private func header(_ trip: Trip) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             ZStack(alignment: .bottomLeading) {
-                CoverArt(seed: trip.coverSeed)
+                TripCover(trip: trip)
                     .frame(height: 140)
                     .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
                 FlagBadge(countryCode: trip.destination.countryCode)
                     .padding(12)
+            }
+            .overlay(alignment: .topTrailing) {
+                Menu {
+                    Button("Kapak fotoğrafı seç", systemImage: "photo") { coverTarget = trip.id }
+                    if trip.coverPhoto != nil {
+                        Button("Fotoğrafı kaldır", systemImage: "photo.badge.minus", role: .destructive) {
+                            withAnimation { store.removeCoverPhoto(for: trip.id) }
+                        }
+                    }
+                } label: {
+                    Image(systemName: "camera.fill")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Color.ink)
+                        .frame(width: 36, height: 36)
+                        .background(.regularMaterial, in: Circle())
+                }
+                .padding(10)
+                .accessibilityLabel("Kapak fotoğrafı")
             }
             HStack(alignment: .bottom) {
                 VStack(alignment: .leading, spacing: 4) {

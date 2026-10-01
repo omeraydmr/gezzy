@@ -56,8 +56,25 @@ final class TripStore {
     }
 
     func delete(_ id: Trip.ID) {
+        if let photo = trip(id)?.coverPhoto {
+            CoverImageStore.shared.delete(named: photo)
+        }
         trips.removeAll { $0.id == id }
         save()
+    }
+
+    /// Kapak fotoğrafını değiştirir; eski dosya silinir.
+    func setCoverPhoto(_ data: Data, for id: Trip.ID) throws {
+        let name = try CoverImageStore.shared.save(data)
+        let old = trip(id)?.coverPhoto
+        update(id) { $0.coverPhoto = name }
+        if let old { CoverImageStore.shared.delete(named: old) }
+    }
+
+    func removeCoverPhoto(for id: Trip.ID) {
+        guard let old = trip(id)?.coverPhoto else { return }
+        update(id) { $0.coverPhoto = nil }
+        CoverImageStore.shared.delete(named: old)
     }
 
     /// Bir seyahati yerinde değiştirir ve kaydeder.
