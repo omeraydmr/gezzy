@@ -1,7 +1,7 @@
 # 05 · Özellik listesi: ne var, ne eksik, sırada ne var
 
 Durum: ✅ yapıldı (CI'da derleniyor, testli mantık) · 🟡 kısmen · ⬜ yok.
-Hiçbir özellik henüz gerçek cihazda denenmedi.
+Gerçek cihaz (iPhone 15) testi sürüyor; iCloud paylaşım/yetki akışları iki hesapla henüz denenmedi.
 
 ## 1. Yapılanlar
 
@@ -51,22 +51,21 @@ Hiçbir özellik henüz gerçek cihazda denenmedi.
 
 ## 3. Yeni adaylar
 
+Kalanlar (harfler önceki listeyle aynı):
+
 | # | Özellik | Değer | Efor | Not |
 |---|---|---|---|---|
-| A | Cihazda test turu + TestFlight | Çok yüksek | Orta | İlk açılış, izin akışları, ikon, gizlilik etiketleri |
-| B | Anılar (fotoğraf öbekleme + kartpostal özet) | Yüksek | Büyük | PhotoKit, cihazda öbekleme |
-| C | Biletten otomatik doldurma (PDF/ekran görüntüsü/.pkpass) | Yüksek | Orta | Vision ile cihazda okuma |
-| D | Schengen 90/180 gün hesaplayıcı | Yüksek (TR) | Küçük | ✅ Vize sekmesinde; seyahatler + elle eklenen ziyaretler |
-| E | Vize randevu ve belge takibi | Yüksek (TR) | Orta | |
 | F | Tax-free iade takibi | Orta | Küçük | |
 | G | Gidiş öncesi kontrol listesi (harç, roaming/eSIM, sigorta, kart) | Orta | Küçük | Valize benzer |
-| H | Hesaplaşma: IBAN, "ödendi", özet paylaş | Orta | Küçük | |
-| I | Konaklama kayıtları + giriş/çıkış bildirimleri | Orta | Orta | |
-| J | Duraklar arası toplu taşıma süreleri | Orta | Orta | MapKit ETA |
 | K | Acil durum kartı (konsolosluk, acil numaralar, alerji kartı) | Orta | Küçük | İnternetsiz |
 | L | Seyahat özeti (harcama, adım, yerler) paylaşılabilir kart | Orta | Orta | HealthKit isteğe bağlı |
 | M | Canlı kartı sunucu push'u ile güncelleme | Düşük-orta | Büyük | Sunucu gerekir |
 | N | İngilizce yerelleştirme | Orta | Orta | Global kitle için |
+
+Yapılanlar (ayrıntı §1 ve §2'de): B Anılar · C Biletten doldurma (PDF, ekran görüntüsü, Wallet `.pkpass`) ·
+D Schengen 90/180 · E Vize randevu ve belge takibi · H Hesaplaşma (IBAN, ödendi, özet) ·
+I Konaklama ve giriş/çıkış bildirimleri · J Duraklar arası toplu taşıma süreleri.
+A (cihazda test turu + TestFlight) listeden çıkarıldı: iPhone 15'te sürüyor.
 
 ## 4. Teknik borç / kalite
 
@@ -74,6 +73,7 @@ Hiçbir özellik henüz gerçek cihazda denenmedi.
 - Uygulama hedefi için UI testleri ve ekran görüntüsü testleri yok; yalnızca TravellerKit birim testleri var.
 - Çökme raporlama yok.
 - Vize kural tablosu elle güncelleniyor; kaynak ve güncelleme tarihi gösterilmeli.
+- Ana ekrandaki Yaklaşan/Geçmiş seçicisinde "Geçmiş" yazısı "Geç…" diye kesiliyor (avatar düğmesi yer daraltıyor).
 
 ## 5. Performans turu (bu değişiklik)
 
