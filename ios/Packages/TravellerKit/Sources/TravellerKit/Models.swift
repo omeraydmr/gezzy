@@ -238,6 +238,8 @@ public struct Trip: Codable, Hashable, Identifiable, Sendable {
     public var currency: String
     /// Kapak illüstrasyonu yer tutucusu için tohum.
     public var coverSeed: Int
+    /// Kullanıcının seçtiği kapak fotoğrafının dosya adı (uygulama klasöründe). Eski kayıtlarda yoktur.
+    public var coverPhoto: String?
     public var members: [Member]
     public var flights: [FlightSegment]
     public var stops: [Stop]
@@ -246,7 +248,8 @@ public struct Trip: Codable, Hashable, Identifiable, Sendable {
     public var packing: [PackingItem]
 
     public init(id: UUID = UUID(), name: String, destination: Destination, startDate: Date, endDate: Date,
-                status: TripStatus = .planned, currency: String = "EUR", coverSeed: Int = 0, members: [Member] = [],
+                status: TripStatus = .planned, currency: String = "EUR", coverSeed: Int = 0, coverPhoto: String? = nil,
+                members: [Member] = [],
                 flights: [FlightSegment] = [], stops: [Stop] = [], budget: [BudgetLine] = [], expenses: [Expense] = [],
                 packing: [PackingItem] = []) {
         self.id = id
@@ -257,6 +260,7 @@ public struct Trip: Codable, Hashable, Identifiable, Sendable {
         self.status = status
         self.currency = currency
         self.coverSeed = coverSeed
+        self.coverPhoto = coverPhoto
         self.members = members
         self.flights = flights
         self.stops = stops

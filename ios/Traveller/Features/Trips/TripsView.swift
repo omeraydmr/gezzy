@@ -1,42 +1,98 @@
 import SwiftUI
 import TravellerKit
 
+/// Seyahat detayına giden rota; isteğe bağlı olarak belirli bir sekmeyle açılır.
+struct TripRoute: Hashable {
+    let id: Trip.ID
+    var section: TripDetailView.TripSection = .plan
+}
+
 struct TripsView: View {
     @Environment(TripStore.self) private var store
     @State private var scope: Scope = .upcoming
+    @State private var index = 0
     @State private var isCreating = false
-    @State private var path: [Trip.ID] = []
+    @State private var path: [TripRoute] = []
+    @State private var coverTarget: Trip.ID?
+    @State private var pendingDelete: Trip?
 
     enum Scope: Hashable { case upcoming, past }
 
+    private var trips: [Trip] { scope == .upcoming ? store.upcoming : store.past }
+    private var focusedIndex: Int { min(max(index, 0), max(trips.count - 1, 0)) }
+    private var focused: Trip? { trips.isEmpty ? nil : trips[focusedIndex] }
+
     var body: some View {
         NavigationStack(path: $path) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    header
-                    content
-                    HStack(spacing: 12) {
-                        Button {
-                            isCreating = true
-                        } label: {
-                            Label("Seyahat planla", systemImage: "plus")
+            VStack(spacing: 0) {
+                header
+                    .padding(.horizontal, 20)
+                    .padding(.top, 8)
+
+                if trips.isEmpty {
+                    emptyState
+                } else {
+                    TripDeck(
+                        trips: trips,
+                        index: Binding(get: { focusedIndex }, set: { index = $0 }),
+                        onOpen: { path.append(TripRoute(id: $0.id)) },
+                        onChangeCover: { coverTarget = $0.id },
+                        onRemoveCover: { trip in withAnimation { store.removeCoverPhoto(for: trip.id) } },
+                        onDelete: { pendingDelete = $0 }
+                    )
+                    .frame(maxWidth: .infinity)
+                    .aspectRatio(1, contentMode: .fit)
+
+                    DeckIndicator(trips: trips, index: focusedIndex)
+                        .padding(.top, 4)
+
+                    if let focused {
+                        TripGlance(trip: focused) { section in
+                            path.append(TripRoute(id: focused.id, section: section))
                         }
-                        .buttonStyle(.primary)
+                        .padding(.horizontal, 16)
+                        .padding(.top, 18)
+                        .id(focused.id)
+                        .transition(.opacity)
                     }
-                    .padding(.top, 4)
                 }
-                .padding(16)
+
+                Spacer(minLength: 12)
+
+                Button {
+                    isCreating = true
+                } label: {
+                    Label("Seyahat planla", systemImage: "plus")
+                }
+                .buttonStyle(.primary)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 8)
             }
-            .background(Color.canvas.ignoresSafeArea())
-            .navigationDestination(for: Trip.ID.self) { id in
-                TripDetailView(tripID: id)
+            .background { background }
+            .toolbar(.hidden, for: .navigationBar)
+            .navigationDestination(for: TripRoute.self) { route in
+                TripDetailView(tripID: route.id, initialSection: route.section)
             }
             .sheet(isPresented: $isCreating) {
                 NewTripSheet { trip in
                     store.add(trip)
-                    path.append(trip.id)
+                    scope = .upcoming
+                    index = store.upcoming.firstIndex { $0.id == trip.id } ?? 0
+                    path.append(TripRoute(id: trip.id))
                 }
             }
+            .coverPhotoPicker(for: $coverTarget)
+            .confirmationDialog("Seyahat silinsin mi?", isPresented: Binding(
+                get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } }
+            ), titleVisibility: .visible, presenting: pendingDelete) { trip in
+                Button("\(trip.name) seyahatini sil", role: .destructive) {
+                    withAnimation(TripDeck.settleAnimation) { store.delete(trip.id) }
+                }
+            } message: { _ in
+                Text("Plan, harcamalar ve valiz listesi de silinir.")
+            }
+            .onChange(of: scope) { _, _ in index = 0 }
+            .animation(.easeInOut(duration: 0.25), value: focused?.id)
         }
     }
 
@@ -48,99 +104,96 @@ struct TripsView: View {
             Spacer()
             PillPicker(selection: $scope, options: [.upcoming, .past]) { $0 == .upcoming ? "Yaklaşan" : "Geçmiş" }
         }
-        .padding(.horizontal, 4)
-        .padding(.top, 8)
     }
 
-    @ViewBuilder
-    private var content: some View {
-        let trips = scope == .upcoming ? store.upcoming : store.past
-        if trips.isEmpty {
-            EmptyHint(symbol: "map", text: scope == .upcoming ? "Henüz planlanmış bir seyahat yok." : "Geçmiş seyahat yok.")
-                .tray()
-        } else {
-            if scope == .upcoming, let featured = trips.first, let flight = featured.primaryFlight {
-                NavigationLink(value: featured.id) {
-                    BoardingPassCard(trip: featured, flight: flight)
-                }
-                .buttonStyle(.plain)
-                ForEach(trips.dropFirst()) { trip in
-                    row(trip)
-                }
-            } else {
-                ForEach(trips) { trip in
-                    row(trip)
-                }
-            }
+    private var emptyState: some View {
+        VStack(spacing: 12) {
+            Spacer()
+            Image(systemName: "map")
+                .font(.system(size: 40))
+                .foregroundStyle(Color.ink3)
+            Text(scope == .upcoming ? "Henüz planlanmış bir seyahat yok." : "Geçmiş seyahat yok.")
+                .font(.tBody)
+                .foregroundStyle(Color.ink2)
         }
+        .frame(maxWidth: .infinity)
     }
 
-    private func row(_ trip: Trip) -> some View {
-        NavigationLink(value: trip.id) {
-            TripRow(trip: trip)
+    /// Odaktaki seyahatin renginden gelen yumuşak ışık.
+    private var background: some View {
+        ZStack {
+            Color.canvas
+            Circle()
+                .fill((focused?.tint ?? Color.ink3).opacity(0.3))
+                .frame(width: 440, height: 440)
+                .blur(radius: 100)
+                .offset(y: -140)
         }
-        .buttonStyle(.plain)
-        .contextMenu {
-            Button("Seyahati sil", systemImage: "trash", role: .destructive) {
-                store.delete(trip.id)
-            }
-        }
+        .ignoresSafeArea()
+        .animation(.easeInOut(duration: 0.6), value: focusedIndex)
     }
 }
 
-struct TripRow: View {
+/// Odaktaki seyahatin üç kısa göstergesi: vize, bütçe, valiz. Dokununca ilgili sekme açılır.
+struct TripGlance: View {
     let trip: Trip
+    let open: (TripDetailView.TripSection) -> Void
 
     var body: some View {
-        HStack(spacing: 16) {
-            ZStack(alignment: .bottomLeading) {
-                CoverArt(seed: trip.coverSeed)
-                    .frame(width: 76, height: 70)
-                    .clipShape(RoundedRectangle(cornerRadius: Radius.thumb, style: .continuous))
-                    .opacity(0.5)
-                    .offset(x: -6, y: -6)
-                CoverArt(seed: trip.coverSeed)
-                    .frame(width: 76, height: 70)
-                    .clipShape(RoundedRectangle(cornerRadius: Radius.thumb, style: .continuous))
-                    .softShadow()
-                FlagBadge(countryCode: trip.destination.countryCode)
-                    .padding(6)
-            }
-            .padding(.leading, 6)
-            .padding(.top, 6)
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(trip.name)
-                    .font(.tBodyStrong)
-                    .foregroundStyle(Color.ink)
-                Text(AppFormat.dateRange(trip.startDate, trip.endDate))
-                    .font(.tBody)
-                    .foregroundStyle(Color.ink2)
-                HStack {
-                    AvatarStack(members: trip.members, size: 26)
-                    Spacer(minLength: 8)
-                    statusTag
-                }
-                .padding(.top, 4)
-            }
+        HStack(spacing: 10) {
+            tile(.visa, symbol: "person.text.rectangle.fill", accent: visa.accent, value: visa.value, caption: "Vize")
+            tile(.money, symbol: "chart.pie.fill", accent: .blue, value: budgetValue, caption: "Bütçe")
+            tile(.packing, symbol: "bag.fill", accent: .purple, value: packingValue, caption: "Valiz")
         }
-        .tray(padding: 14)
-        .accessibilityElement(children: .combine)
     }
 
-    @ViewBuilder
-    private var statusTag: some View {
-        if trip.status == .draft {
-            Tag(text: "Taslak", accent: .orange)
-        } else {
-            let countdown = Countdown.make(start: trip.startDate, end: trip.endDate)
-            let accent: Accent = switch countdown {
-            case .days, .today: .blue
-            case .months: .purple
-            case .ongoing: .green
-            case .past: .gray
+    private func tile(_ section: TripDetailView.TripSection, symbol: String, accent: Accent, value: String,
+                      caption: String) -> some View {
+        Button {
+            open(section)
+        } label: {
+            VStack(alignment: .leading, spacing: 8) {
+                Image(systemName: symbol)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(accent.base)
+                    .frame(width: 28, height: 28)
+                    .background(accent.tint, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(value)
+                        .font(.system(.subheadline, weight: .semibold))
+                        .foregroundStyle(Color.ink)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                    Text(caption)
+                        .font(.caption)
+                        .foregroundStyle(Color.ink3)
+                }
             }
-            Tag(text: AppFormat.countdown(countdown), accent: accent)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(12)
+            .background(Color.tray, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .softShadow()
         }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text("\(caption): \(value)"))
+    }
+
+    private var visa: (value: String, accent: Accent) {
+        let pending = trip.members.filter { member in
+            VisaAdvisor.assess(countryCode: trip.destination.countryCode, passport: member.passport,
+                               tripStart: trip.startDate, tripEnd: trip.endDate).needsAction
+        }.count
+        return pending == 0 ? ("Hazır ✓", .green) : ("\(pending) kişi bekliyor", .orange)
+    }
+
+    private var budgetValue: String {
+        let summary = Budget.summary(for: trip)
+        guard summary.limit > 0 else { return AppFormat.money(summary.spent, trip.currency) }
+        return "%\(Int((Double(summary.spent) / Double(summary.limit) * 100).rounded()))"
+    }
+
+    private var packingValue: String {
+        guard !trip.packing.isEmpty else { return "Boş" }
+        return "\(trip.packing.filter(\.isPacked).count)/\(trip.packing.count)"
     }
 }
