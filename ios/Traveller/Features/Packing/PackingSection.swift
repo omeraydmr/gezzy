@@ -439,6 +439,6 @@ struct WeatherStrip: View {
     private func detail(_ weather: WeatherSummary) -> String {
         let rain = weather.rainyDays == 0 ? "yağış beklenmiyor" : "\(weather.rainyDays) yağışlı gün"
         let source = weather.source == .forecast ? "tahmin" : "geçen yıl bu tarihlerde"
-        return "\(rain) · \(source)"
+        return "\(rain) · \(source) · Open-Meteo"
     }
 }

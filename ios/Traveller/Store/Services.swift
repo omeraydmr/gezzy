@@ -82,8 +82,13 @@ extension TripStore {
 
 /// Makbuz fotoğrafındaki metni cihaz üzerinde (Vision) okuyup toplamı çıkarır; görüntü cihazdan çıkmaz.
 enum ReceiptReader {
-    static func read(_ image: UIImage) async -> ReceiptParser.Result? {
-        guard let cgImage = image.cgImage else { return nil }
+    struct Output {
+        var total: ReceiptParser.Result?
+        var items: [ReceiptItem]
+    }
+
+    static func read(_ image: UIImage) async -> Output {
+        guard let cgImage = image.cgImage else { return Output(total: nil, items: []) }
         let orientation = CGImagePropertyOrientation(image.imageOrientation)
         let lines: [String] = await Task.detached(priority: .userInitiated) { () -> [String] in
             let request = VNRecognizeTextRequest()
@@ -96,12 +101,28 @@ enum ReceiptReader {
             } catch {
                 return []
             }
-            // Yukarıdan aşağıya sırala (Vision'da y ekseni aşağıdan yukarı artar).
-            return (request.results ?? [])
-                .sorted { $0.boundingBox.midY > $1.boundingBox.midY }
-                .compactMap { $0.topCandidates(1).first?.string }
+            return rows(from: request.results ?? [])
         }.value
-        return ReceiptParser.parse(lines: lines)
+        return Output(total: ReceiptParser.parse(lines: lines), items: ReceiptParser.items(lines: lines))
+    }
+
+    /// Aynı yükseklikteki gözlemleri (ör. "Galão" ve "€1.80") tek satırda birleştirir; yukarıdan aşağıya sıralar.
+    static func rows(from observations: [VNRecognizedTextObservation]) -> [String] {
+        let sorted = observations.sorted { $0.boundingBox.midY > $1.boundingBox.midY }
+        var rows: [[VNRecognizedTextObservation]] = []
+        for observation in sorted {
+            if let last = rows.last?.first,
+               abs(last.boundingBox.midY - observation.boundingBox.midY) < max(last.boundingBox.height, observation.boundingBox.height) * 0.5 {
+                rows[rows.count - 1].append(observation)
+            } else {
+                rows.append([observation])
+            }
+        }
+        return rows.map { row in
+            row.sorted { $0.boundingBox.minX < $1.boundingBox.minX }
+                .compactMap { $0.topCandidates(1).first?.string }
+                .joined(separator: "  ")
+        }
     }
 }
 

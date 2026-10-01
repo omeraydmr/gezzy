@@ -15,6 +15,8 @@ struct TripsView: View {
     @State private var path: [TripRoute] = []
     @State private var coverTarget: Trip.ID?
     @State private var pendingDelete: Trip?
+    @State private var isShowingAbout = false
+    @State private var arrivingID: Trip.ID?
 
     enum Scope: Hashable { case upcoming, past }
 
@@ -38,7 +40,8 @@ struct TripsView: View {
                         onOpen: { path.append(TripRoute(id: $0.id)) },
                         onChangeCover: { coverTarget = $0.id },
                         onRemoveCover: { trip in withAnimation { store.removeCoverPhoto(for: trip.id) } },
-                        onDelete: { pendingDelete = $0 }
+                        onDelete: { pendingDelete = $0 },
+                        arrivingID: arrivingID
                     )
                     .frame(maxWidth: .infinity)
                     .aspectRatio(1, contentMode: .fit)
@@ -75,13 +78,21 @@ struct TripsView: View {
             }
             .sheet(isPresented: $isCreating) {
                 NewTripSheet { trip in
-                    store.add(trip)
-                    scope = .upcoming
-                    index = store.upcoming.firstIndex { $0.id == trip.id } ?? 0
-                    path.append(TripRoute(id: trip.id))
+                    // Damgalanan bilet desteye uçarak girer ve öne gelir.
+                    arrivingID = trip.id
+                    withAnimation(.spring(response: 0.6, dampingFraction: 0.78)) {
+                        scope = .upcoming
+                        store.add(trip)
+                        index = store.upcoming.firstIndex { $0.id == trip.id } ?? 0
+                    }
+                    Task {
+                        try? await Task.sleep(for: .seconds(2.2))
+                        withAnimation(.easeOut(duration: 0.5)) { arrivingID = nil }
+                    }
                 }
             }
             .coverPhotoPicker(for: $coverTarget)
+            .sheet(isPresented: $isShowingAbout) { AboutView() }
             .confirmationDialog("Seyahat silinsin mi?", isPresented: Binding(
                 get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } }
             ), titleVisibility: .visible, presenting: pendingDelete) { trip in
@@ -103,6 +114,13 @@ struct TripsView: View {
                 .foregroundStyle(Color.ink2)
             Spacer()
             PillPicker(selection: $scope, options: [.upcoming, .past]) { $0 == .upcoming ? "Yaklaşan" : "Geçmiş" }
+            Button {
+                isShowingAbout = true
+            } label: {
+                Image(systemName: "info")
+            }
+            .buttonStyle(.circleIcon(size: 40))
+            .accessibilityLabel("Hakkında")
         }
     }
 

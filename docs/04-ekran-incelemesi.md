@@ -26,6 +26,9 @@ Görsel maket: [`design/screens.html`](../design/screens.html)
 | Makbuz okuma | Tutar elle | Makbuzdaki toplam cihaz üzerinde (Vision) okunur; tutar ve para birimi dolar, "Geri al" ile vazgeçilir; emin olunamazsa "kontrol et" uyarısı |
 | Para birimleri | — | Birden fazla parayla harcama varsa bütçede dağılım kartı: orijinal toplamlar, seyahat parasındaki karşılığı, yüzdeler |
 | Açılış saatleri | — | OpenStreetMap'ten otomatik; durak saatine göre "O gün kapalı", "Henüz kapalı · açılış 10:00", "Kapanış 17:30 · süre yetmeyebilir"; elle düzenlenebilir |
+| Saat düzeltme | Yalnızca uyarı | Uyarının altında tek dokunuşla çözüm: "Saati 10:00 yap" ya da "Taşı: Sal 13" (aynı saatte açık en yakın gün; eşitlikte sonraki gün) |
+| Kalem kalem bölme | Herkese eşit | Makbuz kalemleri okunur, her kalem kişilere atanır; vergi/servis/kur farkı oransal dağıtılır; bakiyeler kişi başı paylarla hesaplanır |
+| Hakkında | — | Veri kaynakları ve lisans atıfları, gizlilik notları, vize verisi uyarısı, örnek verileri sıfırlama |
 | Durak ekle | Yalnızca metin sonuç listesi | Numaralı sonuçlar ve aynı numaralarla harita önizlemesi; seçilen yer yeşil işaretle |
 | Yeni seyahat | Düz form | Yazdıkça güncellenen canlı bilet kartı + fotoğraf ekleme |
 
@@ -36,7 +39,10 @@ Görsel maket: [`design/screens.html`](../design/screens.html)
 - **OpenStreetMap Overpass API**: durak çevresindeki (80 m) aynı adlı yerin `opening_hours` etiketi; her durak bir kez sorgulanır, istekler arasında 1 sn beklenir. Yoğun kullanımda kendi Overpass sunucusu ya da önbellek gerekir. Veri ODbL lisanslı; uygulamada atıf gösterilmeli.
 - **Apple Vision**: makbuz metni tamamen cihazda okunur, görüntü hiçbir yere gönderilmez.
 
+## Atıflar
+Lisans gereği görünür atıf gereken yerler: plan listesinin altında (açılış saatleri varsa) "© OpenStreetMap katkıcıları" bağlantısı, açılış saati düzenleyicisinde, valizdeki hava kartında "Open-Meteo", döviz satırında "ECB", ve hepsi "Hakkında" ekranında bağlantılarıyla.
+
 ## Sonraki adaylar
-- Açılış saati uyarısında "uygun güne taşı" önerisi (durağın açık olduğu en yakın gün).
-- OpenStreetMap atfının ayarlar/hakkında ekranında gösterilmesi.
-- Makbuzdan kalem kalem okuma ve kişilere bölüştürme.
+- Kayıtlı harcamayı düzenleme (tutar, kişiler, kalem dağılımı).
+- Ekip arkadaşlarıyla senkronizasyon ve davet bağlantısı (sunucu gerektirir).
+- Çevrimdışı harita ve seyahat günü bildirimleri.

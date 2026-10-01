@@ -231,6 +231,33 @@ footer{margin-top:64px;color:var(--ink-3);font-size:14px}
 .glance em{display:grid;place-items:center;width:28px;height:28px;border-radius:8px;font-style:normal;font-size:13px}
 .glance b{display:block;margin-top:8px;font-size:15px}
 .glance small{color:var(--ink-3);font-size:12px}
+
+/* stamp ceremony */
+.cer-wrap{position:relative;overflow:hidden;border-radius:32px;background:var(--surface);box-shadow:var(--shadow),var(--edge);height:560px}
+.cer-stage{position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.0);transition:background .3s}
+.cer-stage.dim{background:rgba(0,0,0,.35)}
+.cer-card{position:relative;width:280px;height:280px;opacity:0;transform:scale(.85)}
+.cer-card .tk{width:100%;height:100%;border-radius:28px;overflow:hidden;background:var(--tray);display:flex;flex-direction:column;
+  -webkit-mask:radial-gradient(circle 11px at 0 168px,transparent 98%,#000),radial-gradient(circle 11px at 100% 168px,transparent 98%,#000);-webkit-mask-composite:source-in;mask-composite:intersect}
+.cer-card .ph{height:168px;position:relative}.cer-card .ph .illo{position:absolute;inset:0;border-radius:0}
+.cer-card .ph::after{content:"";position:absolute;inset:0;background:linear-gradient(transparent 45%,rgba(0,0,0,.5))}
+.cer-card .ttl{position:absolute;left:16px;bottom:12px;z-index:1;color:#fff}.cer-card .ttl b{display:block;font-size:19px}.cer-card .ttl span{font-size:13px;opacity:.9}
+.cer-card .st{flex:1;border-top:1.5px dashed var(--line);padding:14px 18px;background:linear-gradient(rgba(91,120,238,.1),rgba(91,120,238,.02))}
+.cer-card .st b{font-size:22px}.cer-card .st small{display:block;color:var(--ink-3);font-size:12px}
+.imprint{position:absolute;left:50%;top:50%;transform:translate(-50%,calc(-50% + 52px)) rotate(-12deg) scale(1.35);opacity:0;color:#C2343F;
+  border:3px solid currentColor;border-radius:9px;padding:8px 16px;text-align:center;outline:1px solid currentColor;outline-offset:-8px;
+  -webkit-mask:radial-gradient(circle,#000 70%,transparent 72%) 0 0/5px 5px,linear-gradient(#000,#000);-webkit-mask-composite:source-over}
+.imprint b{display:block;font:900 30px/1 ui-rounded,system-ui;letter-spacing:4px}
+.imprint small{font:700 10px/1.4 ui-monospace,monospace;letter-spacing:1px}
+.stamp{position:absolute;left:50%;top:50%;width:140px;margin-left:-70px;opacity:0;transform-origin:50% 100%;filter:drop-shadow(0 8px 10px rgba(0,0,0,.25))}
+.stamp .knob{width:74px;height:50px;margin:0 auto -2px;border-radius:50%;background:radial-gradient(ellipse at 35% 30%,#E9B57A,#D49A5C 40%,#AD6E36)}
+.stamp .neck{width:32px;height:42px;margin:0 auto -2px;border-radius:6px;background:linear-gradient(90deg,#7A4A22,#AD6E36,#D49A5C,#AD6E36)}
+.stamp .collar{width:122px;height:24px;margin:0 auto -2px;border-radius:8px;background:linear-gradient(#AD6E36,#7A4A22)}
+.stamp .body{width:140px;height:22px;margin:0 auto -2px;border-radius:5px;background:linear-gradient(#7A4A22,#5A3418)}
+.stamp .rubber{width:132px;height:8px;margin:0 auto;border-radius:3px;background:#8E2730}
+.cer-btn{position:absolute;left:50%;bottom:20px;transform:translateX(-50%);z-index:3}
+.mini-deck{position:absolute;top:16px;left:50%;transform:translateX(-50%);display:flex;gap:6px;opacity:.5}
+.mini-deck i{width:46px;height:46px;border-radius:12px;background:var(--tray);box-shadow:var(--shadow)}
 </style>
 </head>
 <body>
@@ -309,6 +336,21 @@ footer{margin-top:64px;color:var(--ink-3);font-size:14px}
     <div class="dots" id="dots"></div>
     <div class="glance" id="glance"></div>
     <p class="cap" style="position:relative;text-align:center;margin-top:14px">Sürükle, ok tuşlarını kullan ya da arkadaki karta dokun</p>
+  </section>
+
+
+  <h2 class="sec">Seyahat onayı · damga</h2>
+  <section class="cer-wrap" aria-label="Seyahat oluşturma animasyonu">
+    <div class="mini-deck"><i></i><i></i><i></i></div>
+    <div class="cer-stage" id="cerStage">
+      <div class="cer-card" id="cerCard">
+        <div class="tk"><div class="ph"><div class="illo ill-lisbon"></div><div class="ttl"><b>Porto hafta sonu</b><span>🇵🇹 Porto · 31 Eki – 5 Kas</span></div></div>
+        <div class="st"><b>Porto</b><small>Uçuş eklenmedi · 5 gece</small></div></div>
+        <div class="imprint" id="cerImprint"><b>PASSED</b><small>01 EKİ 2026 · POR</small></div>
+        <div class="stamp" id="cerStamp"><div class="knob"></div><div class="neck"></div><div class="collar"></div><div class="body"></div><div class="rubber"></div></div>
+      </div>
+    </div>
+    <button class="btn cer-btn" id="cerPlay" style="flex:none;width:auto;padding:0 24px"><svg><use href="#i-plus"/></svg>Oluştur</button>
   </section>
 
   <h2 class="sec">Modüller</h2>
@@ -508,6 +550,30 @@ footer{margin-top:64px;color:var(--ink-3);font-size:14px}
   <footer>Kartpostal v0.1 · Token'lar: design/tokens.json · İllüstrasyonlar yer tutucudur; nihai stil el çizimi pastel boya.</footer>
 </div>
 <script>
+(function(){
+  var stage=document.getElementById('cerStage'),card=document.getElementById('cerCard'),stamp=document.getElementById('cerStamp'),
+      imp=document.getElementById('cerImprint'),btn=document.getElementById('cerPlay');
+  var H=138, imprintY=52, touch=imprintY-H/2+6;
+  function set(el,tr,op,dur,ease){el.style.transition=dur?('transform '+dur+'ms '+(ease||'ease')+',opacity '+dur+'ms'):'none';el.style.transform=tr;el.style.opacity=op}
+  function reset(){stage.classList.remove('dim');set(card,'scale(.85)',0);set(stamp,'translateY(-360px) rotate(-14deg)',0);
+    set(imp,'translate(-50%,calc(-50% + 52px)) rotate(-12deg) scale(1.35)',0)}
+  var wait=function(ms){return new Promise(function(r){setTimeout(r,ms)})};
+  async function play(){
+    btn.disabled=true;reset();await wait(30);
+    stage.classList.add('dim');set(card,'scale(1)',1,350,'cubic-bezier(.2,.9,.3,1.1)');set(stamp,'translateY(-360px) rotate(-14deg)',1);
+    await wait(320);
+    set(stamp,'translateY('+(touch-H/2)+'px) rotate(-4deg)',1,260,'ease-in');await wait(260);
+    set(stamp,'translateY('+(touch-H/2)+'px) rotate(-4deg) scaleY(.9)',1,120,'cubic-bezier(.3,1.6,.5,1)');
+    set(imp,'translate(-50%,calc(-50% + 52px)) rotate(-12deg) scale(1)',.9,220,'cubic-bezier(.3,1.6,.5,1)');
+    if(navigator.vibrate)navigator.vibrate(30);
+    await wait(480);
+    set(stamp,'translateY(-380px) rotate(8deg)',0,350,'ease-out');await wait(420);
+    stage.classList.remove('dim');set(card,'translateY(-720px) scale(.45) rotate(-8deg)',1,420,'ease-in');await wait(700);
+    reset();btn.disabled=false;
+  }
+  btn.addEventListener('click',play);reset();
+})();
+
 (function(){
   var trips=[
     {name:'Lizbon Kaçamağı',city:'🇵🇹 Lizbon · 12 – 18 Eki',cd:'11 gün',cdc:'var(--flights)',ill:'ill-lisbon',tint:'#5B78EE',from:'IST',ft:'07:40',to:'LIS',tt:'10:15',meta:'6 gece · 4 kişi',av:['a1','a2','a3'],g:['2 kişi bekliyor','%49','2/4']},
