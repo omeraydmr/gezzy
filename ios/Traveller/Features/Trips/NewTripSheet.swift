@@ -18,6 +18,7 @@ struct NewTripSheet: View {
     @State private var photoItem: PhotosPickerItem?
     @State private var photoData: Data?
     @State private var previewImage: UIImage?
+    @State private var ceremonyTrip: Trip?
 
     static let currencies = ["EUR", "USD", "GBP", "TRY", "JPY", "CHF", "GEL", "AZN", "RSD", "MAD", "AMD", "BRL"]
 
@@ -83,6 +84,15 @@ struct NewTripSheet: View {
             .scrollContentBackground(.hidden)
             .background(TintGlow(tint: Accent.cycle(coverSeed).base, offsetY: -200))
         }
+        .overlay {
+            if let ceremonyTrip {
+                StampCeremony(trip: ceremonyTrip, coverImage: previewImage) {
+                    onCreate(ceremonyTrip)
+                    dismiss()
+                }
+            }
+        }
+        .interactiveDismissDisabled(ceremonyTrip != nil)
     }
 
     private var trimmedName: String { name.trimmingCharacters(in: .whitespacesAndNewlines) }
@@ -127,8 +137,7 @@ struct NewTripSheet: View {
         if let photoData {
             trip.coverPhoto = try? CoverImageStore.shared.save(photoData)
         }
-        onCreate(trip)
-        dismiss()
+        ceremonyTrip = trip
     }
 }
 

@@ -10,6 +10,8 @@ struct TripDeck: View {
     var onChangeCover: (Trip) -> Void
     var onRemoveCover: (Trip) -> Void
     var onDelete: (Trip) -> Void
+    /// Yeni oluşturulup damgalanan seyahat; yukarıdan uçarak girer ve kısa süre damga izini taşır.
+    var arrivingID: Trip.ID?
 
     @GestureState(resetTransaction: Transaction(animation: TripDeck.settleAnimation))
     private var dragOffset: CGFloat = 0
@@ -29,6 +31,16 @@ struct TripDeck: View {
                     if geometry.isVisible(relative) {
                         let t = geometry.transform(relative: relative)
                         TripTicketCard(trip: trip, side: side)
+                            .overlay {
+                                if trip.id == arrivingID {
+                                    StampImprint(subtitle: StampImprint.subtitle(for: trip), scale: side / 280)
+                                        .offset(y: side * 0.18)
+                                        .transition(.opacity)
+                                }
+                            }
+                            .transition(.asymmetric(
+                                insertion: .offset(y: -side * 1.6).combined(with: .scale(scale: 0.5)).combined(with: .opacity),
+                                removal: .opacity.combined(with: .scale(scale: 0.8))))
                             .scaleEffect(t.scale)
                             .rotationEffect(.degrees(t.rotationDegrees), anchor: .bottom)
                             .offset(x: t.x, y: t.y)
