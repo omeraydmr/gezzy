@@ -101,6 +101,16 @@
         }
       }
     },
+    "\"%@\" olarak kullan" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use \"%@\""
+          }
+        }
+      }
+    },
     "/ %@" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -728,6 +738,12 @@
     },
     "%lld / %lld" : {
       "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld / %lld"
+          }
+        },
         "tr" : {
           "stringUnit" : {
             "state" : "new",
@@ -1542,6 +1558,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Search"
+          }
+        }
+      }
+    },
+    "Aramaya uyan yer bulunamadı." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No places match your search."
           }
         }
       }
@@ -2722,6 +2748,16 @@
         }
       }
     },
+    "En benzer ve şehir merkezine en yakın yerler önce; mesafe şehir merkezine göre." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Closest matches near the city centre come first; distance is from the city centre."
+          }
+        }
+      }
+    },
     "En çok neyde yardım istersin?" : {
       "localizations" : {
         "en" : {
@@ -3184,6 +3220,16 @@
         }
       }
     },
+    "Gideceğin şehri ara; konumu haritalar ve öneriler için kaydedilir." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search for the city you're going to; its location is saved for maps and suggestions."
+          }
+        }
+      }
+    },
     "Gidiş" : {
       "localizations" : {
         "en" : {
@@ -3571,6 +3617,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Map, place search and city location"
+          }
+        }
+      }
+    },
+    "Haritada \"%@\"" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "\"%@\" on the map"
           }
         }
       }
@@ -4925,6 +4981,16 @@
         }
       }
     },
+    "Merkeze %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ from centre"
+          }
+        }
+      }
+    },
     "Meydan" : {
       "comment" : "TravellerKit PlaceSuggestions category",
       "extractionState" : "manual",
@@ -5264,6 +5330,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Suggestions come from Wikipedia; the most-read places of the last 30 days come first. Opening hours are looked up on OpenStreetMap once added to the plan."
+          }
+        }
+      }
+    },
+    "Önerilerde ya da haritada ara" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search suggestions or the map"
           }
         }
       }
@@ -5998,12 +6074,32 @@
         }
       }
     },
+    "Seç" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose"
+          }
+        }
+      }
+    },
     "Şehir" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "City"
+          }
+        }
+      }
+    },
+    "Şehir ara" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search cities"
           }
         }
       }
