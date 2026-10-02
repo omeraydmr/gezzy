@@ -1,4 +1,8 @@
-# Traveller · canlı uçuş kartı sunucusu
+# Traveller sunucusu
+
+İki iş yapar: canlı uçuş kartı push'ları ve topluluk öneri havuzu (aşağıda).
+
+## Canlı uçuş kartı
 
 Kilit ekranı / Dynamic Island'daki canlı uçuş kartını uygulama kapalıyken de günceller.
 Cloudflare Worker: KV'de kayıtlı kartları 5 dakikada bir AeroDataBox'tan sorgular, durum değişince
@@ -20,6 +24,9 @@ uygulama ──POST /activities (push token + uçuş)──▶ Worker ──KV
    cd server
    npm install
    npx wrangler kv namespace create ACTIVITIES   # çıkan id'yi wrangler.toml'a yaz
+   npx wrangler d1 create traveller-community    # çıkan database_id'yi wrangler.toml'a yaz
+   npx wrangler d1 migrations apply traveller-community --remote
+   npx wrangler secret put CONTRIBUTOR_SALT      # rastgele uzun bir değer; değişirse katkı sayımları sıfırlanır
    npx wrangler secret put CLIENT_KEY            # rastgele uzun bir değer
    npx wrangler secret put RAPIDAPI_KEY
    npx wrangler secret put APNS_KEY_ID
@@ -35,6 +42,24 @@ uygulama ──POST /activities (push token + uçuş)──▶ Worker ──KV
    Adreste `https://` yazma: xcconfig'te `//` yorum başlatır; uygulama şemayı kendisi ekler.
 
 Sunucu adresi boşsa uygulama eskisi gibi çalışır: kart yalnızca uygulama açıkken ve arka plan yenilemesinde güncellenir.
+
+## Topluluk öneri havuzu
+
+Seyahati biten kullanıcı Anılar'daki kartla onay verirse gittiği yerler ve aynı gün art arda gidilen yer çiftleri D1'e yazılır.
+Veritabanı gizlidir (yalnızca Worker erişir); uç noktalar `X-Traveller-Key` ister.
+
+| Uç nokta | İş |
+|---|---|
+| `POST /places/contribute` | `X-Traveller-Contributor: <cihaz UUID'si>`; gövde `{country, places[], transitions[[ref, ref]]}`. Günde 300 yer sınırı (429) |
+| `GET /places/nearby?lat&lon` | 8 km içinde en az 3 farklı gezginin gittiği, beğenisi beğenmemesinden az olmayan yerler |
+| `GET /places/next?lat&lon` | Bu yerden sonra aynı gün en az 3 gezginin gittiği yerler |
+
+- Saklanan: yer adı, konum (5 basamak), tür, oy, fotoğrafla doğrulandı mı ve yer çiftleri. Kişi adı, tarih, not, ekip, tam rota saklanmaz.
+- Cihaz kimliği `SHA-256(CONTRIBUTOR_SALT + UUID)` olarak tutulur; yalnızca "aynı kişi iki kez sayılmasın" ve kota için.
+- Aynı yer farklı dillerde/küçük konum farkıyla gelirse 60 m içinde ve adı örtüşüyorsa (ya da 15 m içindeyse) birleştirilir.
+- Yerelde denemek: `npx wrangler d1 migrations apply traveller-community --local` ve `npx wrangler dev`; uygulamayı
+  `LIVE_ACTIVITY_SERVER_HOST='http:/$()/localhost:8787'` ile derle.
+- Sonraki adım: App Attest ile yalnızca gerçek uygulamanın katkı gönderebilmesi (şimdilik ortak `CLIENT_KEY` + kota).
 
 ## Notlar
 

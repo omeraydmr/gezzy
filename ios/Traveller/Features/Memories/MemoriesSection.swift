@@ -20,6 +20,9 @@ struct MemoriesSection: View {
     var body: some View {
         ModuleCard(String(localized: "Anılar"), symbol: "photo.on.rectangle.angled") {
             TripSummaryCard(trip: trip)
+            if CommunityService.shared.isConfigured && CommunityPlaces.canContribute(trip) {
+                CommunityShareCard(trip: trip, verified: CommunityPlaces.verifiedStops(in: trip, moments: moments ?? []))
+            }
             if !library.canRead {
                 permissionPrompt
             } else if let moments {
