@@ -1,15 +1,23 @@
-// Traveller canlı uçuş kartı sunucusu (Cloudflare Worker).
-//  POST   /activities          uygulama kartın push token'ını ve uçuşu kaydeder
+// Traveller sunucusu (Cloudflare Worker).
+//  POST   /activities          uygulama canlı uçuş kartının push token'ını ve uçuşu kaydeder
 //  DELETE /activities/:token   kart kapatıldı
+//  POST   /places/contribute   seyahati biten kullanıcının onayla paylaştığı yerler ve geçişler (D1)
+//  GET    /places/nearby       ?lat&lon  en az 3 kişinin önerdiği yerler
+//  GET    /places/next         ?lat&lon  bu yerden sonra en sık gidilenler
 //  cron   */5                  izlenen uçuşları AeroDataBox'tan sorgular, değişeni APNs ile gönderir
 
 import { sendLiveActivity, type ApnsEnv } from "./apns.ts";
+import { contribute, contributorHash, nearby, nextPlaces, validate, type Database } from "./community.ts";
 import { contentState, isFinished, isWatchWindow, parseAeroDataBox, type Registration } from "./flight.ts";
 
 interface Env extends ApnsEnv {
   ACTIVITIES: KVNamespace;
   CLIENT_KEY: string;
   RAPIDAPI_KEY: string;
+  /** Topluluk öneri havuzu (D1). */
+  DB: Database;
+  /** Katkı veren kimliklerini özetlemek için gizli tuz. */
+  CONTRIBUTOR_SALT: string;
 }
 
 interface Stored {
@@ -41,6 +49,7 @@ export default {
       await env.ACTIVITIES.put(body.pushToken, JSON.stringify(stored), { expirationTtl: ttl });
       return json({ ok: true });
     }
+    if (url.pathname.startsWith("/places/")) return places(request, url, env);
     const match = url.pathname.match(/^\/activities\/([0-9a-f]+)$/);
     if (request.method === "DELETE" && match) {
       await env.ACTIVITIES.delete(match[1]);
@@ -53,6 +62,28 @@ export default {
     ctx.waitUntil(checkAll(env));
   },
 };
+
+async function places(request: Request, url: URL, env: Env): Promise<Response> {
+  if (request.method === "POST" && url.pathname === "/places/contribute") {
+    const raw = request.headers.get("x-traveller-contributor") ?? "";
+    if (!/^[0-9A-Fa-f-]{36}$/.test(raw) || !env.CONTRIBUTOR_SALT) return json({ error: "contributor" }, 400);
+    const body = validate(await request.json().catch(() => null));
+    if (typeof body === "string") return json({ error: `invalid ${body}` }, 400);
+    const accepted = await contribute(env.DB, await contributorHash(raw.toLowerCase(), env.CONTRIBUTOR_SALT), body);
+    return accepted ? json({ ok: true }) : json({ error: "quota" }, 429);
+  }
+  if (request.method === "GET" && (url.pathname === "/places/nearby" || url.pathname === "/places/next")) {
+    const lat = Number(url.searchParams.get("lat")), lon = Number(url.searchParams.get("lon"));
+    if (!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) {
+      return json({ error: "coordinate" }, 400);
+    }
+    const result = url.pathname === "/places/nearby" ? await nearby(env.DB, lat, lon) : await nextPlaces(env.DB, lat, lon);
+    return new Response(JSON.stringify({ places: result }), {
+      headers: { "content-type": "application/json", "cache-control": "public, max-age=3600" },
+    });
+  }
+  return json({ error: "not found" }, 404);
+}
 
 async function checkAll(env: Env, now = new Date()): Promise<void> {
   let cursor: string | undefined;

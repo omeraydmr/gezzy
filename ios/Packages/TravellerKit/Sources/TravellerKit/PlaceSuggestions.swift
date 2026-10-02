@@ -15,8 +15,10 @@ public enum PlaceSuggestions {
         public var openingHours: String?
         /// Önerilen ziyaret süresi (dakika).
         public var duration: Int
-        /// Sıralama puanı (Wikipedia'da son 30 günün okunma sayısı).
+        /// Sıralama puanı (Wikipedia'da son 30 günün okunma sayısı ya da topluluk puanı).
         public var score: Int
+        /// Topluluk önerisiyse katkı veren kişi sayısı; Wikipedia'dan gelenlerde nil.
+        public var contributors: Int?
 
         public init(id: String, name: String, kind: StopKind, category: String, coordinate: Coordinate,
                     openingHours: String?, duration: Int, score: Int) {
