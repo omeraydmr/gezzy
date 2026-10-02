@@ -102,4 +102,61 @@ final class BookingParserTests: XCTestCase {
     func testIgnoresTextWithoutBookings() {
         XCTAssertTrue(BookingParser.parse("Merhaba, 7 gece kalacağız. 10 kişiyiz.", now: now, calendar: cal).isEmpty)
     }
+
+    /// Booking.com onay PDF'inin PDFKit metni (kişisel bilgiler değiştirildi). Yazı tipi "i"yi "!" verir.
+    static let bookingComPDF = """
+    Rezervasyon onayı
+    ONAY NUMARASI: 1234.567.890
+    PİN KODU: 4321
+    Cab!nn Copenhagen
+    Adres: 1 Arn! Magnussons Gade,
+    Vesterbro, 1577 Køpenhag,
+    Dan!marka
+    Telefon: +45 33 29 19 00
+    GPS koord!natları: N 055°
+    39.954, E 12° 33.915
+    CHECK-İN
+    17
+    HAZİRAN
+    Çarşamba
+    15:00 - 00:00
+    CHECK-OUT
+    20
+    HAZİRAN
+    Cumartesi
+    00:00 - 11:00
+    ODA
+    1 /
+    GECE
+    3
+    FİYAT
+    1 oda TL 19.560
+    yaklaşık TL 24.450
+    (2 konuk !ç!n)
+    Commodore Oda - İk! Yataklı
+    Konuk adı: Test K!ş!
+    İptal koşulları:
+    Bu rezervasyonu !ptal edersen!z !ade almaya uygun olmayacaksınız.
+    """
+
+    func testBookingComTurkishPDF() throws {
+        let lodging = try XCTUnwrap(BookingParser.parse(Self.bookingComPDF, now: now, calendar: cal).lodgings.first)
+        XCTAssertEqual(lodging.name, "Cabinn Copenhagen")
+        XCTAssertEqual(lodging.address, "1 Arni Magnussons Gade, Vesterbro, 1577 Køpenhag, Danimarka")
+        XCTAssertEqual(lodging.confirmation, "1234567890")
+        XCTAssertEqual(lodging.note, "PIN: 4321")
+        // Yıl yazmıyor; 17 Haziran Çarşamba 2026'ya denk gelir (geçmişte kalsa da).
+        XCTAssertEqual(cal.dateComponents([.year, .month, .day, .hour], from: lodging.checkIn),
+                       DateComponents(year: 2026, month: 6, day: 17, hour: 15))
+        XCTAssertEqual(cal.dateComponents([.day, .hour], from: lodging.checkOut), DateComponents(day: 20, hour: 11))
+        XCTAssertEqual(lodging.lodging().nights(calendar: cal), 3)
+        let coordinate = try XCTUnwrap(lodging.coordinate)
+        XCTAssertEqual(coordinate.latitude, 55.6659, accuracy: 0.0001)
+        XCTAssertEqual(coordinate.longitude, 12.56525, accuracy: 0.0001)
+    }
+
+    func testGlyphRepairOnlyWhenTextIsBroken() {
+        XCTAssertEqual(BookingParser.repairGlyphs("Cab!nn !ç!n Dan!marka"), "Cabinn için Danimarka")
+        XCTAssertEqual(BookingParser.repairGlyphs("Harika! Görüşürüz!"), "Harika! Görüşürüz!")
+    }
 }
