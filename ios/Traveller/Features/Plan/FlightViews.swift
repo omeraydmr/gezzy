@@ -63,7 +63,7 @@ struct FlightsCard: View {
         .tray()
         .sheet(isPresented: $isAdding) { FlightSheet(trip: trip, editing: nil) }
         .sheet(item: $editing) { flight in FlightSheet(trip: trip, editing: flight) }
-        .sheet(isPresented: $isImporting) { BookingImportSheet(trip: trip) }
+        .sheet(isPresented: $isImporting) { BookingImportSheet(trip: trip, kind: .flights) }
     }
 }
 

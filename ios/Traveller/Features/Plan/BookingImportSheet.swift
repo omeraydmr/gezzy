@@ -5,12 +5,15 @@ import SwiftUI
 import TravellerKit
 import UniformTypeIdentifiers
 
-/// E-bilet ya da otel onayını (PDF, ekran görüntüsü ya da Wallet biniş kartı) okur, bulunan uçuş ve konaklamaları
-/// gösterir; seçilenler seyahate eklenir. Metin tamamen cihazda okunur.
+/// E-bilet (Uçuşlar kartından) ya da konaklama onayını (Konaklama kartından; Booking.com, Airbnb, otel e-postası)
+/// PDF, ekran görüntüsü ya da Wallet biniş kartından okur; seçilenler seyahate eklenir. Metin tamamen cihazda okunur.
 struct BookingImportSheet: View {
+    enum Kind { case flights, lodgings }
+
     @Environment(TripStore.self) private var store
     @Environment(\.dismiss) private var dismiss
     let trip: Trip
+    let kind: Kind
 
     @State private var isPickingFile = false
     @State private var photoItem: PhotosPickerItem?
@@ -27,13 +30,16 @@ struct BookingImportSheet: View {
                     Button {
                         isPickingFile = true
                     } label: {
-                        Label("PDF, Wallet kartı ya da dosya seç", systemImage: "doc.fill")
+                        Label(kind == .flights ? String(localized: "PDF, Wallet kartı ya da dosya seç") : String(localized: "PDF ya da dosya seç"),
+                              systemImage: "doc.fill")
                     }
                     PhotosPicker(selection: $photoItem, matching: .images) {
                         Label("Ekran görüntüsü seç", systemImage: "photo")
                     }
                 } footer: {
-                    Text("E-bilet, otel onayı ya da Wallet biniş kartı (.pkpass). Metin cihazda okunur, hiçbir yere gönderilmez.")
+                    Text(kind == .flights
+                         ? String(localized: "E-bilet ya da Wallet biniş kartı (.pkpass). Metin cihazda okunur, hiçbir yere gönderilmez.")
+                         : String(localized: "Booking.com, Airbnb ya da otelin onay PDF'i veya ekran görüntüsü. Metin cihazda okunur, hiçbir yere gönderilmez."))
                 }
 
                 if isReading {
@@ -44,13 +50,12 @@ struct BookingImportSheet: View {
                 }
 
                 if let result {
-                    if result.isEmpty {
+                    if kind == .flights ? result.flights.isEmpty : result.lodgings.isEmpty {
                         Section {
-                            Text("Uçuş ya da konaklama bulunamadı. Başka bir sayfa ya da daha net bir ekran görüntüsü dene.")
-                                .foregroundStyle(Color.ink2)
+                            Text(emptyText(result)).foregroundStyle(Color.ink2)
                         }
                     }
-                    if !result.flights.isEmpty {
+                    if kind == .flights && !result.flights.isEmpty {
                         Section("Uçuşlar") {
                             ForEach(Array(result.flights.enumerated()), id: \.offset) { index, flight in
                                 toggleRow(isOn: selectedFlights.contains(index)) {
@@ -61,7 +66,7 @@ struct BookingImportSheet: View {
                             }
                         }
                     }
-                    if !result.lodgings.isEmpty {
+                    if kind == .lodgings && !result.lodgings.isEmpty {
                         Section("Konaklama") {
                             ForEach(Array(result.lodgings.enumerated()), id: \.offset) { index, lodging in
                                 toggleRow(isOn: selectedLodgings.contains(index)) {
@@ -74,7 +79,7 @@ struct BookingImportSheet: View {
                     }
                 }
             }
-            .navigationTitle("Rezervasyon içe aktar")
+            .navigationTitle(kind == .flights ? String(localized: "Bileti içe aktar") : String(localized: "Konaklamayı içe aktar"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -85,7 +90,8 @@ struct BookingImportSheet: View {
                         .disabled(selectedFlights.isEmpty && selectedLodgings.isEmpty)
                 }
             }
-            .fileImporter(isPresented: $isPickingFile, allowedContentTypes: [.pdf, .image, .walletPass]) { outcome in
+            .fileImporter(isPresented: $isPickingFile,
+                          allowedContentTypes: kind == .flights ? [.pdf, .image, .walletPass] : [.pdf, .image]) { outcome in
                 if case let .success(url) = outcome {
                     Task { await read(url: url) }
                 }
@@ -150,6 +156,20 @@ struct BookingImportSheet: View {
         .buttonStyle(.plain)
     }
 
+    /// Aranan tür yoksa diğer kartı işaret eder (ör. konaklama onayı uçuş kartından açıldıysa).
+    private func emptyText(_ result: BookingParser.Result) -> String {
+        switch kind {
+        case .flights where !result.lodgings.isEmpty:
+            String(localized: "Bu belgede uçuş yok ama konaklama var; Konaklama kartındaki + ile içe aktarabilirsin.")
+        case .lodgings where !result.flights.isEmpty:
+            String(localized: "Bu belgede konaklama yok ama uçuş var; Uçuşlar kartındaki + ile içe aktarabilirsin.")
+        case .flights:
+            String(localized: "Uçuş bulunamadı. Başka bir sayfa ya da daha net bir ekran görüntüsü dene.")
+        case .lodgings:
+            String(localized: "Konaklama bulunamadı. Giriş/çıkış tarihlerinin göründüğü sayfayı ya da ekran görüntüsünü dene.")
+        }
+    }
+
     private func toggle(_ set: inout Set<Int>, _ index: Int) {
         if set.contains(index) { set.remove(index) } else { set.insert(index) }
     }
@@ -200,8 +220,8 @@ struct BookingImportSheet: View {
     private func apply(_ parsed: BookingParser.Result) {
         withAnimation {
             result = parsed
-            selectedFlights = Set(parsed.flights.indices)
-            selectedLodgings = Set(parsed.lodgings.indices)
+            selectedFlights = kind == .flights ? Set(parsed.flights.indices) : []
+            selectedLodgings = kind == .lodgings ? Set(parsed.lodgings.indices) : []
         }
     }
 

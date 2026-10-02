@@ -61,18 +61,6 @@
         }
       }
     },
-    "Toplam: %@" : {
-      "comment" : "TravellerKit BookingParser lodging note",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Total: %@"
-          }
-        }
-      }
-    },
     "—" : {
       "localizations" : {
         "en" : {
@@ -1894,6 +1882,16 @@
         }
       }
     },
+    "Bileti içe aktar" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import ticket"
+          }
+        }
+      }
+    },
     "Biletten içe aktar" : {
       "localizations" : {
         "en" : {
@@ -2014,6 +2012,16 @@
         }
       }
     },
+    "Booking.com, Airbnb ya da otelin onay PDF'i veya ekran görüntüsü. Metin cihazda okunur, hiçbir yere gönderilmez." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Booking.com, Airbnb or hotel confirmation PDF or screenshot. Text is read on device and never sent anywhere."
+          }
+        }
+      }
+    },
     "Boş" : {
       "localizations" : {
         "en" : {
@@ -2030,6 +2038,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Categories left empty are hidden from the budget (unless they have expenses)."
+          }
+        }
+      }
+    },
+    "Bu belgede konaklama yok ama uçuş var; Uçuşlar kartındaki + ile içe aktarabilirsin." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No stay here, but there is a flight; import it with + on the Flights card."
+          }
+        }
+      }
+    },
+    "Bu belgede uçuş yok ama konaklama var; Konaklama kartındaki + ile içe aktarabilirsin." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No flight here, but there is a stay; import it with + on the Stays card."
           }
         }
       }
@@ -2580,7 +2608,18 @@
         }
       }
     },
+    "E-bilet ya da Wallet biniş kartı (.pkpass). Metin cihazda okunur, hiçbir yere gönderilmez." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-ticket or Wallet boarding pass (.pkpass). Text is read on device and never sent anywhere."
+          }
+        }
+      }
+    },
     "E-bilet, otel onayı ya da Wallet biniş kartı (.pkpass). Metin cihazda okunur, hiçbir yere gönderilmez." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4631,6 +4670,16 @@
         }
       }
     },
+    "Konaklama bulunamadı. Giriş/çıkış tarihlerinin göründüğü sayfayı ya da ekran görüntüsünü dene." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No stay found. Try the page or screenshot that shows check-in and check-out dates."
+          }
+        }
+      }
+    },
     "Konaklama ekle" : {
       "localizations" : {
         "en" : {
@@ -4647,6 +4696,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Accommodation booking"
+          }
+        }
+      }
+    },
+    "Konaklamayı içe aktar" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import stay"
           }
         }
       }
@@ -5406,7 +5465,18 @@
         }
       }
     },
+    "Otel ya da ev ekle ya da Booking.com, Airbnb onayından içe aktar; günlerin planı oradan başlasın." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add a hotel or home, or import a Booking.com or Airbnb confirmation; each day's plan starts there."
+          }
+        }
+      }
+    },
     "Otel ya da ev ekle; günlerin planı oradan başlasın." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -5738,6 +5808,16 @@
         }
       }
     },
+    "PDF ya da dosya seç" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose a PDF or file"
+          }
+        }
+      }
+    },
     "PDF, Wallet kartı ya da dosya seç" : {
       "localizations" : {
         "en" : {
@@ -5941,6 +6021,7 @@
       }
     },
     "Rezervasyon içe aktar" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -5956,6 +6037,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Booking number"
+          }
+        }
+      }
+    },
+    "Rezervasyondan içe aktar" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import from booking"
           }
         }
       }
@@ -6812,6 +6903,18 @@
         }
       }
     },
+    "Toplam: %@" : {
+      "comment" : "TravellerKit BookingParser lodging note",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Total: %@"
+          }
+        }
+      }
+    },
     "Toplu taşıma önerilir · %lld dk yürüyüş" : {
       "localizations" : {
         "en" : {
@@ -6992,6 +7095,16 @@
         }
       }
     },
+    "Uçuş bulunamadı. Başka bir sayfa ya da daha net bir ekran görüntüsü dene." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No flight found. Try another page or a sharper screenshot."
+          }
+        }
+      }
+    },
     "Uçuş durumu alınamadı." : {
       "localizations" : {
         "en" : {
@@ -7053,6 +7166,7 @@
       }
     },
     "Uçuş ya da konaklama bulunamadı. Başka bir sayfa ya da daha net bir ekran görüntüsü dene." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {

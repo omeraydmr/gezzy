@@ -2,12 +2,14 @@ import MapKit
 import SwiftUI
 import TravellerKit
 
-/// Plan sekmesindeki konaklama kartı: oteller, gece sayıları, konaklaması olmayan geceler.
+/// Plan sekmesindeki konaklama kartı: oteller, gece sayıları, konaklaması olmayan geceler; elle ekleme ya da
+/// Booking.com/Airbnb onayından içe aktarma.
 struct LodgingCard: View {
     @Environment(TripStore.self) private var store
     let trip: Trip
     @State private var editing: Lodging?
     @State private var isAdding = false
+    @State private var isImporting = false
 
     var body: some View {
         let lodgings = trip.lodgingList
@@ -18,8 +20,9 @@ struct LodgingCard: View {
                     .font(.tBodyStrong)
                     .foregroundStyle(Color.ink)
                 Spacer()
-                Button {
-                    isAdding = true
+                Menu {
+                    Button("Elle ekle", systemImage: "square.and.pencil") { isAdding = true }
+                    Button("Rezervasyondan içe aktar", systemImage: "doc.viewfinder") { isImporting = true }
                 } label: {
                     Image(systemName: "plus")
                 }
@@ -28,7 +31,22 @@ struct LodgingCard: View {
             }
 
             if lodgings.isEmpty {
-                EmptyHint(symbol: "building.2", text: String(localized: "Otel ya da ev ekle; günlerin planı oradan başlasın."))
+                EmptyHint(symbol: "building.2",
+                          text: String(localized: "Otel ya da ev ekle ya da Booking.com, Airbnb onayından içe aktar; günlerin planı oradan başlasın."))
+                HStack(spacing: 10) {
+                    Button {
+                        isAdding = true
+                    } label: {
+                        Label("Elle ekle", systemImage: "square.and.pencil")
+                    }
+                    .buttonStyle(.primary)
+                    Button {
+                        isImporting = true
+                    } label: {
+                        Label("İçe aktar", systemImage: "doc.viewfinder")
+                    }
+                    .buttonStyle(.primary)
+                }
             }
 
             ForEach(lodgings) { lodging in
@@ -58,6 +76,7 @@ struct LodgingCard: View {
         }
         .tray()
         .sheet(isPresented: $isAdding) { LodgingSheet(trip: trip, editing: nil) }
+        .sheet(isPresented: $isImporting) { BookingImportSheet(trip: trip, kind: .lodgings) }
         .sheet(item: $editing) { lodging in LodgingSheet(trip: trip, editing: lodging) }
     }
 
