@@ -418,6 +418,16 @@
         }
       }
     },
+    "%@ fotoğraflarını paylaşmaya hazır. Sen de onay verince albüm açılır." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is ready to share photos. The album opens once you agree too."
+          }
+        }
+      }
+    },
     "%@ gecesi için konaklama yok" : {
       "localizations" : {
         "en" : {
@@ -692,6 +702,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld"
+          }
+        }
+      }
+    },
+    "%lld / %lld" : {
+      "localizations" : {
+        "tr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld / %2$lld"
           }
         }
       }
@@ -1334,6 +1354,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Activities"
+          }
+        }
+      }
+    },
+    "Albüm seçenekleri" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Album options"
+          }
+        }
+      }
+    },
+    "Albümden çıkar" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove from album"
           }
         }
       }
@@ -2504,6 +2544,16 @@
         }
       }
     },
+    "Ekran görüntüleri hariç; 2048 px'e küçültülmüş kopya iCloud'a yüklenir. İstediğin fotoğrafı sonra çıkarabilirsin." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Screenshots are skipped; a copy resized to 2048 px is uploaded to iCloud. You can remove any photo later."
+          }
+        }
+      }
+    },
     "Ekran görüntüsü seç" : {
       "localizations" : {
         "en" : {
@@ -2654,6 +2704,16 @@
         }
       }
     },
+    "Fotoğraf" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photo"
+          }
+        }
+      }
+    },
     "Fotoğraf çek" : {
       "localizations" : {
         "en" : {
@@ -2694,6 +2754,16 @@
         }
       }
     },
+    "Fotoğrafı aç" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open photo"
+          }
+        }
+      }
+    },
     "Fotoğrafı kaldır" : {
       "localizations" : {
         "en" : {
@@ -2730,6 +2800,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "From photos"
+          }
+        }
+      }
+    },
+    "Fotoğraflarımı paylaş" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Share my photos"
+          }
+        }
+      }
+    },
+    "Fotoğrafların albümden ve ekibin cihazlarından kalkar; sen de başkalarının fotoğraflarını göremezsin." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your photos are removed from the album and your crew's devices, and you can no longer see theirs."
+          }
+        }
+      }
+    },
+    "Fotoğrafların hazırlanıyor…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preparing your photos…"
           }
         }
       }
@@ -3350,6 +3450,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "You're all set, %@!"
+          }
+        }
+      }
+    },
+    "Henüz fotoğraf yok. Yüklemeler eşitlendikçe burada görünür." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No photos yet. They appear here as uploads sync."
           }
         }
       }
@@ -4716,6 +4826,16 @@
         }
       }
     },
+    "Onayın alındı. Ekipten biri de onay verince albüm açılacak." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're in. The album opens when someone else in the crew agrees too."
+          }
+        }
+      }
+    },
     "Onaylandı" : {
       "localizations" : {
         "en" : {
@@ -4822,6 +4942,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Open Database License (ODbL)"
+          }
+        }
+      }
+    },
+    "Ortak albüm" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shared album"
+          }
+        }
+      }
+    },
+    "Ortak albüm için önce Ekip sekmesinden kendini seyahate ekle." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To use the shared album, first add yourself to the trip from the Crew tab."
           }
         }
       }
@@ -5066,12 +5206,32 @@
         }
       }
     },
+    "Paylaşım kapatılsın mı?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stop sharing?"
+          }
+        }
+      }
+    },
     "Paylaşım yetkileri güncellenemedi: %@" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Couldn't update sharing permissions: %@"
+          }
+        }
+      }
+    },
+    "Paylaşımı kapat" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stop sharing"
           }
         }
       }
@@ -5494,6 +5654,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Trip not found"
+          }
+        }
+      }
+    },
+    "Seyahat günlerinde çektiğin fotoğraflar ekiple paylaşılır. Albüm, en az iki kişi onay verince açılır; yalnızca onay verenler görür." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photos you take on trip days are shared with your crew. The album opens once at least two people agree, and only those who agree can see it."
           }
         }
       }

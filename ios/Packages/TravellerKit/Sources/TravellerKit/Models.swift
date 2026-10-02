@@ -405,6 +405,10 @@ public struct Trip: Codable, Hashable, Identifiable, Sendable {
     public var checklist: [ChecklistItem]?
     /// Tax-free (KDV iadesi) kayıtları; eski kayıtlarda yok.
     public var taxRefunds: [TaxRefund]?
+    /// Ortak albüme fotoğraflarını açan kişiler (karşılıklı onay); eski kayıtlarda yok.
+    public var albumConsents: [AlbumConsent]?
+    /// Ortak albümdeki fotoğrafların bilgisi; dosyalar iCloud'da ayrı "Photo" kayıtlarıdır.
+    public var albumPhotos: [AlbumPhoto]?
 
     public init(id: UUID = UUID(), name: String, destination: Destination, startDate: Date, endDate: Date,
                 status: TripStatus = .planned, currency: String = "EUR", coverSeed: Int = 0, coverPhoto: String? = nil,
@@ -593,6 +597,8 @@ public struct Trip: Codable, Hashable, Identifiable, Sendable {
         ids += flights.map(\.id)
         ids += (checklist ?? []).map(\.id)
         ids += (taxRefunds ?? []).map(\.id)
+        ids += (albumConsents ?? []).map(\.id)
+        ids += (albumPhotos ?? []).map(\.id)
         return Set(ids)
     }
 
@@ -636,6 +642,15 @@ public struct Trip: Codable, Hashable, Identifiable, Sendable {
         result.checklist = checklist.isEmpty ? nil : checklist
         let refunds = union(result.taxRefunds ?? [], older.taxRefunds ?? [])
         result.taxRefunds = refunds.isEmpty ? nil : refunds
+        // Aynı kişi iki cihazdan onay verdiyse tek kayıt kalır.
+        var consented: Set<UUID> = []
+        let consents = union(result.albumConsents ?? [], older.albumConsents ?? [])
+            .filter { consented.insert($0.memberID).inserted }
+        result.albumConsents = consents.isEmpty ? nil : consents
+        var seenSources: Set<String> = []
+        let album = union(result.albumPhotos ?? [], older.albumPhotos ?? [])
+            .filter { seenSources.insert("\($0.ownerID)-\($0.sourceKey)").inserted }
+        result.albumPhotos = album.isEmpty ? nil : album
         result.tombstones = deleted.isEmpty ? nil : deleted
         return result
     }
