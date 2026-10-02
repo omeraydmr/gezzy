@@ -143,24 +143,133 @@ extension CGImagePropertyOrientation {
     }
 }
 
+/// Overpass API istemcisi. Sunucular sık meşgul olduğundan sorgu birkaç sunucuya aynı anda gider,
+/// ilk geçerli yanıt kullanılır. User-Agent zorunlu: olmadan ana sunucu 406 döndürüyor.
+enum OverpassClient {
+    static let endpoints = [
+        URL(string: "https://overpass-api.de/api/interpreter")!,
+        URL(string: "https://maps.mail.ru/osm/tools/overpass/api/interpreter")!,
+        URL(string: "https://overpass.private.coffee/api/interpreter")!,
+    ]
+
+    static func run(_ query: String, timeout: TimeInterval = 25) async throws -> Data {
+        let body = Data("data=\(query.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? query)".utf8)
+        return try await withThrowingTaskGroup(of: Data?.self) { group in
+            for endpoint in endpoints {
+                group.addTask {
+                    var request = URLRequest(url: endpoint)
+                    request.httpMethod = "POST"
+                    request.timeoutInterval = timeout
+                    request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+                    request.setValue("application/json", forHTTPHeaderField: "Accept")
+                    request.setValue("Traveller/\(Bundle.main.shortVersion) (iOS travel planner)", forHTTPHeaderField: "User-Agent")
+                    request.httpBody = body
+                    guard let (data, response) = try? await URLSession.shared.data(for: request),
+                          (response as? HTTPURLResponse)?.statusCode == 200,
+                          data.first == UInt8(ascii: "{") else { return nil }
+                    return data
+                }
+            }
+            for try await result in group {
+                if let result {
+                    group.cancelAll()
+                    return result
+                }
+            }
+            throw ServiceError.badResponse
+        }
+    }
+}
+
+private extension Bundle {
+    var shortVersion: String { object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1" }
+}
+
 /// OpenStreetMap (Overpass API) üzerinden bir durağın açılış saatlerini bulur.
 @MainActor
 final class OpeningHoursService {
     static let shared = OpeningHoursService()
-    private let endpoint = URL(string: "https://overpass-api.de/api/interpreter")!
 
     func lookup(name: String, coordinate: Coordinate) async throws -> String? {
-        var request = URLRequest(url: endpoint)
-        request.httpMethod = "POST"
-        request.timeoutInterval = 15
-        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
         let query = OpeningHoursLookup.query(latitude: coordinate.latitude, longitude: coordinate.longitude)
-        let encoded = query.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? query
-        request.httpBody = Data("data=\(encoded)".utf8)
-        let (data, response) = try await URLSession.shared.data(for: request)
-        guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw ServiceError.badResponse }
+        let data = try await OverpassClient.run(query, timeout: 15)
         let candidates = try OpeningHoursLookup.decodeCandidates(data)
         return OpeningHoursLookup.bestMatch(for: name, in: candidates)?.openingHours
+    }
+}
+
+/// Gidilen şehirde görülecek yer önerileri: Wikipedia (konuma göre arama + okunma sayısı); olmazsa Apple Haritalar.
+@MainActor
+final class PlaceSuggestionService {
+    static let shared = PlaceSuggestionService()
+    /// Şehir başına son sonuç (filtresiz); sayfa her açıldığında yeniden sorgulanmasın.
+    private var cache: [String: [PlaceSuggestions.Suggestion]] = [:]
+
+    func suggestions(around center: Coordinate, excluding existing: [Stop]) async throws -> [PlaceSuggestions.Suggestion] {
+        let key = String(format: "%.3f,%.3f", center.latitude, center.longitude)
+        let all: [PlaceSuggestions.Suggestion]
+        if let cached = cache[key] {
+            all = cached
+        } else {
+            let language = Bundle.main.preferredLocalizations.first == "tr" ? "tr" : "en"
+            let responses = await wikipedia(PlaceSuggestions.searchURLs(center: center))
+            let decoded = PlaceSuggestions.decode(responses, language: language, limit: 80)
+            all = decoded.isEmpty ? try await mapKitSuggestions(around: center) : decoded
+            cache[key] = all
+        }
+        return Array(all.filter { suggestion in !existing.contains(where: suggestion.matches) }.prefix(40))
+    }
+
+    /// Aramalar paralel; başarısız olanlar atlanır.
+    private func wikipedia(_ urls: [URL]) async -> [Data] {
+        await withTaskGroup(of: Data?.self) { group in
+            for url in urls {
+                group.addTask {
+                    var request = URLRequest(url: url, timeoutInterval: 12)
+                    // Wikimedia API kuralı: uygulamayı tanıtan bir User-Agent.
+                    request.setValue("Traveller/1.0 (iOS travel planner; https://github.com/omeraydmr/travller)",
+                                     forHTTPHeaderField: "User-Agent")
+                    guard let (data, response) = try? await URLSession.shared.data(for: request),
+                          (response as? HTTPURLResponse)?.statusCode == 200 else { return nil }
+                    return data
+                }
+            }
+            var result: [Data] = []
+            for await data in group { if let data { result.append(data) } }
+            return result
+        }
+    }
+
+    /// Yedek: Apple Haritalar'ın turistik yer kategorileri (açılış saati ve popülerlik bilgisi yok).
+    private func mapKitSuggestions(around center: Coordinate) async throws -> [PlaceSuggestions.Suggestion] {
+        var categories: [MKPointOfInterestCategory] = [.museum, .park, .nationalPark, .zoo, .aquarium, .amusementPark, .theater]
+        if #available(iOS 18.0, *) {
+            categories += [.castle, .fortress, .landmark, .nationalMonument, .planetarium]
+        }
+        let request = MKLocalPointsOfInterestRequest(center: CLLocationCoordinate2D(latitude: center.latitude,
+                                                                                   longitude: center.longitude),
+                                                     radius: 5000)
+        request.pointOfInterestFilter = MKPointOfInterestFilter(including: categories)
+        let items = try await MKLocalSearch(request: request).start().mapItems
+        return items.compactMap { item -> PlaceSuggestions.Suggestion? in
+            guard let name = item.name else { return nil }
+            let coordinate = Coordinate(latitude: item.placemark.coordinate.latitude, longitude: item.placemark.coordinate.longitude)
+            let (kind, category, duration) = Self.describe(item.pointOfInterestCategory)
+            return PlaceSuggestions.Suggestion(id: "apple/\(name)/\(coordinate.latitude)", name: name, kind: kind,
+                                               category: category, coordinate: coordinate, openingHours: nil,
+                                               duration: duration, score: item.url == nil ? 1 : 2)
+        }.sorted { $0.score > $1.score }
+    }
+
+    private static func describe(_ category: MKPointOfInterestCategory?) -> (StopKind, String, Int) {
+        switch category {
+        case .museum?: (.sight, String(localized: "Müze"), 120)
+        case .park?, .nationalPark?: (.activity, String(localized: "Park / bahçe"), 60)
+        case .zoo?, .aquarium?: (.activity, String(localized: "Hayvanat bahçesi / akvaryum"), 180)
+        case .amusementPark?: (.activity, String(localized: "Tema parkı"), 240)
+        case .theater?: (.activity, String(localized: "Tiyatro"), 120)
+        default: (.sight, String(localized: "Gezilecek yer"), 75)
+        }
     }
 }
 

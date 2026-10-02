@@ -1,12 +1,17 @@
 import SwiftUI
 import TravellerKit
 
-/// Henüz bir güne konmamış yerler. "Güne ekle" ile seçili günün sonuna taşınır.
+/// Gitmek istenen ama henüz bir güne konmamış yerler. Elle ya da önerilerden eklenir; "Güne ekle" ile
+/// seçili güne taşınır ya da "Otomatik rota" hepsini günlere dağıtır.
 struct IdeasCard: View {
     @Environment(TripStore.self) private var store
     let trip: Trip
     let day: Date
     @State private var isAdding = false
+    @State private var isSuggesting = false
+    @State private var isPlanning = false
+    /// Son otomatik rotadan önceki duraklar ve fikirler; "Geri al" bunları geri yükler.
+    @State private var undo: (stops: [Stop], ideas: [Stop]?)?
 
     var body: some View {
         let ideas = trip.ideaList
@@ -29,7 +34,44 @@ struct IdeasCard: View {
             }
 
             if ideas.isEmpty {
-                EmptyHint(symbol: "lightbulb", text: String(localized: "Gitmek istediğin ama gününü bilmediğin yerleri buraya at."))
+                EmptyHint(symbol: "lightbulb", text: String(localized: "Gitmek istediğin yerleri ekle ya da önerilerden seç; sonra otomatik rota günlere dağıtsın."))
+            }
+
+            HStack(spacing: 8) {
+                Button {
+                    isSuggesting = true
+                } label: {
+                    Label("Yer öner", systemImage: "sparkle.magnifyingglass")
+                }
+                .buttonStyle(PillButtonStyle())
+                if !ideas.isEmpty {
+                    Button {
+                        isPlanning = true
+                    } label: {
+                        Label("Otomatik rota", systemImage: "wand.and.stars")
+                    }
+                    .buttonStyle(PillButtonStyle(isProminent: true))
+                }
+                if let undo {
+                    Button {
+                        withAnimation(.spring(duration: 0.35)) {
+                            store.update(trip.id) { trip in
+                                trip.stops = undo.stops
+                                // Fikirler uygulanınca silindi olarak işaretlendi; eşitlemede kaybolmasınlar
+                                // diye geri gelenler yeni kimlik alır.
+                                trip.ideas = undo.ideas?.map { idea in
+                                    var copy = idea
+                                    if trip.tombstones?.contains(idea.id) == true { copy.id = UUID() }
+                                    return copy
+                                }
+                            }
+                        }
+                        self.undo = nil
+                    } label: {
+                        Label("Geri al", systemImage: "arrow.uturn.backward")
+                    }
+                    .buttonStyle(PillButtonStyle())
+                }
             }
 
             ForEach(ideas) { idea in
@@ -69,6 +111,14 @@ struct IdeasCard: View {
         .sheet(isPresented: $isAdding) {
             AddStopSheet(trip: trip, day: day, asIdea: true)
         }
+        .sheet(isPresented: $isSuggesting) {
+            PlaceSuggestionsSheet(trip: trip)
+        }
+        .sheet(isPresented: $isPlanning) {
+            AutoPlanSheet(trip: trip) { before in
+                withAnimation { undo = before }
+            }
+        }
     }
 
     /// Fikri günün sonuna durak olarak ekler. Durak yeni kimlik alır; böylece fikrin silinmesi
@@ -83,5 +133,20 @@ struct IdeasCard: View {
             trip.stops.append(stop)
             trip.ideas?.removeAll { $0.id == idea.id }
         }
+    }
+}
+
+/// Kart içi küçük hap düğme.
+struct PillButtonStyle: ButtonStyle {
+    var isProminent = false
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(.footnote, weight: .semibold))
+            .foregroundStyle(isProminent ? Color.onInk : Color.ink)
+            .padding(.horizontal, 12)
+            .frame(height: 34)
+            .background(isProminent ? Color.ink : Color.track, in: Capsule())
+            .opacity(configuration.isPressed ? 0.8 : 1)
     }
 }
