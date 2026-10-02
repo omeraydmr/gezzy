@@ -494,6 +494,16 @@
         }
       }
     },
+    "%@ için yerler aranıyor…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finding places in %@…"
+          }
+        }
+      }
+    },
     "%@ içinde yer ara" : {
       "localizations" : {
         "en" : {
@@ -966,6 +976,16 @@
         }
       }
     },
+    "%lld yer ekle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add %lld places"
+          }
+        }
+      }
+    },
     "%lld. durak" : {
       "localizations" : {
         "en" : {
@@ -1004,6 +1024,22 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$lld. gün · %2$@ · %3$@"
+          }
+        }
+      }
+    },
+    "%lld. gün · %@ · %@ yürüyüş" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Day %1$lld · %2$@ · %3$@ walking"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld. gün · %2$@ · %3$@ yürüyüş"
           }
         }
       }
@@ -1964,6 +2000,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Closed at this time · closes %@"
+          }
+        }
+      }
+    },
+    "Bu şehir için yeni öneri bulunamadı." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No new suggestions for this city."
           }
         }
       }
@@ -3004,6 +3050,16 @@
         }
       }
     },
+    "Gezilecek yer" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sight"
+          }
+        }
+      }
+    },
     "Gezilen ülkeler" : {
       "localizations" : {
         "en" : {
@@ -3095,11 +3151,22 @@
       }
     },
     "Gitmek istediğin ama gününü bilmediğin yerleri buraya at." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Drop places here that you want to visit but haven't scheduled yet."
+          }
+        }
+      }
+    },
+    "Gitmek istediğin yerleri ekle ya da önerilerden seç; sonra otomatik rota günlere dağıtsın." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add places you want to visit or pick from suggestions; then let auto route spread them across your days."
           }
         }
       }
@@ -3218,6 +3285,16 @@
         }
       }
     },
+    "Güne başlama · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start the day · %@"
+          }
+        }
+      }
+    },
     "Günler: Mo Tu We Th Fr Sa Su. Kapalı günler için \"off\". Saatler OpenStreetMap'ten otomatik gelir; yanlışsa buradan düzeltebilirsin. %@" : {
       "localizations" : {
         "en" : {
@@ -3234,6 +3311,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Add stops to each day; the route is ordered by opening hours and the shortest walk, and the map works offline too."
+          }
+        }
+      }
+    },
+    "Günü bitirme · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "End the day · %@"
           }
         }
       }
@@ -3420,6 +3507,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "In the airport's local time."
+          }
+        }
+      }
+    },
+    "Hayvanat bahçesi / akvaryum" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zoo / aquarium"
           }
         }
       }
@@ -4396,6 +4493,16 @@
         }
       }
     },
+    "Konumu olmayan, açık olduğu günlerde yeri kalmayan ya da güne sığmayan yerler Fikirler'de kalır." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Places without a location, with no room on the days they're open, or that don't fit a day stay in Ideas."
+          }
+        }
+      }
+    },
     "Kosova" : {
       "localizations" : {
         "en" : {
@@ -4656,6 +4763,16 @@
         }
       }
     },
+    "Müze" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Museum"
+          }
+        }
+      }
+    },
     "Nasıl seyahat ediyorsun?" : {
       "localizations" : {
         "en" : {
@@ -4906,6 +5023,16 @@
         }
       }
     },
+    "Önerilen yerler" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suggested places"
+          }
+        }
+      }
+    },
     "Öneriler" : {
       "localizations" : {
         "en" : {
@@ -4916,12 +5043,32 @@
         }
       }
     },
+    "Öneriler alınamadı; internet bağlantını kontrol et." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't load suggestions; check your internet connection."
+          }
+        }
+      }
+    },
     "Öneriler mevsime göre yapılacak." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Suggestions will be based on the season."
+          }
+        }
+      }
+    },
+    "Öneriler Wikipedia'dan; son 30 günde en çok okunan yerler önce gelir. Açılış saatleri plana eklendikten sonra OpenStreetMap'ten aranır." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suggestions come from Wikipedia; the most-read places of the last 30 days come first. Opening hours are looked up on OpenStreetMap once added to the plan."
           }
         }
       }
@@ -4982,6 +5129,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Add a hotel or home; each day's plan starts from there."
+          }
+        }
+      }
+    },
+    "Otomatik rota" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auto route"
           }
         }
       }
@@ -5052,6 +5209,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Currencies"
+          }
+        }
+      }
+    },
+    "Park / bahçe" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Park / garden"
           }
         }
       }
@@ -5592,6 +5759,16 @@
         }
       }
     },
+    "Şehrin konumu bulunamadı." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't find the city's location."
+          }
+        }
+      }
+    },
     "Sekiz" : {
       "localizations" : {
         "en" : {
@@ -5878,6 +6055,16 @@
         }
       }
     },
+    "Sığmayanlar" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Didn't fit"
+          }
+        }
+      }
+    },
     "Sınır aşılıyor" : {
       "localizations" : {
         "en" : {
@@ -6148,6 +6335,16 @@
         }
       }
     },
+    "Tekrar dene" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try again"
+          }
+        }
+      }
+    },
     "Tekrar kontrol et" : {
       "localizations" : {
         "en" : {
@@ -6164,6 +6361,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Phone"
+          }
+        }
+      }
+    },
+    "Tema parkı" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Theme park"
+          }
+        }
+      }
+    },
+    "Tiyatro" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Theatre"
           }
         }
       }
@@ -6698,6 +6915,16 @@
         }
       }
     },
+    "Yakın yerler aynı güne toplanır; açılış saatleri, otel, varış ve dönüş uçuşları dikkate alınır. Mevcut durakların saatleri değişmez." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nearby places are grouped on the same day; opening hours, your stay, and arrival and departure flights are taken into account. Existing stop times stay as they are."
+          }
+        }
+      }
+    },
     "Yaklaşan" : {
       "localizations" : {
         "en" : {
@@ -6788,6 +7015,16 @@
         }
       }
     },
+    "Yeni" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New"
+          }
+        }
+      }
+    },
     "Yeni seyahat" : {
       "localizations" : {
         "en" : {
@@ -6804,6 +7041,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Location (e.g. VFS Global Istanbul)"
+          }
+        }
+      }
+    },
+    "Yer öner" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suggest places"
           }
         }
       }
@@ -6874,6 +7121,174 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Delete visit"
+          }
+        }
+      }
+    },
+    "Galeri" : {
+      "comment" : "TravellerKit PlaceSuggestions category",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gallery"
+          }
+        }
+      }
+    },
+    "Kale / saray" : {
+      "comment" : "TravellerKit PlaceSuggestions category",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Castle / palace"
+          }
+        }
+      }
+    },
+    "İbadethane" : {
+      "comment" : "TravellerKit PlaceSuggestions category",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Place of worship"
+          }
+        }
+      }
+    },
+    "Seyir noktası" : {
+      "comment" : "TravellerKit PlaceSuggestions category",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Viewpoint"
+          }
+        }
+      }
+    },
+    "Meydan" : {
+      "comment" : "TravellerKit PlaceSuggestions category",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Square"
+          }
+        }
+      }
+    },
+    "Semt" : {
+      "comment" : "TravellerKit PlaceSuggestions category",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neighbourhood"
+          }
+        }
+      }
+    },
+    "Anıt" : {
+      "comment" : "TravellerKit PlaceSuggestions category",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Monument"
+          }
+        }
+      }
+    },
+    "Simge yapı" : {
+      "comment" : "TravellerKit PlaceSuggestions category",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Landmark"
+          }
+        }
+      }
+    },
+    "Tarihî alan" : {
+      "comment" : "TravellerKit PlaceSuggestions category",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Historic site"
+          }
+        }
+      }
+    },
+    "Pazar" : {
+      "comment" : "TravellerKit PlaceSuggestions category",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Market"
+          }
+        }
+      }
+    },
+    "Tiyatro / opera" : {
+      "comment" : "TravellerKit PlaceSuggestions category",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Theatre / opera"
+          }
+        }
+      }
+    },
+    "Kafe / restoran" : {
+      "comment" : "TravellerKit PlaceSuggestions category",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Café / restaurant"
+          }
+        }
+      }
+    },
+    "Plaj" : {
+      "comment" : "TravellerKit PlaceSuggestions category",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beach"
+          }
+        }
+      }
+    },
+    "Kütüphane / kitapçı" : {
+      "comment" : "TravellerKit PlaceSuggestions category",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Library / bookshop"
           }
         }
       }
