@@ -61,6 +61,18 @@
         }
       }
     },
+    "Toplam: %@" : {
+      "comment" : "TravellerKit BookingParser lodging note",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Total: %@"
+          }
+        }
+      }
+    },
     "—" : {
       "localizations" : {
         "en" : {

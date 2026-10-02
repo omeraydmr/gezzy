@@ -1,3 +1,4 @@
+import CoreLocation
 import PDFKit
 import PhotosUI
 import SwiftUI
@@ -109,6 +110,12 @@ struct BookingImportSheet: View {
         return VStack(alignment: .leading, spacing: 2) {
             Text(lodging.name).foregroundStyle(Color.ink)
             Text(detail).font(.footnote).foregroundStyle(Color.ink2)
+            if !lodging.address.isEmpty {
+                Text(lodging.address).font(.caption).foregroundStyle(Color.ink3).lineLimit(2)
+            }
+            if !lodging.note.isEmpty {
+                Text(lodging.note).font(.caption).foregroundStyle(Color.ink3)
+            }
         }
     }
 
@@ -209,6 +216,18 @@ struct BookingImportSheet: View {
                 trip.flights.append(flight)
             }
             if !lodgings.isEmpty { trip.lodgings = (trip.lodgings ?? []) + lodgings }
+        }
+        // Onayda koordinat yoksa (Airbnb) adresten bulunur; harita ve gün planı otelden başlasın.
+        let store = store, tripID = trip.id
+        for lodging in lodgings where lodging.coordinate == nil && !lodging.address.isEmpty {
+            Task { @MainActor in
+                guard let location = try? await CLGeocoder().geocodeAddressString(lodging.address).first?.location else { return }
+                store.update(tripID) { trip in
+                    guard let index = trip.lodgings?.firstIndex(where: { $0.id == lodging.id }) else { return }
+                    trip.lodgings?[index].coordinate = Coordinate(latitude: location.coordinate.latitude,
+                                                                  longitude: location.coordinate.longitude)
+                }
+            }
         }
         dismiss()
     }

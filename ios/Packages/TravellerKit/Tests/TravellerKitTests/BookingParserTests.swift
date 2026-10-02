@@ -131,6 +131,7 @@ final class BookingParserTests: XCTestCase {
     3
     FİYAT
     1 oda TL 19.560
+    F!yat
     yaklaşık TL 24.450
     (2 konuk !ç!n)
     Commodore Oda - İk! Yataklı
@@ -144,7 +145,7 @@ final class BookingParserTests: XCTestCase {
         XCTAssertEqual(lodging.name, "Cabinn Copenhagen")
         XCTAssertEqual(lodging.address, "1 Arni Magnussons Gade, Vesterbro, 1577 Køpenhag, Danimarka")
         XCTAssertEqual(lodging.confirmation, "1234567890")
-        XCTAssertEqual(lodging.note, "PIN: 4321")
+        XCTAssertEqual(lodging.note, "PIN: 4321 · Toplam: TL 24.450")
         // Yıl yazmıyor; 17 Haziran Çarşamba 2026'ya denk gelir (geçmişte kalsa da).
         XCTAssertEqual(cal.dateComponents([.year, .month, .day, .hour], from: lodging.checkIn),
                        DateComponents(year: 2026, month: 6, day: 17, hour: 15))
@@ -158,5 +159,61 @@ final class BookingParserTests: XCTestCase {
     func testGlyphRepairOnlyWhenTextIsBroken() {
         XCTAssertEqual(BookingParser.repairGlyphs("Cab!nn !ç!n Dan!marka"), "Cabinn için Danimarka")
         XCTAssertEqual(BookingParser.repairGlyphs("Harika! Görüşürüz!"), "Harika! Görüşürüz!")
+    }
+
+    /// Airbnb onay PDF'inin PDFKit metni (ad, adres, kod ve telefon değiştirildi).
+    static let airbnbPDF = """
+    Call host: +36 70 000 0000
+    Sample Side Studios 3/2
+    Check-in
+    3:00 PM
+    Sat, Nov 14
+    Checkout
+    11:00 AM
+    Sun, Nov 15
+    Who’s coming
+    2 guests
+    Test Kişi, Deneme Kişi
+    Confirmation code
+    HM2TEST0X1
+    Budapest, Example utca 1, Budapest, 1088, Hungary
+    Hosted by T Host
+    Payment details
+    Total cost: ₺4,363.46
+    """
+
+    func testAirbnbEnglishPDF() throws {
+        let lodging = try XCTUnwrap(BookingParser.parse(Self.airbnbPDF, now: now, calendar: cal).lodgings.first)
+        XCTAssertEqual(lodging.name, "Sample Side Studios 3/2")
+        XCTAssertEqual(lodging.address, "Budapest, Example utca 1, Budapest, 1088, Hungary")
+        XCTAssertEqual(lodging.confirmation, "HM2TEST0X1")
+        XCTAssertEqual(lodging.note, "Toplam: ₺4,363.46")
+        XCTAssertEqual(cal.dateComponents([.year, .month, .day, .hour], from: lodging.checkIn),
+                       DateComponents(year: 2026, month: 11, day: 14, hour: 15))
+        XCTAssertEqual(cal.dateComponents([.day, .hour], from: lodging.checkOut), DateComponents(day: 15, hour: 11))
+        XCTAssertNil(lodging.coordinate)
+    }
+
+    func testAirbnbTurkishLayout() throws {
+        let text = """
+        Galata Loft
+        Giriş
+        15:00
+        Cmt, 14 Kas
+        Çıkış
+        11:00
+        Paz, 15 Kas
+        Onay kodu
+        HMABC12345
+        """
+        let lodging = try XCTUnwrap(BookingParser.parse(text, now: now, calendar: cal).lodgings.first)
+        XCTAssertEqual(lodging.name, "Galata Loft")
+        XCTAssertEqual(lodging.confirmation, "HMABC12345")
+        XCTAssertEqual(cal.dateComponents([.month, .day, .hour], from: lodging.checkIn), DateComponents(month: 11, day: 14, hour: 15))
+        XCTAssertEqual(cal.dateComponents([.day, .hour], from: lodging.checkOut), DateComponents(day: 15, hour: 11))
+    }
+
+    func testTwelveHourTimes() {
+        XCTAssertEqual(BookingParser.findTimes(in: "3:00 PM · 11:00 AM · 12:30 am · 14:05", excluding: []).map(\.hour), [15, 11, 0, 14])
     }
 }

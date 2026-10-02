@@ -100,6 +100,21 @@ public enum BookingParser {
         return regex.matches(in: text, range: NSRange(text.startIndex..., in: text))
     }
 
+    /// Üst üste binebilen eşleşmeler: her eşleşmeden sonra bir karakter ileriden aranır. Ay adı olmayan bir
+    /// kelimeyle ("15:00 Cmt, 14 Kas" içindeki "00 Cmt, 14") gerçek tarihin ("14 Kas") yutulmaması için.
+    static func overlappingMatches(_ pattern: String, in text: String) -> [NSTextCheckingResult] {
+        guard let regex = try? NSRegularExpression(pattern: pattern) else { return [] }
+        let length = (text as NSString).length
+        var result: [NSTextCheckingResult] = []
+        var location = 0
+        while location < length,
+              let m = regex.firstMatch(in: text, range: NSRange(location: location, length: length - location)) {
+            result.append(m)
+            location = m.range.location + 1
+        }
+        return result
+    }
+
     static func group(_ match: NSTextCheckingResult, _ index: Int, in text: String) -> String? {
         let range = match.range(at: index)
         guard range.location != NSNotFound, let swiftRange = Range(range, in: text) else { return nil }
@@ -142,15 +157,21 @@ public enum BookingParser {
         }
         // 12 Eki 2026, 12OCT26, 12 October
         let word = "([A-Za-zÇĞİÖŞÜçğıöşü]{3,9})"
-        for m in matches(#"\b(\d{1,2})\s?"# + word + #"\.?,?\s?(\d{4}|\d{2}(?![:.\d]))?"#, in: text) {
+        for m in overlappingMatches(#"\b(\d{1,2})\s?"# + word + #"\.?,?\s?(\d{4}|\d{2}(?![:.\d]))?"#, in: text) {
             guard let monthValue = month(group(m, 2, in: text) ?? "") else { continue }
             add(day: Int(group(m, 1, in: text)!)!, month: monthValue, year: group(m, 3, in: text).flatMap { Int($0) }, range: m.range,
-                weekday: weekday(after: m.range, in: text))
+                weekday: weekday(after: m.range, in: text) ?? weekday(before: m.range, in: text))
         }
         // Oct 12, 2026
         for m in matches(word + #"\.?\s(\d{1,2}),?\s(\d{4})\b"#, in: text) {
             guard let monthValue = month(group(m, 1, in: text) ?? "") else { continue }
             add(day: Int(group(m, 2, in: text)!)!, month: monthValue, year: Int(group(m, 3, in: text)!), range: m.range)
+        }
+        // Nov 14 (yılsız, Airbnb)
+        for m in overlappingMatches(word + #"\.?\s(\d{1,2})\b(?![:.]\d)"#, in: text) {
+            guard let monthValue = month(group(m, 1, in: text) ?? "") else { continue }
+            add(day: Int(group(m, 2, in: text)!)!, month: monthValue, year: nil, range: m.range,
+                weekday: weekday(before: m.range, in: text))
         }
         return tokens.sorted { $0.range.location < $1.range.location }
     }
@@ -158,7 +179,24 @@ public enum BookingParser {
     static let weekdayNames: [String: Int] = [
         "pazar": 1, "pazartesi": 2, "sali": 3, "carsamba": 4, "persembe": 5, "cuma": 6, "cumartesi": 7,
         "sunday": 1, "monday": 2, "tuesday": 3, "wednesday": 4, "thursday": 5, "friday": 6, "saturday": 7,
+        "paz": 1, "pzt": 2, "sal": 3, "car": 4, "per": 5, "cum": 6, "cmt": 7,
+        "sun": 1, "mon": 2, "tue": 3, "tues": 3, "wed": 4, "thu": 5, "thur": 5, "thurs": 5, "fri": 6, "sat": 7,
     ]
+
+    static func weekday(named word: String) -> Int? {
+        let folded = word.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: Locale(identifier: "en_US"))
+            .replacingOccurrences(of: "ı", with: "i").lowercased()
+        return weekdayNames[folded]
+    }
+
+    /// Tarihten hemen önce yazan gün adı ("Sat, Nov 14", "Cmt, 14 Kas").
+    static func weekday(before range: NSRange, in text: String) -> Int? {
+        let start = max(0, range.location - 14)
+        let preceding = (text as NSString).substring(with: NSRange(location: start, length: range.location - start))
+        guard let m = matches(#"([A-Za-zÇĞİÖŞÜçğıöşü]{3,10})\.?[\s,]*$"#, in: preceding).first,
+              let word = group(m, 1, in: preceding) else { return nil }
+        return weekday(named: word)
+    }
 
     /// Tarihten hemen sonra (aynı ya da sonraki satırda) yazan gün adı.
     static func weekday(after range: NSRange, in text: String) -> Int? {
@@ -168,15 +206,20 @@ public enum BookingParser {
         let following = (text as NSString).substring(with: NSRange(location: end, length: length))
         guard let m = matches(#"^[\s,(]*([A-Za-zÇĞİÖŞÜçğıöşü]{4,10})"#, in: following).first,
               let word = group(m, 1, in: following) else { return nil }
-        let folded = word.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: Locale(identifier: "en_US"))
-            .replacingOccurrences(of: "ı", with: "i").lowercased()
-        return weekdayNames[folded]
+        return weekday(named: word)
     }
 
     static func findTimes(in text: String, excluding excluded: [NSRange]) -> [TimeToken] {
-        matches(#"\b([01]?\d|2[0-3]):([0-5]\d)\b"#, in: text).compactMap { m in
+        // 24 saat ("15:00") ya da 12 saat ("3:00 PM", Airbnb).
+        matches(#"\b([01]?\d|2[0-3]):([0-5]\d)(?:\s?([AaPp])\.?[Mm]\b\.?)?"#, in: text).compactMap { m in
             guard !excluded.contains(where: { NSIntersectionRange($0, m.range).length > 0 }) else { return nil }
-            return TimeToken(hour: Int(group(m, 1, in: text)!)!, minute: Int(group(m, 2, in: text)!)!, range: m.range)
+            var hour = Int(group(m, 1, in: text)!)!
+            switch group(m, 3, in: text)?.lowercased() {
+            case "p"? where hour < 12: hour += 12
+            case "a"? where hour == 12: hour = 0
+            default: break
+            }
+            return TimeToken(hour: hour, minute: Int(group(m, 2, in: text)!)!, range: m.range)
         }
     }
 
@@ -298,28 +341,39 @@ public enum BookingParser {
             return times.first { $0.range.location >= end && $0.range.location - end < 40 }
         }
         guard let inDay = dateAfter(checkInKey), let outDay = dateAfter(checkOutKey) else { return [] }
+        // Airbnb saati tarihten önce yazar ("Check-in / 3:00 PM / Sat, Nov 14").
+        func time(for key: NSTextCheckingResult, _ day: DayToken) -> TimeToken? {
+            let end = key.range.location + key.range.length
+            return times.first { $0.range.location >= end && $0.range.location < day.range.location } ?? timeAfter(day)
+        }
         func rangeEnd(_ time: TimeToken) -> TimeToken {
             let end = time.range.location + time.range.length
             guard let next = times.first(where: { $0.range.location > end && $0.range.location - end <= 4 }) else { return time }
             let between = (text as NSString).substring(with: NSRange(location: end, length: next.range.location - end))
             return between.trimmingCharacters(in: .whitespaces).allSatisfy { "-–—".contains($0) } ? next : time
         }
-        let inTime = timeAfter(inDay).map { ($0.hour, $0.minute) } ?? (14, 0)
-        let outTime = timeAfter(outDay).map(rangeEnd).map { ($0.hour, $0.minute) } ?? (11, 0)
+        let inTime = time(for: checkInKey, inDay).map { ($0.hour, $0.minute) } ?? (14, 0)
+        let outTime = time(for: checkOutKey, outDay).map(rangeEnd).map { ($0.hour, $0.minute) } ?? (11, 0)
         guard let checkIn = date(inDay, hour: inTime.0, minute: inTime.1, timeZone: nil, calendar: calendar),
               let checkOut = date(outDay, hour: outTime.0, minute: outTime.1, timeZone: nil, calendar: calendar),
               checkOut > checkIn else { return [] }
 
         let lines = text.split(separator: "\n").map { $0.trimmingCharacters(in: .whitespaces) }
         let addressIndex = lines.firstIndex { $0.lowercased().hasPrefix("adres") || $0.lowercased().hasPrefix("address") }
-        let lodgingPattern = #"\b(hotel|otel|hostel|apart|apartments?|residence|suites?|inn|resort|pansiyon|guesthouse|lodge|palace)\b"#
-        let skipWords = ["booking.com", "airbnb", "check", "giriş", "çıkış", "confirmation", "rezervasyon", "onay"]
-        // Booking.com: tesis adı adres satırının hemen üstünde.
-        let aboveAddress = addressIndex.flatMap { $0 > 0 ? lines[$0 - 1] : nil }.flatMap { line -> String? in
+        let lodgingPattern = #"\b(hotel|otel|hostel|apart|apartments?|residence|suites?|inn|resort|pansiyon|guesthouse|lodge|palace|studios?|flat|loft|villa|daire)\b"#
+        let skipWords = ["booking.com", "airbnb", "check", "giriş", "çıkış", "confirmation", "rezervasyon", "onay",
+                         "call host", "ev sahibi", "hosted by"]
+        func plausibleName(_ line: String) -> String? {
             let lower = line.lowercased()
-            return line.count <= 60 && !line.contains(":") && !skipWords.contains { lower.contains($0) } ? line : nil
+            return line.count <= 60 && !line.contains(":") && !line.hasPrefix("+") && line.contains(where: \.isLetter)
+                && !skipWords.contains { lower.contains($0) } ? line : nil
         }
-        let name = aboveAddress ?? lines.first { line in
+        // Booking.com: tesis adı adres satırının hemen üstünde.
+        let aboveAddress = addressIndex.flatMap { $0 > 0 ? lines[$0 - 1] : nil }.flatMap(plausibleName)
+        // Airbnb: ilan adı giriş bilgisinin hemen üstünde.
+        let aboveCheckIn = (text as NSString).substring(to: checkInKey.range.location)
+            .split(separator: "\n").last.map { $0.trimmingCharacters(in: .whitespaces) }.flatMap(plausibleName)
+        let name = aboveAddress ?? aboveCheckIn ?? lines.first { line in
             let lower = line.lowercased()
             return line.count <= 60 && !matches(lodgingPattern, in: line, options: .caseInsensitive).isEmpty
                 && !skipWords.contains { lower.contains($0) }
@@ -335,6 +389,12 @@ public enum BookingParser {
                 address += " " + lines[next]
                 next += 1
             }
+        } else {
+            // Etiketsiz adres (Airbnb): en az iki virgül ve bir sayı içeren satır.
+            address = lines.first { line in
+                line.count <= 120 && line.filter { $0 == "," }.count >= 2 && line.contains(where: \.isNumber)
+                    && !line.contains(":") && !line.hasPrefix("+")
+            } ?? ""
         }
 
         // "ONAY NUMARASI", "PİN KODU": büyük Türkçe I/İ küçük harfe eşlenmez; aynı uzunlukta sadeleştirilir.
@@ -348,8 +408,12 @@ public enum BookingParser {
         let pin = matches(#"\b(?:pin(?: kodu| code)?|kapi kodu|door code)\s*[:#]?\s*(\d{4,8})\b"#, in: plain, options: .caseInsensitive)
             .first.flatMap { group($0, 1, in: plain) }
 
+        let total = matches(#"(?:total cost|total|toplam(?: tutar| maliyet| fiyat)?|fiyat|price)\s*:?\s*(?:yaklaşık|approx(?:imately)?\.?)?\s*([€$£₺]\s?[\d.,]*\d|(?:TL|EUR|USD|GBP|DKK|HUF)\s?[\d.,]*\d|\d[\d.,]*\s?(?:TL|EUR|USD|GBP|DKK|HUF|₺|€))"#,
+                            in: text, options: .caseInsensitive).first.flatMap { group($0, 1, in: text) }
+        let note = [pin.map { "PIN: \($0)" }, total.map { String(localized: "Toplam: \($0)") }].compactMap { $0 }
+            .joined(separator: " · ")
         return [LodgingCandidate(name: name, address: address, checkIn: checkIn, checkOut: checkOut, confirmation: confirmation,
-                                 coordinate: coordinate(in: text), note: pin.map { "PIN: \($0)" } ?? "")]
+                                 coordinate: coordinate(in: text), note: note)]
     }
 
     /// "N 055° 39.954, E 12° 33.915" (derece + ondalık dakika) ya da "GPS: 55.66590, 12.56525".
