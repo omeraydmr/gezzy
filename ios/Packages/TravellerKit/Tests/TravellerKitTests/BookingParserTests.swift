@@ -216,4 +216,15 @@ final class BookingParserTests: XCTestCase {
     func testTwelveHourTimes() {
         XCTAssertEqual(BookingParser.findTimes(in: "3:00 PM · 11:00 AM · 12:30 am · 14:05", excluding: []).map(\.hour), [15, 11, 0, 14])
     }
+
+    func testMatchingTripByDate() {
+        let copenhagen = Trip(name: "Kopenhag", destination: Destination(countryCode: "DK", city: "Kopenhag"),
+                              startDate: TestCalendar.date(2026, 6, 17), endDate: TestCalendar.date(2026, 6, 20))
+        let lisbon = Trip(name: "Lizbon", destination: Destination(countryCode: "PT", city: "Lizbon"),
+                          startDate: TestCalendar.date(2026, 9, 30), endDate: TestCalendar.date(2026, 10, 3))
+        let result = BookingParser.parse(Self.bookingComPDF, now: now, calendar: cal)
+        XCTAssertEqual(result.matchingTrip(in: [lisbon, copenhagen], calendar: cal)?.name, "Kopenhag")
+        let airbnb = BookingParser.parse(Self.airbnbPDF, now: now, calendar: cal)
+        XCTAssertNil(airbnb.matchingTrip(in: [lisbon, copenhagen], calendar: cal), "14 Kasım hiçbir seyahate düşmez")
+    }
 }

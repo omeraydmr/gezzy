@@ -94,6 +94,9 @@ struct TripsView: View {
             }
             .coverPhotoPicker(for: $coverTarget)
             .sheet(isPresented: $isShowingProfile) { ProfileView() }
+            .sheet(item: Binding(get: { AppRouter.shared.pendingImport }, set: { AppRouter.shared.pendingImport = $0 })) { file in
+                IncomingBookingSheet(url: file.url)
+            }
             .fullScreenCover(isPresented: $isOnboarding) {
                 OnboardingView(store: store) { planFirstTrip in
                     isOnboarding = false

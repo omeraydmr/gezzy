@@ -440,3 +440,17 @@ public enum BookingParser {
         return nil
     }
 }
+
+extension BookingParser.Result {
+    /// Belgenin ait olduğu seyahat: ilk uçuşun ya da girişin tarihi seyahat tarihlerine (gidişten 2 gün önce,
+    /// dönüşten 1 gün sonraya kadar) düşen seyahat; birden çoksa başlangıcı en yakın olan.
+    public func matchingTrip(in trips: [Trip], calendar: Calendar = .current) -> Trip? {
+        guard let date = (flights.map(\.departure) + lodgings.map(\.checkIn)).min() else { return nil }
+        let day = calendar.startOfDay(for: date)
+        return trips.filter { trip in
+            guard let from = calendar.date(byAdding: .day, value: -2, to: calendar.startOfDay(for: trip.startDate)),
+                  let to = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: trip.endDate)) else { return false }
+            return (from...to).contains(day)
+        }.min { abs($0.startDate.timeIntervalSince(day)) < abs($1.startDate.timeIntervalSince(day)) }
+    }
+}

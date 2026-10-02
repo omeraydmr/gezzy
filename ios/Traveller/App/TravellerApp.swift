@@ -25,7 +25,11 @@ struct TravellerApp: App {
                     await FlightStatusService.shared.refreshAll()
                 }
                 .onOpenURL { url in
-                    if let link = TripLink(url: url) { AppRouter.shared.open(link) }
+                    if let link = TripLink(url: url) {
+                        AppRouter.shared.open(link)
+                    } else if url.isFileURL {
+                        AppRouter.shared.importFile(url)
+                    }
                 }
         }
         .onChange(of: scenePhase) { _, phase in
@@ -88,9 +92,27 @@ final class SceneDelegate: NSObject, UIWindowSceneDelegate {
         }
     }
 
-    /// Widget ve canlı karttan gelen `traveller://` bağlantıları.
+    /// Widget ve canlı karttan gelen `traveller://` bağlantıları; Wallet, Dosyalar ya da Mail'den paylaşılan
+    /// rezervasyon dosyaları (.pkpass, PDF).
     func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
-        guard let link = URLContexts.lazy.compactMap({ TripLink(url: $0.url) }).first else { return }
-        Task { @MainActor in AppRouter.shared.open(link) }
+        handle(URLContexts)
+    }
+
+    /// Uygulama kapalıyken dosya ya da bağlantıyla açıldı.
+    func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
+        handle(connectionOptions.urlContexts)
+    }
+
+    private func handle(_ contexts: Set<UIOpenURLContext>) {
+        for context in contexts {
+            let url = context.url
+            Task { @MainActor in
+                if let link = TripLink(url: url) {
+                    AppRouter.shared.open(link)
+                } else if url.isFileURL {
+                    AppRouter.shared.importFile(url)
+                }
+            }
+        }
     }
 }

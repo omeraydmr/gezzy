@@ -8,12 +8,15 @@ import UniformTypeIdentifiers
 /// E-bilet (Uçuşlar kartından) ya da konaklama onayını (Konaklama kartından; Booking.com, Airbnb, otel e-postası)
 /// PDF, ekran görüntüsü ya da Wallet biniş kartından okur; seçilenler seyahate eklenir. Metin tamamen cihazda okunur.
 struct BookingImportSheet: View {
-    enum Kind { case flights, lodgings }
+    /// `all`: başka uygulamadan (Wallet, Dosyalar, Mail) paylaşılan belge; ne bulunursa gösterilir.
+    enum Kind { case flights, lodgings, all }
 
     @Environment(TripStore.self) private var store
     @Environment(\.dismiss) private var dismiss
     let trip: Trip
     let kind: Kind
+    /// Önceden okunmuş belge (paylaşılan dosya).
+    var preloaded: BookingParser.Result?
 
     @State private var isPickingFile = false
     @State private var photoItem: PhotosPickerItem?
@@ -30,16 +33,16 @@ struct BookingImportSheet: View {
                     Button {
                         isPickingFile = true
                     } label: {
-                        Label(kind == .flights ? String(localized: "PDF, Wallet kartı ya da dosya seç") : String(localized: "PDF ya da dosya seç"),
+                        Label(kind == .lodgings ? String(localized: "PDF ya da dosya seç") : String(localized: "PDF, Wallet kartı ya da dosya seç"),
                               systemImage: "doc.fill")
                     }
                     PhotosPicker(selection: $photoItem, matching: .images) {
                         Label("Ekran görüntüsü seç", systemImage: "photo")
                     }
                 } footer: {
-                    Text(kind == .flights
-                         ? String(localized: "E-bilet ya da Wallet biniş kartı (.pkpass). Metin cihazda okunur, hiçbir yere gönderilmez.")
-                         : String(localized: "Booking.com, Airbnb ya da otelin onay PDF'i veya ekran görüntüsü. Metin cihazda okunur, hiçbir yere gönderilmez."))
+                    Text(kind == .lodgings
+                         ? String(localized: "Booking.com, Airbnb ya da otelin onay PDF'i veya ekran görüntüsü. Metin cihazda okunur, hiçbir yere gönderilmez.")
+                         : String(localized: "E-bilet ya da Wallet biniş kartı (.pkpass). Wallet'taki kartı ••• → Paylaş → Traveller ile de gönderebilirsin. Metin cihazda okunur, hiçbir yere gönderilmez."))
                 }
 
                 if isReading {
@@ -50,12 +53,12 @@ struct BookingImportSheet: View {
                 }
 
                 if let result {
-                    if kind == .flights ? result.flights.isEmpty : result.lodgings.isEmpty {
+                    if isEmpty(result) {
                         Section {
                             Text(emptyText(result)).foregroundStyle(Color.ink2)
                         }
                     }
-                    if kind == .flights && !result.flights.isEmpty {
+                    if kind != .lodgings && !result.flights.isEmpty {
                         Section("Uçuşlar") {
                             ForEach(Array(result.flights.enumerated()), id: \.offset) { index, flight in
                                 toggleRow(isOn: selectedFlights.contains(index)) {
@@ -66,7 +69,7 @@ struct BookingImportSheet: View {
                             }
                         }
                     }
-                    if kind == .lodgings && !result.lodgings.isEmpty {
+                    if kind != .flights && !result.lodgings.isEmpty {
                         Section("Konaklama") {
                             ForEach(Array(result.lodgings.enumerated()), id: \.offset) { index, lodging in
                                 toggleRow(isOn: selectedLodgings.contains(index)) {
@@ -79,7 +82,8 @@ struct BookingImportSheet: View {
                     }
                 }
             }
-            .navigationTitle(kind == .flights ? String(localized: "Bileti içe aktar") : String(localized: "Konaklamayı içe aktar"))
+            .navigationTitle(title)
+            .onAppear { if let preloaded, result == nil { apply(preloaded) } }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -91,7 +95,7 @@ struct BookingImportSheet: View {
                 }
             }
             .fileImporter(isPresented: $isPickingFile,
-                          allowedContentTypes: kind == .flights ? [.pdf, .image, .walletPass] : [.pdf, .image]) { outcome in
+                          allowedContentTypes: kind == .lodgings ? [.pdf, .image] : [.pdf, .image, .walletPass]) { outcome in
                 if case let .success(url) = outcome {
                     Task { await read(url: url) }
                 }
@@ -156,6 +160,22 @@ struct BookingImportSheet: View {
         .buttonStyle(.plain)
     }
 
+    private var title: String {
+        switch kind {
+        case .flights: String(localized: "Bileti içe aktar")
+        case .lodgings: String(localized: "Konaklamayı içe aktar")
+        case .all: String(localized: "Rezervasyon içe aktar")
+        }
+    }
+
+    private func isEmpty(_ result: BookingParser.Result) -> Bool {
+        switch kind {
+        case .flights: result.flights.isEmpty
+        case .lodgings: result.lodgings.isEmpty
+        case .all: result.isEmpty
+        }
+    }
+
     /// Aranan tür yoksa diğer kartı işaret eder (ör. konaklama onayı uçuş kartından açıldıysa).
     private func emptyText(_ result: BookingParser.Result) -> String {
         switch kind {
@@ -167,6 +187,8 @@ struct BookingImportSheet: View {
             String(localized: "Uçuş bulunamadı. Başka bir sayfa ya da daha net bir ekran görüntüsü dene.")
         case .lodgings:
             String(localized: "Konaklama bulunamadı. Giriş/çıkış tarihlerinin göründüğü sayfayı ya da ekran görüntüsünü dene.")
+        case .all:
+            String(localized: "Uçuş ya da konaklama bulunamadı. Başka bir sayfa ya da daha net bir ekran görüntüsü dene.")
         }
     }
 
@@ -177,39 +199,13 @@ struct BookingImportSheet: View {
     // MARK: Okuma
 
     private func read(url: URL) async {
-        let scoped = url.startAccessingSecurityScopedResource()
-        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
         isReading = true
         defer { isReading = false }
         errorText = nil
-
-        if url.pathExtension.lowercased() == "pkpass" {
-            guard let data = try? Data(contentsOf: url), let parsed = PassParser.parse(pkpass: data) else {
-                errorText = String(localized: "Wallet kartı okunamadı.")
-                return
-            }
-            apply(parsed)
-        } else if url.pathExtension.lowercased() == "pdf", let document = PDFDocument(url: url) {
-            let text = document.string ?? ""
-            if text.trimmingCharacters(in: .whitespacesAndNewlines).count > 40 {
-                apply(BookingParser.parse(text))
-                return
-            }
-            // Taranmış PDF: ilk sayfaları görüntüye çevirip oku.
-            var lines: [String] = []
-            for index in 0..<min(document.pageCount, 3) {
-                guard let page = document.page(at: index) else { continue }
-                let bounds = page.bounds(for: .mediaBox)
-                let scale = 2000 / max(bounds.width, bounds.height)
-                let image = page.thumbnail(of: CGSize(width: bounds.width * scale, height: bounds.height * scale), for: .mediaBox)
-                lines += await TextReader.lines(in: image)
-            }
-            await read(lines: lines)
-        } else if let data = try? Data(contentsOf: url),
-                  let image = CoverImageStore.downsample(data: data, maxPixelSize: 2400) {
-            await read(lines: TextReader.lines(in: image))
-        } else {
-            errorText = String(localized: "Dosya okunamadı.")
+        do {
+            apply(try await BookingFileReader.read(url))
+        } catch {
+            errorText = error.localizedDescription
         }
     }
 
@@ -220,8 +216,8 @@ struct BookingImportSheet: View {
     private func apply(_ parsed: BookingParser.Result) {
         withAnimation {
             result = parsed
-            selectedFlights = kind == .flights ? Set(parsed.flights.indices) : []
-            selectedLodgings = kind == .lodgings ? Set(parsed.lodgings.indices) : []
+            selectedFlights = kind != .lodgings ? Set(parsed.flights.indices) : []
+            selectedLodgings = kind != .flights ? Set(parsed.lodgings.indices) : []
         }
     }
 
@@ -253,7 +249,51 @@ struct BookingImportSheet: View {
     }
 }
 
-private extension UTType {
+/// Rezervasyon dosyasını okur: Wallet kartı (.pkpass), PDF (metni yoksa sayfa görüntüsünden) ya da görüntü.
+enum BookingFileReader {
+    enum Failure: LocalizedError {
+        case pass, file
+
+        var errorDescription: String? {
+            switch self {
+            case .pass: String(localized: "Wallet kartı okunamadı.")
+            case .file: String(localized: "Dosya okunamadı.")
+            }
+        }
+    }
+
+    @MainActor
+    static func read(_ url: URL) async throws -> BookingParser.Result {
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+
+        if url.pathExtension.lowercased() == "pkpass" {
+            guard let data = try? Data(contentsOf: url), let parsed = PassParser.parse(pkpass: data) else { throw Failure.pass }
+            return parsed
+        }
+        if url.pathExtension.lowercased() == "pdf", let document = PDFDocument(url: url) {
+            let text = document.string ?? ""
+            if text.trimmingCharacters(in: .whitespacesAndNewlines).count > 40 {
+                return BookingParser.parse(text)
+            }
+            // Taranmış PDF: ilk sayfaları görüntüye çevirip oku.
+            var lines: [String] = []
+            for index in 0..<min(document.pageCount, 3) {
+                guard let page = document.page(at: index) else { continue }
+                let bounds = page.bounds(for: .mediaBox)
+                let scale = 2000 / max(bounds.width, bounds.height)
+                let image = page.thumbnail(of: CGSize(width: bounds.width * scale, height: bounds.height * scale), for: .mediaBox)
+                lines += await TextReader.lines(in: image)
+            }
+            return BookingParser.parse(lines.joined(separator: "\n"))
+        }
+        guard let data = try? Data(contentsOf: url),
+              let image = CoverImageStore.downsample(data: data, maxPixelSize: 2400) else { throw Failure.file }
+        return BookingParser.parse(await TextReader.lines(in: image).joined(separator: "\n"))
+    }
+}
+
+extension UTType {
     /// Wallet kartı. Info.plist'te içe aktarılan tür olarak bildirilir (UTImportedTypeDeclarations).
     static let walletPass = UTType(importedAs: "com.apple.pkpass", conformingTo: .data)
 }

@@ -37,6 +37,19 @@ targets:
         FlightStatusAPIKey: $(FLIGHT_STATUS_API_KEY)
         LiveActivityServerHost: $(LIVE_ACTIVITY_SERVER_HOST)
         LiveActivityServerKey: $(LIVE_ACTIVITY_SERVER_KEY)
+        # Wallet'taki kart (••• → Paylaş), Dosyalar ya da Mail'deki PDF "Traveller ile aç" ile içe aktarılır.
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: Wallet Pass
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            LSItemContentTypes:
+              - com.apple.pkpass
+          - CFBundleTypeName: PDF
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            LSItemContentTypes:
+              - com.adobe.pdf
+        LSSupportsOpeningDocumentsInPlace: false
         # Wallet biniş kartları (.pkpass) içe aktarılabilsin; Wallet'ı olmayan ortamda da tür tanınsın.
         UTImportedTypeDeclarations:
           - UTTypeIdentifier: com.apple.pkpass

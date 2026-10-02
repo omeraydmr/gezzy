@@ -1822,6 +1822,16 @@
         }
       }
     },
+    "Belgenin tarihi hiçbir seyahate denk gelmedi." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The document's date doesn't match any trip."
+          }
+        }
+      }
+    },
     "Belirtilmedi" : {
       "localizations" : {
         "en" : {
@@ -2609,11 +2619,22 @@
       }
     },
     "E-bilet ya da Wallet biniş kartı (.pkpass). Metin cihazda okunur, hiçbir yere gönderilmez." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "E-ticket or Wallet boarding pass (.pkpass). Text is read on device and never sent anywhere."
+          }
+        }
+      }
+    },
+    "E-bilet ya da Wallet biniş kartı (.pkpass). Wallet'taki kartı ••• → Paylaş → Traveller ile de gönderebilirsin. Metin cihazda okunur, hiçbir yere gönderilmez." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-ticket or Wallet boarding pass (.pkpass). You can also send a pass from Wallet via ••• → Share → Traveller. Text is read on device and never sent anywhere."
           }
         }
       }
@@ -3562,6 +3583,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "About, notifications and data sources"
+          }
+        }
+      }
+    },
+    "Hangi seyahate eklensin?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Which trip should it go to?"
           }
         }
       }
@@ -5304,6 +5335,16 @@
         }
       }
     },
+    "Önce bir seyahat oluştur; sonra belgeyi tekrar paylaş." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create a trip first, then share the document again."
+          }
+        }
+      }
+    },
     "Önceden e-vize alınmalı" : {
       "localizations" : {
         "en" : {
@@ -6021,7 +6062,6 @@
       }
     },
     "Rezervasyon içe aktar" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -7166,7 +7206,6 @@
       }
     },
     "Uçuş ya da konaklama bulunamadı. Başka bir sayfa ya da daha net bir ekran görüntüsü dene." : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
