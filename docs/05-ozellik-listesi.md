@@ -37,6 +37,7 @@ Gerçek cihaz (iPhone 15) testi sürüyor; iCloud paylaşım/yetki akışları i
 | Özellik | Durum | Not |
 |---|---|---|
 | Anılar: fotoğrafları tarih/konuma göre toplama, öbekleme, haritada gösterme | ✅ | Yeni "Anılar" sekmesi: anlar, durakla eşleme, harita, kartpostal paylaşma; tamamen cihazda |
+| Fotoğrafları tam ekran açma; ortak albüm (karşılıklı onay) | ✅ | Anılardaki fotoğraflar tam ekran, kaydırarak ve yakınlaştırarak açılır. Ortak albüm en az iki kişi onay verince açılır, yalnızca onay verenler görür; seyahat günlerindeki fotoğraflar (ekran görüntüleri hariç) 2048 px, konum bilgisi olmadan iCloud ile paylaşılır. Onay geri çekilince kişinin fotoğrafları kalkar |
 | Konaklama (otel) kayıtları | ✅ | Plan sekmesinde kart; gün planı ve harita otelden başlar; giriş/çıkış bildirimi; konaklamasız gece uyarısı |
 | Rezervasyon içe aktarma (PDF, ekran görüntüsü, Wallet biniş kartı) | ✅ | PDF ve ekran görüntüsünden uçuş + otel; Wallet `.pkpass` biniş kartından uçuş, saat ve koltuk (anlamsal etiketler, yoksa kart alanları). Hepsi cihazda |
 | Duraklar arası ulaşım satırı (yürüme/tram/taksi süreleri) | ✅ | Apple Haritalar'dan yürüme ve toplu taşıma süresi; otelden ilk durağa da |

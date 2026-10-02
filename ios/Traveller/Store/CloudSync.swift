@@ -309,7 +309,20 @@ final class CloudSync {
             guard let url = CoverImageStore.documents.fileURL(named: document.fileName) else { return nil }
             return UploadFile(kind: "document", name: document.fileName, url: url)
         }
-        let files = receiptFiles + documentFiles
+        // Ortak albüm: yalnızca bu kişinin kendi fotoğrafları yüklenir (başkalarınınki onların cihazından gelir).
+        let me = store?.me.id
+        let albumFiles: [UploadFile] = (trip.albumPhotos ?? []).filter { $0.ownerID == me }.compactMap { photo -> UploadFile? in
+            guard let url = CoverImageStore.album.fileURL(named: photo.fileName) else { return nil }
+            return UploadFile(kind: "album", name: photo.fileName, url: url)
+        }
+        let files = receiptFiles + documentFiles + albumFiles
+        // Bu cihazın yüklediği ama artık hiçbir albümde olmayan fotoğrafların kayıtları silinir.
+        // Yalnızca kendi yüklediklerine bakılır: ekipten yeni gelen ve seyahat kaydı henüz birleşmemiş
+        // bir fotoğraf yanlışlıkla silinmesin.
+        let albumNames = Set((store?.trips ?? []).flatMap { $0.albumPhotos ?? [] }.map(\.fileName))
+        let deletions = ownAlbumUploads[trip.id.uuidString, default: []]
+            .filter { !albumNames.contains($0) }
+            .map { CKRecord.ID(recordName: "album-\($0)", zoneID: id.zoneID) }
         let photoRecords: [CKRecord] = files
             .filter { !uploadedPhotos.contains("\($0.kind)-\($0.name)") }
             .map { file in
@@ -322,12 +335,22 @@ final class CloudSync {
                 return photo
             }
 
-        let (results, _) = try await database.modifyRecords(saving: [record] + photoRecords, deleting: [],
-                                                            savePolicy: .ifServerRecordUnchanged, atomically: false)
+        let (results, deleteResults) = try await database.modifyRecords(saving: [record] + photoRecords, deleting: deletions,
+                                                                         savePolicy: .ifServerRecordUnchanged, atomically: false)
         for photo in photoRecords {
             if case .success? = results[photo.recordID] {
                 uploadedPhotos.insert(photo.recordID.recordName)
+                if photo["kind"] as? String == "album", let name = photo["name"] as? String {
+                    ownAlbumUploads[trip.id.uuidString, default: []].append(name)
+                }
             }
+        }
+        for (recordID, result) in deleteResults {
+            // Başarılıysa ya da kayıt zaten yoksa takipten çıkar.
+            if case let .failure(error) = result, (error as? CKError)?.code != .unknownItem { continue }
+            let name = String(recordID.recordName.dropFirst("album-".count))
+            uploadedPhotos.remove(recordID.recordName)
+            ownAlbumUploads[trip.id.uuidString]?.removeAll { $0 == name }
         }
         if case let .failure(error)? = results[id] {
             if let ckError = error as? CKError, ckError.code == .serverRecordChanged, attempt < 2,
@@ -427,6 +450,14 @@ final class CloudSync {
         let url: URL
     }
     private static let uploadedKey = "traveller.cloud.uploadedPhotos"
+    private static let ownAlbumKey = "traveller.cloud.ownAlbumUploads"
+
+    /// Bu cihazın ortak albüme yüklediği dosyalar (seyahat → dosya adları).
+    @ObservationIgnored
+    private var ownAlbumUploads: [String: [String]] =
+        UserDefaults.standard.dictionary(forKey: CloudSync.ownAlbumKey) as? [String: [String]] ?? [:] {
+        didSet { UserDefaults.standard.set(ownAlbumUploads, forKey: Self.ownAlbumKey) }
+    }
 
     /// Buluta yüklenmiş (ya da buluttan gelmiş) fotoğraf anahtarları; tekrar yüklenmez.
     @ObservationIgnored
@@ -437,7 +468,11 @@ final class CloudSync {
     private func importPhoto(_ record: CKRecord) {
         guard let name = record["name"] as? String, let asset = record["asset"] as? CKAsset, let url = asset.fileURL else { return }
         let kind = record["kind"] as? String ?? "receipt"
-        let store = kind == "document" ? CoverImageStore.documents : CoverImageStore.receipts
+        let store = switch kind {
+        case "document": CoverImageStore.documents
+        case "album": CoverImageStore.album
+        default: CoverImageStore.receipts
+        }
         store.importFile(at: url, named: name)
         uploadedPhotos.insert("\(kind)-\(name)")
     }
