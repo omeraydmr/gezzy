@@ -5,14 +5,14 @@ compatibility_date = "2026-09-01"
 # Kayıtlı canlı kartlar (push token → uçuş). Oluştur: npx wrangler kv namespace create ACTIVITIES
 [[kv_namespaces]]
 binding = "ACTIVITIES"
-id = "REPLACE_WITH_KV_NAMESPACE_ID"
+id = "f882ce8eca3048348496372dfbcd74ed"
 
 # Topluluk öneri havuzu. Oluştur: npx wrangler d1 create traveller-community
 # Şema: npx wrangler d1 migrations apply traveller-community --remote
 [[d1_databases]]
 binding = "DB"
 database_name = "traveller-community"
-database_id = "REPLACE_WITH_D1_DATABASE_ID"
+database_id = "e90a5467-10e9-4f58-a14f-8ed63a1ca427"
 migrations_dir = "migrations"
 
 # Uçuşlar 5 dakikada bir kontrol edilir.
