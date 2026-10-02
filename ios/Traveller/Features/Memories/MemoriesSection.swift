@@ -15,11 +15,13 @@ struct MemoriesSection: View {
     @State private var expanded: String?
     @State private var postcard: UIImage?
     @State private var isRenderingPostcard = false
+    @State private var viewer: PhotoViewerContext?
     private var library: PhotoLibrary { .shared }
 
     var body: some View {
         ModuleCard(String(localized: "Anılar"), symbol: "photo.on.rectangle.angled") {
             TripSummaryCard(trip: trip)
+            SharedAlbumCard(trip: trip)
             if CommunityService.shared.isConfigured && CommunityPlaces.canContribute(trip) {
                 CommunityShareCard(trip: trip, verified: CommunityPlaces.verifiedStops(in: trip, moments: moments ?? []))
             }
@@ -40,6 +42,14 @@ struct MemoriesSection: View {
             }
         }
         .task(id: "\(trip.id)-\(library.status.rawValue)-\(trip.stops.count)") { await load() }
+        // Albüm açıldıysa (ör. ekipten biri onay verdi) eksik fotoğrafları yükle; kullanılmayanları temizle.
+        .task(id: "\(trip.id)-\(SharedAlbum.canView(store.me.id, in: trip))-\(library.status.rawValue)") {
+            AlbumSync.shared.pruneOrphans(store: store)
+            await AlbumSync.shared.sync(trip.id, store: store)
+        }
+        .fullScreenCover(item: $viewer) { context in
+            PhotoViewer(items: context.items, index: context.index)
+        }
     }
 
     // MARK: İzin
@@ -132,20 +142,32 @@ struct MemoriesSection: View {
 
             if isExpanded {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 76), spacing: 4)], spacing: 4) {
-                    ForEach(moment.photoIDs, id: \.self) { id in
-                        PhotoThumb(id: id, side: 76)
+                    ForEach(Array(moment.photoIDs.enumerated()), id: \.element) { index, id in
+                        openable(moment, index) { PhotoThumb(id: id, side: 76) }
                     }
                 }
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 4) {
-                        ForEach(moment.photoIDs.prefix(10), id: \.self) { id in
-                            PhotoThumb(id: id, side: 64)
+                        ForEach(Array(moment.photoIDs.prefix(10).enumerated()), id: \.element) { index, id in
+                            openable(moment, index) { PhotoThumb(id: id, side: 64) }
                         }
                     }
                 }
             }
         }
+    }
+
+    /// Dokununca anın fotoğrafları tam ekran açılır.
+    private func openable<Thumb: View>(_ moment: PhotoClusterer.Moment, _ index: Int,
+                                       @ViewBuilder thumb: () -> Thumb) -> some View {
+        Button {
+            viewer = PhotoViewerContext(items: moment.photoIDs.map { .library($0) }, index: index)
+        } label: {
+            thumb()
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Fotoğrafı aç")
     }
 
     // MARK: Kartpostal

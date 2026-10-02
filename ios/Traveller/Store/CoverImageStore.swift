@@ -19,6 +19,11 @@ final class CoverImageStore {
         .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         .appendingPathComponent("TripDocuments", isDirectory: true))
 
+    /// Ortak albüm fotoğrafları (2048 px JPEG); kendi yüklediklerin ve ekipten gelenler.
+    static let album = CoverImageStore(directory: FileManager.default
+        .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        .appendingPathComponent("SharedAlbum", isDirectory: true))
+
     private let directory: URL
     private let images = NSCache<NSString, UIImage>()
     /// Kartlar için küçültülmüş ve önceden çözülmüş görüntüler ("ad@piksel").
@@ -143,6 +148,11 @@ final class CoverImageStore {
         for size in [Self.cardPixelSize, 64] {
             thumbnails.removeObject(forKey: "\(name)@\(Int(size))" as NSString)
         }
+    }
+
+    /// Klasördeki dosya adları (artık kullanılmayanları temizlemek için).
+    func allFileNames() -> [String] {
+        (try? FileManager.default.contentsOfDirectory(atPath: directory.path)) ?? []
     }
 
     func delete(named name: String) {
