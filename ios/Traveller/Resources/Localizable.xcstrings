@@ -101,6 +101,16 @@
         }
       }
     },
+    "\"%@\" olarak kullan" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use \"%@\""
+          }
+        }
+      }
+    },
     "/ %@" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -586,6 +596,16 @@
         }
       }
     },
+    "%@ sonrası gezginler genelde" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "After %@, travellers usually go to"
+          }
+        }
+      }
+    },
     "%@ tanınmadı; saat bu cihazın saatiyle kaydedilir." : {
       "localizations" : {
         "en" : {
@@ -718,6 +738,12 @@
     },
     "%lld / %lld" : {
       "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld / %lld"
+          }
+        },
         "tr" : {
           "stringUnit" : {
             "state" : "new",
@@ -972,6 +998,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld rainy days"
+          }
+        }
+      }
+    },
+    "%lld yer · oyla" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld places · rate"
           }
         }
       }
@@ -1484,6 +1520,18 @@
         }
       }
     },
+    "Anıt" : {
+      "comment" : "TravellerKit PlaceSuggestions category",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Monument"
+          }
+        }
+      }
+    },
     "Apple Haritalar" : {
       "localizations" : {
         "en" : {
@@ -1510,6 +1558,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Search"
+          }
+        }
+      }
+    },
+    "Aramaya uyan yer bulunamadı." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No places match your search."
           }
         }
       }
@@ -1670,6 +1728,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Submitted"
+          }
+        }
+      }
+    },
+    "Beğendiklerini işaretle; en az üç gezginin gittiği yerler Önerilen yerler'de çıkar. Yalnızca yer adı, konumu, oyun ve aynı gün hangi yerden sonra nereye gittiğin paylaşılır — adın, tarihlerin, notların ve ekibin paylaşılmaz." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark the ones you liked; places visited by at least three travellers show up in Suggested places. Only the place name, location, your vote and which place you went to next on the same day are shared — never your name, dates, notes or group."
+          }
+        }
+      }
+    },
+    "Beğendim" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Liked it"
+          }
+        }
+      }
+    },
+    "Beğenmedim" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Didn't like it"
           }
         }
       }
@@ -2110,6 +2198,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Today"
+          }
+        }
+      }
+    },
+    "Bugün için paylaşım sınırına ulaştın; yarın tekrar dene." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You've reached today's sharing limit; try again tomorrow."
           }
         }
       }
@@ -2650,6 +2748,16 @@
         }
       }
     },
+    "En benzer ve şehir merkezine en yakın yerler önce; mesafe şehir merkezine göre." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Closest matches near the city centre come first; distance is from the city centre."
+          }
+        }
+      }
+    },
     "En çok neyde yardım istersin?" : {
       "localizations" : {
         "en" : {
@@ -2880,12 +2988,34 @@
         }
       }
     },
+    "Fotoğraflarla doğrulandı" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirmed by photos"
+          }
+        }
+      }
+    },
     "Frankfurter · Avrupa Merkez Bankası" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Frankfurter · European Central Bank"
+          }
+        }
+      }
+    },
+    "Galeri" : {
+      "comment" : "TravellerKit PlaceSuggestions category",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gallery"
           }
         }
       }
@@ -3050,6 +3180,26 @@
         }
       }
     },
+    "Gezginler seçti" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Travellers' pick"
+          }
+        }
+      }
+    },
+    "Gezginler seçti · %lld kişi" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Travellers' pick · %lld people"
+          }
+        }
+      }
+    },
     "Gezilecek yer" : {
       "localizations" : {
         "en" : {
@@ -3066,6 +3216,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Countries visited"
+          }
+        }
+      }
+    },
+    "Gideceğin şehri ara; konumu haritalar ve öneriler için kaydedilir." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search for the city you're going to; its location is saved for maps and suggestions."
           }
         }
       }
@@ -3167,6 +3327,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Add places you want to visit or pick from suggestions; then let auto route spread them across your days."
+          }
+        }
+      }
+    },
+    "Gittiğin yerleri diğer gezginlere öner" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recommend your places to other travellers"
           }
         }
       }
@@ -3451,6 +3621,16 @@
         }
       }
     },
+    "Haritada \"%@\"" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "\"%@\" on the map"
+          }
+        }
+      }
+    },
     "Haritada aç" : {
       "localizations" : {
         "en" : {
@@ -3731,6 +3911,18 @@
         }
       }
     },
+    "İbadethane" : {
+      "comment" : "TravellerKit PlaceSuggestions category",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Place of worship"
+          }
+        }
+      }
+    },
     "IBAN" : {
       "localizations" : {
         "en" : {
@@ -3927,6 +4119,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fire"
+          }
+        }
+      }
+    },
+    "Kafe / restoran" : {
+      "comment" : "TravellerKit PlaceSuggestions category",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Café / restaurant"
+          }
+        }
+      }
+    },
+    "Kale / saray" : {
+      "comment" : "TravellerKit PlaceSuggestions category",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Castle / palace"
           }
         }
       }
@@ -4543,6 +4759,18 @@
         }
       }
     },
+    "Kütüphane / kitapçı" : {
+      "comment" : "TravellerKit PlaceSuggestions category",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Library / bookshop"
+          }
+        }
+      }
+    },
     "limit yok" : {
       "localizations" : {
         "en" : {
@@ -4749,6 +4977,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Split costs and scan receipts; see who owes whom in one tap."
+          }
+        }
+      }
+    },
+    "Merkeze %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ from centre"
+          }
+        }
+      }
+    },
+    "Meydan" : {
+      "comment" : "TravellerKit PlaceSuggestions category",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Square"
           }
         }
       }
@@ -5063,12 +5313,33 @@
         }
       }
     },
+    "Öneriler Wikipedia'dan; son 30 günde en çok okunan yerler önce gelir. \"Gezginler seçti\" olanlar Traveller kullanıcılarının gidip beğendiği yerler. Açılış saatleri plana eklendikten sonra OpenStreetMap'ten aranır." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suggestions come from Wikipedia; the most-read places of the last 30 days come first. \"Travellers' pick\" places were visited and liked by Traveller users. Opening hours are looked up on OpenStreetMap once added to the plan."
+          }
+        }
+      }
+    },
     "Öneriler Wikipedia'dan; son 30 günde en çok okunan yerler önce gelir. Açılış saatleri plana eklendikten sonra OpenStreetMap'ten aranır." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Suggestions come from Wikipedia; the most-read places of the last 30 days come first. Opening hours are looked up on OpenStreetMap once added to the plan."
+          }
+        }
+      }
+    },
+    "Önerilerde ya da haritada ara" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search suggestions or the map"
           }
         }
       }
@@ -5373,6 +5644,16 @@
         }
       }
     },
+    "Paylaşılamadı; internet bağlantını kontrol et." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't share; check your internet connection."
+          }
+        }
+      }
+    },
     "Paylaşım kapatılsın mı?" : {
       "localizations" : {
         "en" : {
@@ -5389,6 +5670,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Couldn't update sharing permissions: %@"
+          }
+        }
+      }
+    },
+    "Paylaşıma ekle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Include in sharing"
           }
         }
       }
@@ -5413,12 +5704,46 @@
         }
       }
     },
+    "Paylaşma" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Don't share"
+          }
+        }
+      }
+    },
+    "Pazar" : {
+      "comment" : "TravellerKit PlaceSuggestions category",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Market"
+          }
+        }
+      }
+    },
     "PDF, Wallet kartı ya da dosya seç" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Choose a PDF, Wallet pass or file"
+          }
+        }
+      }
+    },
+    "Plaj" : {
+      "comment" : "TravellerKit PlaceSuggestions category",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beach"
           }
         }
       }
@@ -5749,12 +6074,32 @@
         }
       }
     },
+    "Seç" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose"
+          }
+        }
+      }
+    },
     "Şehir" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "City"
+          }
+        }
+      }
+    },
+    "Şehir ara" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search cities"
           }
         }
       }
@@ -5775,6 +6120,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Eight"
+          }
+        }
+      }
+    },
+    "Semt" : {
+      "comment" : "TravellerKit PlaceSuggestions category",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neighbourhood"
           }
         }
       }
@@ -5985,6 +6342,18 @@
         }
       }
     },
+    "Seyir noktası" : {
+      "comment" : "TravellerKit PlaceSuggestions category",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Viewpoint"
+          }
+        }
+      }
+    },
     "Sigorta" : {
       "localizations" : {
         "en" : {
@@ -6041,6 +6410,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Skip for now"
+          }
+        }
+      }
+    },
+    "Simge yapı" : {
+      "comment" : "TravellerKit PlaceSuggestions category",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Landmark"
           }
         }
       }
@@ -6265,6 +6646,18 @@
         }
       }
     },
+    "Tarihî alan" : {
+      "comment" : "TravellerKit PlaceSuggestions category",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Historic site"
+          }
+        }
+      }
+    },
     "Taşı: %@" : {
       "localizations" : {
         "en" : {
@@ -6385,6 +6778,18 @@
         }
       }
     },
+    "Tiyatro / opera" : {
+      "comment" : "TravellerKit PlaceSuggestions category",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Theatre / opera"
+          }
+        }
+      }
+    },
     "Toplam harcama: %@" : {
       "localizations" : {
         "en" : {
@@ -6401,6 +6806,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Public transport suggested · %lld min walk"
+          }
+        }
+      }
+    },
+    "Topluluk önerilerine yalnızca seyahat bitince onay verirsen katkı gider: yer adı, konumu, oyun ve aynı gün art arda gittiğin yerler. Adın, tarihlerin, notların ve ekibin gönderilmez." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Community suggestions only receive a contribution if you approve it after a trip: place names, locations, your votes and the places you visited one after another on the same day. Your name, dates, notes and group are never sent."
           }
         }
       }
@@ -7055,6 +7470,16 @@
         }
       }
     },
+    "Yerlerin topluluk önerilerine eklendi. Teşekkürler!" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your places were added to community suggestions. Thank you!"
+          }
+        }
+      }
+    },
     "Yetki" : {
       "localizations" : {
         "en" : {
@@ -7121,174 +7546,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Delete visit"
-          }
-        }
-      }
-    },
-    "Galeri" : {
-      "comment" : "TravellerKit PlaceSuggestions category",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Gallery"
-          }
-        }
-      }
-    },
-    "Kale / saray" : {
-      "comment" : "TravellerKit PlaceSuggestions category",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Castle / palace"
-          }
-        }
-      }
-    },
-    "İbadethane" : {
-      "comment" : "TravellerKit PlaceSuggestions category",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Place of worship"
-          }
-        }
-      }
-    },
-    "Seyir noktası" : {
-      "comment" : "TravellerKit PlaceSuggestions category",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Viewpoint"
-          }
-        }
-      }
-    },
-    "Meydan" : {
-      "comment" : "TravellerKit PlaceSuggestions category",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Square"
-          }
-        }
-      }
-    },
-    "Semt" : {
-      "comment" : "TravellerKit PlaceSuggestions category",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Neighbourhood"
-          }
-        }
-      }
-    },
-    "Anıt" : {
-      "comment" : "TravellerKit PlaceSuggestions category",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Monument"
-          }
-        }
-      }
-    },
-    "Simge yapı" : {
-      "comment" : "TravellerKit PlaceSuggestions category",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Landmark"
-          }
-        }
-      }
-    },
-    "Tarihî alan" : {
-      "comment" : "TravellerKit PlaceSuggestions category",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Historic site"
-          }
-        }
-      }
-    },
-    "Pazar" : {
-      "comment" : "TravellerKit PlaceSuggestions category",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Market"
-          }
-        }
-      }
-    },
-    "Tiyatro / opera" : {
-      "comment" : "TravellerKit PlaceSuggestions category",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Theatre / opera"
-          }
-        }
-      }
-    },
-    "Kafe / restoran" : {
-      "comment" : "TravellerKit PlaceSuggestions category",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Café / restaurant"
-          }
-        }
-      }
-    },
-    "Plaj" : {
-      "comment" : "TravellerKit PlaceSuggestions category",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Beach"
-          }
-        }
-      }
-    },
-    "Kütüphane / kitapçı" : {
-      "comment" : "TravellerKit PlaceSuggestions category",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Library / bookshop"
           }
         }
       }

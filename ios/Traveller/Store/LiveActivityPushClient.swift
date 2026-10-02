@@ -3,6 +3,7 @@ import Foundation
 import TravellerKit
 
 /// Canlı uçuş kartının push token'ını Traveller sunucusuna kaydeder (bkz. depodaki `server/`).
+/// Topluluk önerileri (`CommunityService`) de aynı sunucuyu ve anahtarı kullanır.
 /// `LIVE_ACTIVITY_SERVER_HOST` boşsa kapalıdır; kart yalnızca uygulama açıkken güncellenir.
 enum LiveActivityPushClient {
     static var baseURL: URL? {
@@ -12,7 +13,7 @@ enum LiveActivityPushClient {
 
     static var isConfigured: Bool { baseURL != nil }
 
-    private static var apiKey: String? { info("LiveActivityServerKey") }
+    static var apiKey: String? { info("LiveActivityServerKey") }
 
     private static func info(_ key: String) -> String? {
         let value = (Bundle.main.object(forInfoDictionaryKey: key) as? String)?.trimmingCharacters(in: .whitespaces)

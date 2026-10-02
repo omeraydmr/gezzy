@@ -17,7 +17,9 @@ struct AddStopSheet: View {
     }
 
     @State private var query = ""
-    @State private var results: [MKMapItem] = []
+    @State private var results: [PlaceSearch.Result] = []
+    /// Şehir merkezi: arama bu çevreyle sınırlanır (yoksa şehir adından bulunur).
+    @State private var center: Coordinate?
     @State private var isSearching = false
     @State private var searchTask: Task<Void, Never>?
 
@@ -44,7 +46,7 @@ struct AddStopSheet: View {
                         previewMap
                             .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
                     }
-                    ForEach(Array(results.enumerated()), id: \.element) { index, item in
+                    ForEach(Array(results.enumerated()), id: \.element.id) { index, item in
                         Button {
                             select(item)
                         } label: {
@@ -55,16 +57,26 @@ struct AddStopSheet: View {
                                     .frame(width: 22, height: 22)
                                     .background(Accent.cycle(index).base, in: Circle())
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text(item.name ?? String(localized: "Adsız yer")).foregroundStyle(Color.ink)
-                                    if let address = item.placemark.title {
+                                    Text(item.name.isEmpty ? String(localized: "Adsız yer") : item.name).foregroundStyle(Color.ink)
+                                    if let address = item.address {
                                         Text(address).font(.footnote).foregroundStyle(Color.ink2).lineLimit(1)
                                     }
+                                }
+                                Spacer(minLength: 4)
+                                if let distance = item.distance {
+                                    Text(AppFormat.distance(meters: distance))
+                                        .font(.caption.monospacedDigit())
+                                        .foregroundStyle(Color.ink3)
                                 }
                             }
                         }
                     }
                 } header: {
                     Text("Ara")
+                } footer: {
+                    if results.count > 1 {
+                        Text("En benzer ve şehir merkezine en yakın yerler önce; mesafe şehir merkezine göre.")
+                    }
                 }
 
                 Section {
@@ -103,6 +115,7 @@ struct AddStopSheet: View {
                 }
             }
             .onDisappear { searchTask?.cancel() }
+            .task { center = await store.ensureCoordinate(for: trip.id) }
         }
     }
 
@@ -119,7 +132,8 @@ struct AddStopSheet: View {
     /// Arama sonuçları numaralı, seçilen yer yeşil onay işaretiyle.
     private var mapPins: [MapPin] {
         var pins = results.enumerated().map { index, item in
-            MapPin(id: "r\(index)", title: item.name ?? "", coordinate: item.placemark.coordinate,
+            MapPin(id: "r\(index)", title: item.name,
+                   coordinate: CLLocationCoordinate2D(latitude: item.coordinate.latitude, longitude: item.coordinate.longitude),
                    label: "\(index + 1)", color: Accent.cycle(index).base)
         }
         if let coordinate {
@@ -140,17 +154,16 @@ struct AddStopSheet: View {
         .mapStyle(.standard(elevation: .flat, pointsOfInterest: .excludingAll))
         .frame(height: 190)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .onChange(of: mapPins.map(\.id)) { _, _ in
-            withAnimation(.easeInOut(duration: 0.4)) { mapPosition = .automatic }
+        .onChange(of: mapPins.map(\.id), initial: true) { _, _ in
+            withAnimation(.easeInOut(duration: 0.4)) { mapPosition = MapFraming.position(mapPins.map(\.coordinate)) }
         }
     }
 
-    private func select(_ item: MKMapItem) {
-        name = item.name ?? name
-        let location = item.placemark.coordinate
-        coordinate = Coordinate(latitude: location.latitude, longitude: location.longitude)
-        if let category = item.pointOfInterestCategory {
-            kind = Self.kind(for: category)
+    private func select(_ result: PlaceSearch.Result) {
+        name = result.name.isEmpty ? name : result.name
+        coordinate = result.coordinate
+        if let category = result.item.pointOfInterestCategory {
+            kind = PlaceSearch.kind(for: category)
         }
         results = []
         query = ""
@@ -170,16 +183,10 @@ struct AddStopSheet: View {
             isSearching = true
             defer { isSearching = false }
 
-            let request = MKLocalSearch.Request()
-            request.naturalLanguageQuery = trimmed
-            if let center = trip.destination.coordinate {
-                request.region = MKCoordinateRegion(
-                    center: CLLocationCoordinate2D(latitude: center.latitude, longitude: center.longitude),
-                    latitudinalMeters: 40_000, longitudinalMeters: 40_000)
-            }
-            let response = try? await MKLocalSearch(request: request).start()
+            let found = await PlaceSearch.places(trimmed, city: trip.destination.city,
+                                                 countryCode: trip.destination.countryCode, center: center)
             guard !Task.isCancelled else { return }
-            results = Array((response?.mapItems ?? []).prefix(8))
+            results = found
         }
     }
 
@@ -200,15 +207,5 @@ struct AddStopSheet: View {
             }
         }
         dismiss()
-    }
-
-    private static func kind(for category: MKPointOfInterestCategory) -> StopKind {
-        switch category {
-        case .restaurant, .cafe, .bakery, .brewery, .winery, .foodMarket, .nightlife: .food
-        case .hotel, .campground: .stay
-        case .airport, .publicTransport, .carRental, .marina: .transport
-        case .museum, .theater, .movieTheater, .amusementPark, .aquarium, .zoo, .stadium: .activity
-        default: .sight
-        }
     }
 }

@@ -123,6 +123,8 @@ struct AboutView: View {
                     Label("Makbuz metni cihaz üzerinde okunur; görüntü hiçbir yere gönderilmez.", systemImage: "doc.text.viewfinder")
                     Label("Kur, hava ve açılış saati sorgularında yalnızca para birimi, konum ve yer adı gönderilir.",
                           systemImage: "network")
+                    Label("Topluluk önerilerine yalnızca seyahat bitince onay verirsen katkı gider: yer adı, konumu, oyun ve aynı gün art arda gittiğin yerler. Adın, tarihlerin, notların ve ekibin gönderilmez.",
+                          systemImage: "person.3.sequence")
                 } header: {
                     Text("Gizlilik")
                 }

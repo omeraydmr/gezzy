@@ -9,7 +9,13 @@ struct PlaceSuggestionsSheet: View {
     let trip: Trip
 
     @State private var suggestions: [PlaceSuggestions.Suggestion]?
+    /// Plandaki yerlerden sonra gezginlerin aynı gün genelde gittiği yerler (topluluk havuzu).
+    @State private var nextPlaces: [(anchor: String, places: [PlaceSuggestions.Suggestion])] = []
     @State private var selected: Set<String> = []
+    @State private var query = ""
+    /// Aramaya göre Apple Haritalar'dan bulunan yerler.
+    @State private var mapResults: [PlaceSuggestions.Suggestion] = []
+    @State private var center: Coordinate?
     @State private var errorText: String?
 
     var body: some View {
@@ -21,15 +27,35 @@ struct PlaceSuggestionsSheet: View {
                         Button("Tekrar dene") { Task { await load() } }
                     }
                 } else if let suggestions {
-                    if suggestions.isEmpty {
-                        Text("Bu şehir için yeni öneri bulunamadı.").foregroundStyle(Color.ink2)
+                    let suggestions = filter(suggestions)
+                    if !mapResults.isEmpty {
+                        Section {
+                            ForEach(mapResults) { suggestion in
+                                row(suggestion)
+                            }
+                        } header: {
+                            Text("Haritada \"\(query)\"")
+                        }
+                    }
+                    if suggestions.isEmpty && mapResults.isEmpty {
+                        Text(isFiltering ? String(localized: "Aramaya uyan yer bulunamadı.") : String(localized: "Bu şehir için yeni öneri bulunamadı."))
+                            .foregroundStyle(Color.ink2)
+                    }
+                    ForEach(isFiltering ? [] : nextPlaces, id: \.anchor) { group in
+                        Section {
+                            ForEach(group.places) { suggestion in
+                                row(suggestion)
+                            }
+                        } header: {
+                            Text("\(group.anchor) sonrası gezginler genelde")
+                        }
                     }
                     Section {
                         ForEach(suggestions) { suggestion in
                             row(suggestion)
                         }
                     } footer: {
-                        Text("Öneriler Wikipedia'dan; son 30 günde en çok okunan yerler önce gelir. Açılış saatleri plana eklendikten sonra OpenStreetMap'ten aranır.")
+                        Text("Öneriler Wikipedia'dan; son 30 günde en çok okunan yerler önce gelir. \"Gezginler seçti\" olanlar Traveller kullanıcılarının gidip beğendiği yerler. Açılış saatleri plana eklendikten sonra OpenStreetMap'ten aranır.")
                     }
                 } else {
                     HStack(spacing: 10) {
@@ -48,6 +74,43 @@ struct PlaceSuggestionsSheet: View {
                 }
             }
             .task { await load() }
+            .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always),
+                        prompt: String(localized: "Önerilerde ya da haritada ara"))
+            .task(id: query) { await searchMap() }
+        }
+    }
+
+    private var isFiltering: Bool { !query.trimmingCharacters(in: .whitespaces).isEmpty }
+
+    /// Ad ya da türe göre (büyük/küçük harf ve aksan farkı gözetmeden) süzme.
+    private func filter(_ list: [PlaceSuggestions.Suggestion]) -> [PlaceSuggestions.Suggestion] {
+        let q = PlaceMatch.normalize(query)
+        guard !q.isEmpty else { return list }
+        return list.filter { PlaceMatch.normalize($0.name).contains(q) || PlaceMatch.normalize($0.category).contains(q) }
+    }
+
+    /// Öneri listesinde olmayan yerler için şehirle sınırlı harita araması.
+    private func searchMap() async {
+        let typed = query.trimmingCharacters(in: .whitespaces)
+        guard typed.count >= 2 else {
+            mapResults = []
+            return
+        }
+        try? await Task.sleep(for: .milliseconds(350))
+        guard !Task.isCancelled else { return }
+        let found = await PlaceSearch.places(typed, city: trip.destination.city, countryCode: trip.destination.countryCode,
+                                             center: center, limit: 5)
+        guard !Task.isCancelled else { return }
+        let existing = trip.stops + trip.ideaList
+        let listed = suggestions ?? []
+        mapResults = found.compactMap { result -> PlaceSuggestions.Suggestion? in
+            let kind = PlaceSearch.kind(for: result.item.pointOfInterestCategory)
+            let category = result.distance.map { String(localized: "Merkeze \(AppFormat.distance(meters: $0))") } ?? kind.title
+            let suggestion = PlaceSuggestions.Suggestion(id: "map/\(result.id)", name: result.name, kind: kind, category: category,
+                                                         coordinate: result.coordinate, openingHours: nil, duration: 60, score: 0)
+            let stop = suggestion.stop(day: trip.startDate)
+            guard !existing.contains(where: suggestion.matches), !listed.contains(where: { $0.matches(stop) }) else { return nil }
+            return suggestion
         }
     }
 
@@ -61,7 +124,15 @@ struct PlaceSuggestionsSheet: View {
                     .font(.title3)
                     .foregroundStyle(isOn ? Color.success : Color.ink3)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(suggestion.name).foregroundStyle(Color.ink)
+                    HStack(spacing: 6) {
+                        Text(suggestion.name).foregroundStyle(Color.ink)
+                        if suggestion.contributors != nil {
+                            Image(systemName: "person.3.sequence.fill")
+                                .font(.caption2)
+                                .foregroundStyle(Color.success)
+                                .accessibilityLabel(String(localized: "Gezginler seçti"))
+                        }
+                    }
                     Text(detail(suggestion)).font(.caption).foregroundStyle(Color.ink2).lineLimit(2)
                 }
                 Spacer(minLength: 8)
@@ -74,6 +145,7 @@ struct PlaceSuggestionsSheet: View {
 
     private func detail(_ suggestion: PlaceSuggestions.Suggestion) -> String {
         var parts = [suggestion.category, AppFormat.duration(minutes: suggestion.duration)]
+        if let count = suggestion.contributors { parts.insert(String(localized: "Gezginler seçti · \(count) kişi"), at: 0) }
         if let raw = suggestion.openingHours, let hours = OpeningHours.cached(raw) { parts.append(hours.turkishSummary) }
         return parts.joined(separator: " · ")
     }
@@ -81,20 +153,47 @@ struct PlaceSuggestionsSheet: View {
     private func load() async {
         errorText = nil
         guard let center = await PlanCenter.find(for: trip) else {
+            self.center = nil
             errorText = String(localized: "Şehrin konumu bulunamadı.")
             return
         }
+        self.center = center
+        let existing = trip.stops + trip.ideaList
+        async let community = CommunityService.shared.nearby(center)
+        async let next = loadNextPlaces(excluding: existing)
         do {
-            let result = try await PlaceSuggestionService.shared.suggestions(around: center,
-                                                                             excluding: trip.stops + trip.ideaList)
-            withAnimation { suggestions = result }
+            let result = try await PlaceSuggestionService.shared.suggestions(around: center, excluding: existing)
+            let fresh = await community.filter { suggestion in !existing.contains(where: suggestion.matches) }
+            let groups = await next
+            withAnimation {
+                // "Sonra genelde" bölümünde çıkanlar ana listede tekrar edilmez.
+                let shown = Set(groups.flatMap(\.places).map(\.id))
+                suggestions = CommunityPlaces.merge(community: fresh, wikipedia: result).filter { !shown.contains($0.id) }
+                nextPlaces = groups
+            }
         } catch {
             errorText = String(localized: "Öneriler alınamadı; internet bağlantını kontrol et.")
         }
     }
 
+    /// Plandaki son iki konumlu yer için "sonra nereye" önerileri.
+    private func loadNextPlaces(excluding existing: [Stop]) async -> [(anchor: String, places: [PlaceSuggestions.Suggestion])] {
+        guard CommunityService.shared.isConfigured else { return [] }
+        let anchors = trip.stops.filter { $0.coordinate != nil && $0.kind != .transport && $0.kind != .stay }
+            .sorted { ($0.day, $0.order) < ($1.day, $1.order) }.suffix(2)
+        var groups: [(anchor: String, places: [PlaceSuggestions.Suggestion])] = []
+        for anchor in anchors.reversed() {
+            let places = await CommunityService.shared.next(after: anchor.coordinate!)
+                .filter { suggestion in !existing.contains(where: suggestion.matches) }
+            if !places.isEmpty { groups.append((anchor.name, places)) }
+        }
+        return groups
+    }
+
     private func add() {
-        let chosen = (suggestions ?? []).filter { selected.contains($0.id) }
+        var seen: Set<String> = []
+        let chosen = (mapResults + nextPlaces.flatMap(\.places) + (suggestions ?? []))
+            .filter { selected.contains($0.id) && seen.insert($0.id).inserted }
         store.update(trip.id) { trip in
             trip.ideas = (trip.ideas ?? []) + chosen.map { $0.stop(day: trip.startDate) }
         }

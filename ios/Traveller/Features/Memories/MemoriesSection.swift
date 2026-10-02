@@ -22,6 +22,9 @@ struct MemoriesSection: View {
         ModuleCard(String(localized: "Anılar"), symbol: "photo.on.rectangle.angled") {
             TripSummaryCard(trip: trip)
             SharedAlbumCard(trip: trip)
+            if CommunityService.shared.isConfigured && CommunityPlaces.canContribute(trip) {
+                CommunityShareCard(trip: trip, verified: CommunityPlaces.verifiedStops(in: trip, moments: moments ?? []))
+            }
             if !library.canRead {
                 permissionPrompt
             } else if let moments {
@@ -80,7 +83,9 @@ struct MemoriesSection: View {
 
         let located = moments.filter { $0.center != nil }
         if !located.isEmpty {
-            Map(initialPosition: .automatic) {
+            Map(initialPosition: MapFraming.position(located.compactMap(\.center).map {
+                CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude)
+            })) {
                 ForEach(located) { moment in
                     let center = moment.center!
                     Annotation(moment.stopName ?? "", coordinate: CLLocationCoordinate2D(latitude: center.latitude,
