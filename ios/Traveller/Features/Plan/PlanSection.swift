@@ -123,7 +123,6 @@ struct PlanSection: View {
         }
         .task(id: trip.stops.filter { $0.coordinate != nil }.count) { await lookUpOpeningHours() }
         .onChange(of: plan.day) { _, _ in
-            cameraPosition = .automatic
             lastOrderBeforeOptimize = nil
         }
     }
@@ -289,6 +288,10 @@ struct PlanSection: View {
             }
         }
         .mapStyle(.standard(elevation: .flat, pointsOfInterest: .excludingAll))
+        // Gün ya da duraklar değişince yeniden çerçevelenir; tek durakta da semt görünür.
+        .task(id: route.map { "\($0.latitude),\($0.longitude)" }) {
+            cameraPosition = MapFraming.position(route)
+        }
         .frame(height: 240)
         .clipShape(RoundedRectangle(cornerRadius: Radius.tray, style: .continuous))
         // Gölge haritanın kendisinden değil zemin şeklinden: canlı harita katmana birleştirilmez.

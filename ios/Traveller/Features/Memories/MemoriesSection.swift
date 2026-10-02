@@ -83,7 +83,9 @@ struct MemoriesSection: View {
 
         let located = moments.filter { $0.center != nil }
         if !located.isEmpty {
-            Map(initialPosition: .automatic) {
+            Map(initialPosition: MapFraming.position(located.compactMap(\.center).map {
+                CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude)
+            })) {
                 ForEach(located) { moment in
                     let center = moment.center!
                     Annotation(moment.stopName ?? "", coordinate: CLLocationCoordinate2D(latitude: center.latitude,

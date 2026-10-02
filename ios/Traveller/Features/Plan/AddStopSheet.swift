@@ -154,8 +154,8 @@ struct AddStopSheet: View {
         .mapStyle(.standard(elevation: .flat, pointsOfInterest: .excludingAll))
         .frame(height: 190)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .onChange(of: mapPins.map(\.id)) { _, _ in
-            withAnimation(.easeInOut(duration: 0.4)) { mapPosition = .automatic }
+        .onChange(of: mapPins.map(\.id), initial: true) { _, _ in
+            withAnimation(.easeInOut(duration: 0.4)) { mapPosition = MapFraming.position(mapPins.map(\.coordinate)) }
         }
     }
 
