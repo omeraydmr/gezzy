@@ -4,26 +4,38 @@ Cloudflare Worker + D1: topluluk öneri havuzu ve App Attest doğrulaması. Uçu
 rötar ve iptal bilgisi için havayolunun uygulaması kullanılır); kilit ekranındaki uçuş kartı cihazda, planlanmış
 saatlerle çalışır.
 
+## Ortamlar
+
+| Ortam | Worker | D1 | Kim kullanır |
+|---|---|---|---|
+| staging | `stubly-api-staging` | `stubly-staging` | Xcode'dan kurulan Debug sürümleri (geliştirme attestation'ı kabul edilir) |
+| production | `stubly-api` | `stubly-prod` | TestFlight ve App Store sürümleri |
+
+Her ortamın kendi KV'si, veritabanı ve gizli değerleri var; `wrangler.toml` içinde `[env.staging]` ve `[env.production]`.
+
 ## Kurulum
 
 ```bash
 cd server
 npm install
-npx wrangler kv namespace create KV               # çıkan id'yi wrangler.toml'a yaz
-npx wrangler d1 create traveller-community        # çıkan database_id'yi wrangler.toml'a yaz
-npx wrangler d1 migrations apply traveller-community --remote
-npx wrangler secret put CLIENT_KEY                # rastgele uzun bir değer
-npx wrangler secret put CONTRIBUTOR_SALT          # rastgele uzun bir değer; değişirse katkı sayımları sıfırlanır
-npx wrangler deploy
+# Ortam başına bir kez (çıkan id'leri wrangler.toml'daki ilgili ortama yaz):
+npx wrangler kv namespace create stubly-staging
+npx wrangler d1 create stubly-staging
+npx wrangler d1 migrations apply stubly-staging --env staging --remote
+npx wrangler secret put CLIENT_KEY --env staging         # rastgele uzun bir değer
+npx wrangler secret put CONTRIBUTOR_SALT --env staging   # rastgele uzun bir değer; değişirse katkı sayımları sıfırlanır
+npx wrangler deploy --env staging
+# production için aynı adımlar: stubly-prod, --env production
 ```
 
-Uygulamada `ios/Config/Secrets.xcconfig` (git'e girmez):
+Uygulamada adresler `ios/Config/Debug.xcconfig` (staging) ve `Release.xcconfig` (production) içinde; anahtarlar
+`ios/Config/Secrets.xcconfig`'te (git'e girmez):
 ```
-STUBLY_SERVER_HOST = traveller-live.<hesabın>.workers.dev
-STUBLY_SERVER_KEY = <CLIENT_KEY ile aynı>
+STUBLY_STAGING_KEY = <staging CLIENT_KEY ile aynı>
+STUBLY_PROD_KEY = <production CLIENT_KEY ile aynı>
 ```
-Adreste `https://` yazma: xcconfig'te `//` yorum başlatır; uygulama şemayı kendisi ekler. Adres boşsa topluluk
-önerileri kapalıdır, uygulamanın geri kalanı çalışır.
+Adreste `https://` yazma: xcconfig'te `//` yorum başlatır; uygulama şemayı kendisi ekler. Adres ya da anahtar boşsa
+topluluk önerileri kapalıdır, uygulamanın geri kalanı çalışır.
 
 ## Topluluk öneri havuzu
 
@@ -39,7 +51,7 @@ Veritabanı gizlidir (yalnızca Worker erişir); uç noktalar `X-Stubly-Key` ist
 - Saklanan: yer adı, konum (5 basamak), tür, oy, fotoğrafla doğrulandı mı ve yer çiftleri. Kişi adı, tarih, not, ekip, tam rota saklanmaz.
 - Cihaz kimliği `SHA-256(CONTRIBUTOR_SALT + UUID)` olarak tutulur; yalnızca "aynı kişi iki kez sayılmasın" ve kota için.
 - Aynı yer farklı dillerde/küçük konum farkıyla gelirse 60 m içinde ve adı örtüşüyorsa (ya da 15 m içindeyse) birleştirilir.
-- Yerelde denemek: `npx wrangler d1 migrations apply traveller-community --local` ve `npx wrangler dev`; uygulamayı
+- Yerelde denemek: `npx wrangler d1 migrations apply stubly-staging --env staging --local` ve `npx wrangler dev --env staging`; uygulamayı
   `STUBLY_SERVER_HOST='http:/$()/localhost:8787'` ile derle.
 - Yanlış/spam yer bildirimi: `POST /places/report {placeId, reason}` (wrong, closed, spam, offensive). En az 3 farklı
   kişi bildirdiğinde ya da bildirenler katkı verenlerin yarısına ulaştığında yer önerilerden düşer. Bağlantı, e-posta,

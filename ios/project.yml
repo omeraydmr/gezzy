@@ -7,8 +7,8 @@ options:
   createIntermediateGroups: true
 
 configFiles:
-  Debug: Config/Base.xcconfig
-  Release: Config/Base.xcconfig
+  Debug: Config/Debug.xcconfig
+  Release: Config/Release.xcconfig
 
 packages:
   StublyKit:
