@@ -14,6 +14,21 @@ open Stubly.xcodeproj
 `Stubly.xcodeproj` üretilen bir dosyadır ve repoya eklenmez; yapı `project.yml` içinde tanımlıdır.
 Yeni dosya eklediğinde `xcodegen generate` komutunu tekrar çalıştır.
 
+Debug derlemeleri staging sunucusuna, Release derlemeleri production sunucusuna bağlanır
+(`Config/Debug.xcconfig`, `Config/Release.xcconfig`; anahtarlar `Config/Secrets.xcconfig`, git'e girmez).
+
+## Dağıtım (cihaza kurulum)
+
+```bash
+cd ios
+scripts/release.sh            # Release arşivi + kayıtlı cihazlara kurulabilir IPA → ios/dist/Stubly.ipa
+scripts/release.sh --install  # ayrıca bağlı iPhone'a kurar ve açar
+```
+
+IPA geliştirme imzasıyla çıkar (`Config/ExportOptions.plist`, `method: debugging`); yalnızca Apple Developer
+hesabında kayıtlı cihazlara kurulur. Yeni bir cihaz eklemek için cihazı Mac'e bağlayıp Xcode'da bir kez çalıştırmak
+yeterli; otomatik imzalama cihazı profile ekler.
+
 ## iCloud paylaşımı (CloudKit)
 
 Ekip paylaşımı ve eşitleme Apple'ın iCloud altyapısını kullanır; ayrı bir sunucu yoktur.
@@ -48,22 +63,10 @@ Profil > "Tanıtımı ve anketi yeniden göster" ile tekrar açılır.
 
 `StublyWidgets` uzantısı (`Widgets/`) kilit ekranı ve Dynamic Island görünümünü çizer; ortak
 `FlightActivityAttributes` tipi `Shared/` klasöründedir. Uzantının paket kimliği `com.omeraydemir.stubly.widgets`;
-imzalarken uygulamayla aynı ekibi seç. Kart push'suz, uygulama içinden ve arka plan yenilemesiyle güncellenir.
+imzalarken uygulamayla aynı ekibi seç. Kart push'suz, planlanmış saatlerle uygulama içinden güncellenir; güncel kapı ve rötar için havayolunun uygulaması kullanılır.
 
 Aynı uzantıda ana ekran widget'ı (`TripCountdownWidget`) da var. Uygulama özeti App Group klasörüne
 (`group.com.omeraydemir.stubly`) yazar, widget oradan okur; iki hedefte de *App Groups* yeteneği açık olmalı.
-
-## Uçuş durumu (rötar, kapı)
-
-[AeroDataBox](https://rapidapi.com/aedbx-aedbx/api/aerodatabox) üzerinden alınır. RapidAPI'den bir anahtar al ve
-`ios/Config/Secrets.xcconfig` dosyasına yaz (git'e girmez):
-
-```
-FLIGHT_STATUS_API_KEY = anahtarın
-```
-
-Anahtar yoksa servis kapalıdır, uygulama elle girilen kapı/saatle çalışır. Arka plan yenilemesi
-`com.omeraydemir.stubly.flightstatus` görevidir (`BGTaskSchedulerPermittedIdentifiers`).
 
 ## Bağlantılar
 
