@@ -39,10 +39,17 @@ struct BookingImportSheet: View {
                     PhotosPicker(selection: $photoItem, matching: .images) {
                         Label("Ekran görüntüsü seç", systemImage: "photo")
                     }
+                    // Havayolunun e-bilet sayfası gibi metinler: sayfada "Tümünü seç → Kopyala", sonra buraya yapıştır.
+                    PasteButton(payloadType: String.self) { strings in
+                        let text = strings.joined(separator: "\n")
+                        Task { @MainActor in apply(BookingParser.parse(text)) }
+                    }
+                    .labelStyle(.titleAndIcon)
+                    .buttonBorderShape(.capsule)
                 } footer: {
                     Text(kind == .lodgings
                          ? String(localized: "Booking.com, Airbnb ya da otelin onay PDF'i veya ekran görüntüsü. Metin cihazda okunur, hiçbir yere gönderilmez.")
-                         : String(localized: "E-bilet ya da Wallet biniş kartı (.pkpass). Wallet'taki kartı ••• → Paylaş → Traveller ile de gönderebilirsin. Metin cihazda okunur, hiçbir yere gönderilmez."))
+                         : String(localized: "E-bilet, Wallet biniş kartı (.pkpass) ya da havayolu sayfasından kopyalanan metin. Wallet'taki kartı ••• → Paylaş → Traveller ile de gönderebilirsin. Metin cihazda okunur, hiçbir yere gönderilmez."))
                 }
 
                 if isReading {

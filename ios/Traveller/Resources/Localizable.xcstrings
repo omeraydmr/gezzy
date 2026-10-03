@@ -2886,6 +2886,7 @@
       }
     },
     "Durum bekleniyor" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2937,6 +2938,7 @@
       }
     },
     "E-bilet ya da Wallet biniş kartı (.pkpass). Wallet'taki kartı ••• → Paylaş → Traveller ile de gönderebilirsin. Metin cihazda okunur, hiçbir yere gönderilmez." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2953,6 +2955,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "An e-ticket, hotel confirmation or Wallet boarding pass (.pkpass). The text is read on the device and sent nowhere."
+          }
+        }
+      }
+    },
+    "E-bilet, Wallet biniş kartı (.pkpass) ya da havayolu sayfasından kopyalanan metin. Wallet'taki kartı ••• → Paylaş → Traveller ile de gönderebilirsin. Metin cihazda okunur, hiçbir yere gönderilmez." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-ticket, Wallet boarding pass (.pkpass) or text copied from the airline's page. You can also send a pass from Wallet via ••• → Share → Traveller. Text is read on device and never sent anywhere."
           }
         }
       }
@@ -7674,6 +7686,7 @@
       }
     },
     "T%@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -8150,6 +8163,7 @@
       }
     },
     "Uçuş bulunamadı: %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -8170,6 +8184,7 @@
       }
     },
     "Uçuş durumu alınamadı." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -8180,6 +8195,7 @@
       }
     },
     "Uçuş durumunu yenile" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {

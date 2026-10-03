@@ -227,4 +227,81 @@ final class BookingParserTests: XCTestCase {
         let airbnb = BookingParser.parse(Self.airbnbPDF, now: now, calendar: cal)
         XCTAssertNil(airbnb.matchingTrip(in: [lisbon, copenhagen], calendar: cal), "14 Kasım hiçbir seyahate düşmez")
     }
+
+    /// Pegasus e-bilet sayfası (web.flypgs.com/travel-document) metni; ad, PNR ve bilet no değiştirildi.
+    /// Etiketler Türkçe/İngilizce alt alta, kodlar "( SAW )", dönüş uçuşu gece yarısından sonra iniyor.
+    static let pegasusETicket = """
+        Uçuş Bilgileriniz
+        Flight info
+        TEST KISI
+        Rezervasyon No\tBilet No\tDüzenleyen\tDüzenlenme Tarihi
+        Reservation no.\tTicket no.\tEdit\tEdit date
+        AB12CD\t6240000000001\tINTERNET\t28/07/2026
+        Nereden
+        From
+        İstanbul Sabiha Gökçen ( SAW )
+        Kalkış Zamanı
+        Departure time
+        08/08/2026 - 06:30
+        Kalkış Terminali
+        Departure terminal
+        Ana Terminal
+        Nereye
+        To
+        Antalya ( AYT )
+        Varış Zamanı
+        Arrival time
+        08/08/2026 - 07:50
+        Varış Terminali
+        Arrival terminal
+        T1
+        Uçuş No
+        Flight no.
+        PC2002
+        Durum
+        Status
+        F
+        Geçerlilik Tarihi
+        Expiry date
+        08/08/2027
+        Koltuk
+        Seat
+        39E
+        Nereden
+        From
+        Antalya ( AYT )
+        Kalkış Zamanı
+        Departure time
+        09/08/2026 - 22:40
+        Nereye
+        To
+        İstanbul Sabiha Gökçen ( SAW )
+        Varış Zamanı
+        Arrival time
+        10/08/2026 - 00:05
+        Uçuş No
+        Flight no.
+        PC2023
+        Geçerlilik Tarihi
+        Expiry date
+        09/08/2027
+        Koltuk
+        Seat
+        39A
+        """
+
+    func testPegasusETicketWithTwoFlights() throws {
+        var istanbul = Calendar(identifier: .gregorian)
+        istanbul.timeZone = TimeZone(identifier: "Europe/Istanbul")!
+        let result = BookingParser.parse(Self.pegasusETicket, now: TestCalendar.date(2026, 7, 30), calendar: cal)
+        XCTAssertTrue(result.lodgings.isEmpty)
+        XCTAssertEqual(result.flights.map(\.flightNumber), ["PC2002", "PC2023"])
+        XCTAssertEqual(result.flights.map { "\($0.fromCode)-\($0.toCode)" }, ["SAW-AYT", "AYT-SAW"])
+        XCTAssertEqual(result.flights.map(\.seat), ["39E", "39A"])
+        XCTAssertTrue(result.flights.allSatisfy(\.hasTimes))
+        let back = try XCTUnwrap(result.flights.last)
+        XCTAssertEqual(istanbul.dateComponents([.month, .day, .hour, .minute], from: back.departure),
+                       DateComponents(month: 8, day: 9, hour: 22, minute: 40))
+        XCTAssertEqual(istanbul.dateComponents([.day, .hour, .minute], from: back.arrival), DateComponents(day: 10, hour: 0, minute: 5))
+    }
 }

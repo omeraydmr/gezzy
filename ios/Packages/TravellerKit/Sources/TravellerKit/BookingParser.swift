@@ -239,6 +239,8 @@ public enum BookingParser {
     ]
 
     static func flights(in text: String, dates: [DayToken], times: [TimeToken], calendar: Calendar) -> [FlightCandidate] {
+        let labelled = labelledFlights(in: text, calendar: calendar)
+        if !labelled.isEmpty { return labelled }
         let upper = text.uppercased(with: Locale(identifier: "en_US"))
         let numbers = matches(#"\b([A-Z0-9]{2})\s?(\d{2,4})\b"#, in: upper).compactMap { m -> (code: String, range: NSRange)? in
             guard let airline = group(m, 1, in: upper), airlines.contains(airline),
@@ -292,6 +294,55 @@ public enum BookingParser {
                 && calendar.isDate($0.departure, inSameDayAs: candidate.departure) }) {
                 result.append(candidate)
             }
+        }
+        return result
+    }
+
+    /// Etiketli e-bilet (Pegasus, THY ve benzeri; Türkçe/İngilizce): her uçuş "Nereden/From … ( SAW )" ile başlar,
+    /// içinde "Nereye/To", "Kalkış Zamanı/Departure time", "Varış Zamanı/Arrival time", "Uçuş No/Flight no.",
+    /// "Koltuk/Seat" etiketleri vardır. Etiketler yoksa boş döner.
+    static func labelledFlights(in text: String, calendar: Calendar) -> [FlightCandidate] {
+        let plain = text.replacingOccurrences(of: "İ", with: "I").replacingOccurrences(of: "ı", with: "i")
+        let ns = plain as NSString
+        let code = #"\(\s*([A-Z]{3})\s*\)"#
+        let origins = matches(#"(?:Nereden|\bFrom)\b[^()]{0,90}?"# + code, in: plain, options: .caseInsensitive)
+        guard !origins.isEmpty else { return [] }
+
+        var result: [FlightCandidate] = []
+        for (index, origin) in origins.enumerated() {
+            let start = origin.range.location
+            let end = index + 1 < origins.count ? origins[index + 1].range.location : ns.length
+            let block = ns.substring(with: NSRange(location: start, length: end - start))
+            guard let from = group(origin, 1, in: plain)?.uppercased(),
+                  let to = matches(#"(?:Nereye|\bTo)\b[^()]{0,90}?"# + code, in: block, options: .caseInsensitive)
+                    .first.flatMap({ group($0, 1, in: block)?.uppercased() }),
+                  from != to else { continue }
+
+            // "08/08/2026 - 06:30" ya da "08.08.2026 06:30"
+            func moment(after labels: String, airport: String) -> Date? {
+                let pattern = labels + #"[^\d]{0,60}?(\d{1,2})[./](\d{1,2})[./](\d{4})\s*[-–,]?\s*(\d{1,2}):(\d{2})"#
+                guard let m = matches(pattern, in: block, options: .caseInsensitive).first,
+                      let day = group(m, 1, in: block).flatMap(Int.init), let month = group(m, 2, in: block).flatMap(Int.init),
+                      let year = group(m, 3, in: block).flatMap(Int.init), let hour = group(m, 4, in: block).flatMap(Int.init),
+                      let minute = group(m, 5, in: block).flatMap(Int.init) else { return nil }
+                return date(DayToken(year: year, month: month, day: day, range: m.range), hour: hour, minute: minute,
+                            timeZone: Airports.airport(airport)?.timeZone, calendar: calendar)
+            }
+            guard let departure = moment(after: #"(?:Kalkis Zamani|Kalkis Saati|Departure time|Departure)"#, airport: from)
+            else { continue }
+            let arrival = moment(after: #"(?:Varis Zamani|Varis Saati|Arrival time|Arrival)"#, airport: to)
+            let number = matches(#"(?:Ucus No|Uçuş No|Flight no\.?|Flight)\s*[:#]?\s*(?:Flight no\.?\s*)?([A-Z0-9]{2})\s?(\d{1,4})\b"#,
+                                 in: block, options: .caseInsensitive)
+                .first.flatMap { m in group(m, 1, in: block).flatMap { a in group(m, 2, in: block).map { (a + $0).uppercased() } } }
+                ?? PassParser.flightNumber(in: block)
+            guard let number else { continue }
+            let seat = matches(#"(?:Koltuk|Seat)\s*(?:Seat)?\s*[:#]?\s*(\d{1,2}[A-K])\b"#, in: block, options: .caseInsensitive)
+                .first.flatMap { group($0, 1, in: block)?.uppercased() }
+            let estimated = Airports.estimatedFlightMinutes(from: from, to: to).map { departure.addingTimeInterval(Double($0) * 60) }
+            result.append(FlightCandidate(flightNumber: number, fromCode: from, toCode: to, departure: departure,
+                                          arrival: arrival.map { $0 > departure ? $0 : $0.addingTimeInterval(86_400) }
+                                            ?? estimated ?? departure.addingTimeInterval(3 * 3600),
+                                          hasTimes: arrival != nil, seat: seat))
         }
         return result
     }
