@@ -7,6 +7,7 @@ struct TripDeck: View {
     let trips: [Trip]
     @Binding var index: Int
     var onOpen: (Trip) -> Void
+    var onEdit: (Trip) -> Void
     var onChangeCover: (Trip) -> Void
     var onRemoveCover: (Trip) -> Void
     var onDelete: (Trip) -> Void
@@ -98,6 +99,7 @@ struct TripDeck: View {
     @ViewBuilder
     private func menu(for trip: Trip) -> some View {
         Button("Aç", systemImage: "arrow.up.forward.app") { onOpen(trip) }
+        Button("Düzenle", systemImage: "pencil") { onEdit(trip) }
         Button("Kapak fotoğrafı seç", systemImage: "photo") { onChangeCover(trip) }
         if trip.coverPhoto != nil {
             Button("Fotoğrafı kaldır", systemImage: "photo.badge.minus") { onRemoveCover(trip) }

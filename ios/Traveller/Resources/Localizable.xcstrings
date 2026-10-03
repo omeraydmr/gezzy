@@ -2558,6 +2558,26 @@
         }
       }
     },
+    "Duraklar gidiş tarihindeki kayma kadar taşınır; uçuş ve konaklamalar değişmez." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stops move by the same number of days as the start date; flights and stays stay as they are."
+          }
+        }
+      }
+    },
+    "Duraklar gidiş tarihindeki kayma kadar taşınır. Yeni tarihlerin dışında kalan %lld durak Fikirler'e taşınır." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stops move by the same number of days as the start date. %lld stops outside the new dates move to Ideas."
+          }
+        }
+      }
+    },
     "Durakların açılış saatleri (Overpass API)" : {
       "localizations" : {
         "en" : {
@@ -4320,6 +4340,7 @@
       }
     },
     "Kapak fotoğrafı" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4335,6 +4356,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Choose cover photo"
+          }
+        }
+      }
+    },
+    "Kapak fotoğrafını kartın menüsünden ya da seyahat ekranındaki ••• menüsünden değiştirebilirsin." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change the cover photo from the card's menu or the ••• menu on the trip screen."
           }
         }
       }
@@ -4415,6 +4446,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Visa on arrival · %lld days"
+          }
+        }
+      }
+    },
+    "Kart rengini değiştir" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change card colour"
           }
         }
       }
@@ -5911,6 +5952,16 @@
         }
       }
     },
+    "Planı da kaydır" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shift the plan too"
+          }
+        }
+      }
+    },
     "Planlanmış ve başlamış seyahatlerin ülkeleri otomatik sayılır; Türkiye hariç." : {
       "localizations" : {
         "en" : {
@@ -6121,16 +6172,6 @@
         }
       }
     },
-    "Varış ya da kalkış saati eksik; ekledikten sonra kontrol et." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Arrival or departure time is missing; check it after adding."
-          }
-        }
-      }
-    },
     "Saat, havalimanının yerel saatiyle girilir." : {
       "localizations" : {
         "en" : {
@@ -6305,6 +6346,16 @@
         }
       }
     },
+    "Seyahat adı" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trip name"
+          }
+        }
+      }
+    },
     "Seyahat adı (ör. Lizbon Kaçamağı)" : {
       "localizations" : {
         "en" : {
@@ -6375,6 +6426,16 @@
         }
       }
     },
+    "Seyahat seçenekleri" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trip options"
+          }
+        }
+      }
+    },
     "Seyahat silinsin mi?" : {
       "localizations" : {
         "en" : {
@@ -6411,6 +6472,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Let's group photos from your trip dates into moments by place and time and match them to your stops. Photos never leave the device."
+          }
+        }
+      }
+    },
+    "Seyahati düzenle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit trip"
           }
         }
       }
@@ -6807,6 +6878,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Move: %@"
+          }
+        }
+      }
+    },
+    "Taslak" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Draft"
           }
         }
       }
@@ -7381,6 +7462,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Arrival must be after departure."
+          }
+        }
+      }
+    },
+    "Varış ya da kalkış saati eksik; ekledikten sonra kontrol et." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arrival or departure time is missing; check it after adding."
           }
         }
       }
