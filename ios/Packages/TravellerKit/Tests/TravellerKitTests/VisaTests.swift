@@ -112,6 +112,8 @@ final class VisaTests: XCTestCase {
         XCTAssertFalse(VisaRules.requiresVisa(countryCode: "FR", members: [green]))
         XCTAssertTrue(VisaRules.requiresVisa(countryCode: "FR", members: [green, burgundy]))
         XCTAssertTrue(VisaRules.requiresVisa(countryCode: "FR", members: []), "Pasaport bilgisi yoksa bordo sayılır")
+        XCTAssertTrue(VisaRules.requiresVisa(countryCode: "FR", members: [green, Member(name: "C")]),
+                      "Pasaportu girilmemiş kişi bordo sayılır")
     }
 
     func testDatasetCoversMostCountries() {
@@ -130,7 +132,8 @@ final class VisaTests: XCTestCase {
         XCTAssertEqual(status("MX", .special), .required(zone: nil))
         XCTAssertEqual(status("AD"), .required(zone: .schengen), "Andorra'ya Schengen vizesiyle girilir")
         XCTAssertEqual(status("GB", .special), .required(zone: .uk), "Elle doğrulanan kayıt önceliklidir")
-        XCTAssertNotNil(VisaRules.entry(for: "TH")?.note)
+        XCTAssertNotNil(VisaRules.entry(for: "TH")?.officialText)
+        XCTAssertNotNil(VisaRules.entry(for: "PT")?.officialText, "Elle doğrulanan kayıt resmî metni de taşır")
     }
 
     func testRuleCodes() {

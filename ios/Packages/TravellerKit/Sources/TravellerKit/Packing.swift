@@ -23,34 +23,34 @@ public enum PackingAdvisor {
                                    calendar: Calendar = .current) -> [String] {
         let country = trip.destination.countryCode.uppercased()
         let entry = VisaRules.entry(for: country)
-        var items = ["Pasaport", "Telefon şarj aleti", "Powerbank"]
+        var items = [String(localized: "Pasaport"), String(localized: "Telefon şarj aleti"), String(localized: "Powerbank")]
 
         if entry?.idCardAccepted == true {
-            items.append("Kimlik kartı")
+            items.append(String(localized: "Kimlik kartı"))
         }
         if let adapters = adapterTypes(for: country) {
-            items.append("Priz adaptörü · Tip \(adapters.joined(separator: "/"))")
+            items.append(String(localized: "Priz adaptörü · Tip \(adapters.joined(separator: "/"))"))
         }
         if VisaRules.schengenCountries.contains(country) {
-            items.append("Seyahat sağlık sigortası poliçesi")
+            items.append(String(localized: "Seyahat sağlık sigortası poliçesi"))
         }
         if VisaRules.requiresVisa(countryCode: country, members: trip.members) {
-            items.append("Vize ve başvuru belgelerinin kopyası")
+            items.append(String(localized: "Vize ve başvuru belgelerinin kopyası"))
         }
         if trip.flights.isEmpty == false {
-            items.append("Biniş kartları")
+            items.append(String(localized: "Biniş kartları"))
         }
         if trip.nights(calendar: calendar) >= 5 {
-            items.append("Küçük çamaşır torbası")
+            items.append(String(localized: "Küçük çamaşır torbası"))
         }
         if let weather {
             items += weatherItems(weather)
         } else {
             let month = calendar.component(.month, from: trip.startDate)
             if (5...9).contains(month) {
-                items.append("Güneş kremi")
+                items.append(String(localized: "Güneş kremi"))
             } else if month == 12 || month <= 2 {
-                items.append("Bere ve eldiven")
+                items.append(String(localized: "Bere ve eldiven"))
             }
         }
 
@@ -62,23 +62,23 @@ public enum PackingAdvisor {
     public static func weatherItems(_ weather: WeatherSummary) -> [String] {
         var items: [String] = []
         if weather.maxTemperature >= 24 {
-            items += ["Güneş kremi", "Şapka", "Güneş gözlüğü"]
+            items += [String(localized: "Güneş kremi"), String(localized: "Şapka"), String(localized: "Güneş gözlüğü")]
         }
         if weather.maxTemperature >= 28 {
-            items.append("Matara")
+            items.append(String(localized: "Matara"))
         }
         if weather.minTemperature <= 8 {
-            items.append("Mont")
+            items.append(String(localized: "Mont"))
         }
         if weather.minTemperature <= 3 {
-            items.append("Bere ve eldiven")
+            items.append(String(localized: "Bere ve eldiven"))
         }
         if weather.maxTemperature - weather.minTemperature >= 12 {
-            items.append("İnce hırka (katmanlı giyim)")
+            items.append(String(localized: "İnce hırka (katmanlı giyim)"))
         }
         if weather.rainyDays > 0 {
-            items.append(weather.rainyDays * 3 >= weather.dayCount ? "Yağmurluk" : "Katlanır şemsiye")
-            items.append("Su geçirmez ayakkabı")
+            items.append(weather.rainyDays * 3 >= weather.dayCount ? String(localized: "Yağmurluk") : String(localized: "Katlanır şemsiye"))
+            items.append(String(localized: "Su geçirmez ayakkabı"))
         }
         return items
     }

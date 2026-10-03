@@ -101,6 +101,18 @@
         }
       }
     },
+    " ve %lld madde daha" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " and %lld more"
+          }
+        }
+      }
+    },
     "\"%@\" olarak kullan" : {
       "localizations" : {
         "en" : {
@@ -434,6 +446,18 @@
         }
       }
     },
+    "%@ ekibe katıldı" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ joined the group"
+          }
+        }
+      }
+    },
     "%@ ekle" : {
       "localizations" : {
         "en" : {
@@ -700,6 +724,18 @@
         }
       }
     },
+    "%@ → %@ ödemesi yapıldı · %@" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ paid %2$@ · %3$@"
+          }
+        }
+      }
+    },
     "%@, %@" : {
       "localizations" : {
         "en" : {
@@ -810,6 +846,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld stops"
+          }
+        }
+      }
+    },
+    "%lld form bekliyor; havalimanında check-in'den önce gümrüğe/kiosk'a uğra." : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld forms waiting; visit customs or the kiosk at the airport before check-in."
           }
         }
       }
@@ -1764,6 +1812,18 @@
         }
       }
     },
+    "Bere ve eldiven" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hat and gloves"
+          }
+        }
+      }
+    },
     "Beğendiklerini işaretle; en az üç gezginin gittiği yerler Önerilen yerler'de çıkar. Yalnızca yer adı, konumu, oyun ve aynı gün hangi yerden sonra nereye gittiğin paylaşılır — adın, tarihlerin, notların ve ekibin paylaşılmaz." : {
       "localizations" : {
         "en" : {
@@ -1975,12 +2035,60 @@
         }
       }
     },
+    "Bilinmiyor" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unknown"
+          }
+        }
+      }
+    },
     "Biniş" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Boarding"
+          }
+        }
+      }
+    },
+    "Biniş başladı" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Boarding started"
+          }
+        }
+      }
+    },
+    "Biniş başladı · Kapı %@" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Boarding · Gate %@"
+          }
+        }
+      }
+    },
+    "Biniş kartları" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Boarding passes"
           }
         }
       }
@@ -2005,12 +2113,36 @@
         }
       }
     },
+    "Biraz nakit %@" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Some cash in %@"
+          }
+        }
+      }
+    },
     "Birden fazla seçebilirsin; ilk seçtiğin, seyahat açılınca ilk gelir." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Pick as many as you like; your first pick opens first when you open a trip."
+          }
+        }
+      }
+    },
+    "Biri" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Someone"
           }
         }
       }
@@ -2055,6 +2187,42 @@
         }
       }
     },
+    "Bugün otel girişi: %@" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check-in today: %@"
+          }
+        }
+      }
+    },
+    "Bugün çıkış: %@" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check-out today: %@"
+          }
+        }
+      }
+    },
+    "Bugün: %@" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today: %@"
+          }
+        }
+      }
+    },
     "Bölünecek" : {
       "localizations" : {
         "en" : {
@@ -2081,6 +2249,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Burgundy"
+          }
+        }
+      }
+    },
+    "Bordo pasaporta girişte ücretsiz 90 günlük turist vizesi verilir." : {
+      "comment" : "TravellerKit VisaRules",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ordinary passports get a free 90-day tourist visa on entry."
           }
         }
       }
@@ -2375,6 +2555,18 @@
         }
       }
     },
+    "Çar" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wed"
+          }
+        }
+      }
+    },
     "Çevrimdışı harita" : {
       "localizations" : {
         "en" : {
@@ -2411,12 +2603,60 @@
         }
       }
     },
+    "Çoğu havayolunda kalkıştan 24–48 saat önce açılır; biniş kartını Wallet'a ekle." : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Most airlines open it 24–48 hours before departure; add the boarding pass to Wallet."
+          }
+        }
+      }
+    },
     "Çıkış" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Check-out"
+          }
+        }
+      }
+    },
+    "Check-in açık" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check-in open"
+          }
+        }
+      }
+    },
+    "Cmt" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sat"
+          }
+        }
+      }
+    },
+    "Cum" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fri"
           }
         }
       }
@@ -2933,6 +3173,18 @@
         }
       }
     },
+    "Evden çıkmadan son kontrol" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last check before leaving home"
+          }
+        }
+      }
+    },
     "Eşitleme sorunu: %@" : {
       "localizations" : {
         "en" : {
@@ -3425,6 +3677,18 @@
         }
       }
     },
+    "Gidiş öncesi %lld iş bugün" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld pre-trip tasks today"
+          }
+        }
+      }
+    },
     "Gidişten %lld gün önce" : {
       "localizations" : {
         "en" : {
@@ -3455,6 +3719,18 @@
         }
       }
     },
+    "Giriş saati %@" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check-in from %@"
+          }
+        }
+      }
+    },
     "Giriş ve çıkış günleri kalış günü sayılır. Bu uygulamadaki seyahatler ve eklediğin ziyaretlerle hesaplanır; sınırda resmî kayıtlar esastır." : {
       "localizations" : {
         "en" : {
@@ -3471,6 +3747,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "You're ready to enter."
+          }
+        }
+      }
+    },
+    "Girişten önce internet üzerinden varış bildirimi yapılmalı." : {
+      "comment" : "TravellerKit VisaRules",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Submit the online arrival notice before entry."
           }
         }
       }
@@ -3640,6 +3928,30 @@
         }
       }
     },
+    "Güneş gözlüğü" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sunglasses"
+          }
+        }
+      }
+    },
+    "Güneş kremi" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sunscreen"
+          }
+        }
+      }
+    },
     "Günler: Mo Tu We Th Fr Sa Su. Kapalı günler için \"off\". Saatler OpenStreetMap'ten otomatik gelir; yanlışsa buradan düzeltebilirsin. %@" : {
       "localizations" : {
         "en" : {
@@ -3696,6 +4008,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Which trip should it go to?"
+          }
+        }
+      }
+    },
+    "Haritaları çevrimdışı kaydet" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save maps offline"
           }
         }
       }
@@ -3982,6 +4306,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Add all"
+          }
+        }
+      }
+    },
+    "Her gün 24 saat" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open 24 hours"
           }
         }
       }
@@ -4308,6 +4644,42 @@
         }
       }
     },
+    "İnce hırka (katmanlı giyim)" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Light cardigan (layers)"
+          }
+        }
+      }
+    },
+    "İndi" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Landed"
+          }
+        }
+      }
+    },
+    "İnişe geçti" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Approaching"
+          }
+        }
+      }
+    },
     "İnternet bağlantını kontrol edip tekrar dene; uygulama bu sırada yerel çalışır." : {
       "localizations" : {
         "en" : {
@@ -4324,6 +4696,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Employer letter / social security record or student certificate"
+          }
+        }
+      }
+    },
+    "İnternet ve yurt dışı harcama izni, temassız ödeme ve kart limitleri." : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Online and foreign spending, contactless payments and card limits."
+          }
+        }
+      }
+    },
+    "İptal" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancelled"
           }
         }
       }
@@ -4408,6 +4804,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Split by item · %lld people"
+          }
+        }
+      }
+    },
+    "Kalktı" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Departed"
           }
         }
       }
@@ -4523,12 +4931,60 @@
         }
       }
     },
+    "kapalı" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "closed"
+          }
+        }
+      }
+    },
     "kapı %@" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "gate %@"
+          }
+        }
+      }
+    },
+    "Kapı belli oldu: %@" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gate assigned: %@"
+          }
+        }
+      }
+    },
+    "Kapı değişti: %@ → %@" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gate changed: %1$@ → %2$@"
+          }
+        }
+      }
+    },
+    "Kapı kapandı" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gate closed"
           }
         }
       }
@@ -4573,6 +5029,18 @@
         }
       }
     },
+    "Kartları yurt dışı kullanıma aç" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enable cards abroad"
+          }
+        }
+      }
+    },
     "Kartpostal oluştur" : {
       "localizations" : {
         "en" : {
@@ -4599,6 +5067,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Set category limits and watch spending fill them up here."
+          }
+        }
+      }
+    },
+    "Katlanır şemsiye" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Folding umbrella"
           }
         }
       }
@@ -4715,6 +5195,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Belongs to"
+          }
+        }
+      }
+    },
+    "Kimlik kartı" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ID card"
           }
         }
       }
@@ -4871,6 +5363,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Add stay"
+          }
+        }
+      }
+    },
+    "Konaklama eklendi: %@" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stay added: %@"
           }
         }
       }
@@ -5037,6 +5541,18 @@
         }
       }
     },
+    "Küçük çamaşır torbası" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Small laundry bag"
+          }
+        }
+      }
+    },
     "Listedekiler, alerji kartında gidilen ülkenin diline ve İngilizceye çevrilir." : {
       "localizations" : {
         "en" : {
@@ -5063,6 +5579,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Suggest items"
+          }
+        }
+      }
+    },
+    "Matara" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Water bottle"
           }
         }
       }
@@ -5269,6 +5797,18 @@
         }
       }
     },
+    "Mont" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Coat"
+          }
+        }
+      }
+    },
     "Müze" : {
       "localizations" : {
         "en" : {
@@ -5369,6 +5909,18 @@
         }
       }
     },
+    "Çıkış saati en geç %@." : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check out by %@."
+          }
+        }
+      }
+    },
     "Ödeme yapıldı mı?" : {
       "localizations" : {
         "en" : {
@@ -5405,6 +5957,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Paid by"
+          }
+        }
+      }
+    },
+    "Ocak, su, priz, pencereler, çöp ve anahtar." : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stove, water, plugs, windows, rubbish and keys."
           }
         }
       }
@@ -5630,12 +6194,36 @@
         }
       }
     },
+    "Online check-in" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Online check-in"
+          }
+        }
+      }
+    },
     "Open Database License (ODbL)" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Open Database License (ODbL)"
+          }
+        }
+      }
+    },
+    "Operatörün yurt dışı paketi ya da varış ülkesi için eSIM; hat yurt dışı aramaya açık olsun." : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your carrier's roaming plan or an eSIM for the destination; make sure international calling is enabled."
           }
         }
       }
@@ -5801,6 +6389,18 @@
         }
       }
     },
+    "Pasaport ve belgelerin kopyası" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copies of passport and documents"
+          }
+        }
+      }
+    },
     "Pasaport · %@ tarihine kadar" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -5888,6 +6488,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Passport type"
+          }
+        }
+      }
+    },
+    "Pasaport, bilet ve sigortanın fotoğrafını Belge kasasına ekle." : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add photos of your passport, tickets and insurance to the Document vault."
           }
         }
       }
@@ -6012,6 +6624,18 @@
         }
       }
     },
+    "Paz" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sun"
+          }
+        }
+      }
+    },
     "Pazar" : {
       "comment" : "TravellerKit PlaceSuggestions category",
       "extractionState" : "manual",
@@ -6044,6 +6668,18 @@
         }
       }
     },
+    "Per" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thu"
+          }
+        }
+      }
+    },
     "Plaj" : {
       "comment" : "TravellerKit PlaceSuggestions category",
       "extractionState" : "manual",
@@ -6062,6 +6698,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Plan"
+          }
+        }
+      }
+    },
+    "Plan sekmesinde \"Kaydet\"; varışta internet olmasa da rota açılır." : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap \"Save\" in the Plan tab; the route opens even without internet on arrival."
           }
         }
       }
@@ -6096,6 +6744,30 @@
         }
       }
     },
+    "Plana %lld durak eklendi" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld stops added to the plan"
+          }
+        }
+      }
+    },
+    "Plana eklendi: %@" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Added to the plan: %@"
+          }
+        }
+      }
+    },
     "Planlanmış ve başlamış seyahatlerin ülkeleri otomatik sayılır; Türkiye hariç." : {
       "localizations" : {
         "en" : {
@@ -6112,6 +6784,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Police"
+          }
+        }
+      }
+    },
+    "Powerbank" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Power bank"
+          }
+        }
+      }
+    },
+    "Priz adaptörü · Tip %@" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Plug adapter · Type %@"
           }
         }
       }
@@ -6166,6 +6862,18 @@
         }
       }
     },
+    "Pzt" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mon"
+          }
+        }
+      }
+    },
     "Randevu" : {
       "localizations" : {
         "en" : {
@@ -6192,6 +6900,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "The appointment is %lld days before the trip; processing time may not be enough."
+          }
+        }
+      }
+    },
+    "Randevular dolabilir; Vize sekmesinden başvuruyu takip et." : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Appointments fill up; track the application in the Visa tab."
           }
         }
       }
@@ -6296,6 +7016,66 @@
         }
       }
     },
+    "Rötar kalktı, kalkış %@" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delay cleared, departs %@"
+          }
+        }
+      }
+    },
+    "Rötar: kalkış %@ (+%lld dk)" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delay: departs %1$@ (+%2$lld min)"
+          }
+        }
+      }
+    },
+    "Rötarlı" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delayed"
+          }
+        }
+      }
+    },
+    "Rötarlı +%lld dk" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delayed +%lld min"
+          }
+        }
+      }
+    },
+    "Saat %@%@. Belge listesini kontrol et." : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "At %1$@%2$@. Check the document list."
+          }
+        }
+      }
+    },
     "Saat belirle" : {
       "localizations" : {
         "en" : {
@@ -6356,6 +7136,18 @@
         }
       }
     },
+    "Sal" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tue"
+          }
+        }
+      }
+    },
     "Sayılan ziyaretler" : {
       "localizations" : {
         "en" : {
@@ -6402,6 +7194,18 @@
         }
       }
     },
+    "Şapka" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sun hat"
+          }
+        }
+      }
+    },
     "Şehir" : {
       "localizations" : {
         "en" : {
@@ -6428,6 +7232,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Couldn't find the city's location."
+          }
+        }
+      }
+    },
+    "Schengen: 180 gün içinde en fazla 90 gün. Pasaport son 10 yıl içinde verilmiş olmalı." : {
+      "comment" : "TravellerKit VisaRules",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schengen: at most 90 days in any 180. The passport must have been issued within the last 10 years."
           }
         }
       }
@@ -6560,6 +7376,42 @@
         }
       }
     },
+    "Seyahat sağlık sigortası" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Travel health insurance"
+          }
+        }
+      }
+    },
+    "Seyahat sağlık sigortası poliçesi" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Travel health insurance policy"
+          }
+        }
+      }
+    },
+    "Seyahat seninle paylaşıldı." : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A trip was shared with you."
+          }
+        }
+      }
+    },
     "Seyahat seçenekleri" : {
       "localizations" : {
         "en" : {
@@ -6586,6 +7438,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Trip complete"
+          }
+        }
+      }
+    },
+    "Seyahat tarihleri değişti" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trip dates changed"
           }
         }
       }
@@ -6636,6 +7500,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Delete trip"
+          }
+        }
+      }
+    },
+    "Seyahatin tüm günlerini kapsamalı; poliçeyi Belge kasasına ekle." : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It must cover every day of the trip; add the policy to the Document vault."
           }
         }
       }
@@ -6884,6 +7760,18 @@
         }
       }
     },
+    "Su geçirmez ayakkabı" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waterproof shoes"
+          }
+        }
+      }
+    },
     "Sunucuya ulaşılamadı." : {
       "localizations" : {
         "en" : {
@@ -7006,6 +7894,18 @@
         }
       }
     },
+    "Tax-free formlarını onaylat" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get your tax-free forms stamped"
+          }
+        }
+      }
+    },
     "Taşı: %@" : {
       "localizations" : {
         "en" : {
@@ -7116,6 +8016,18 @@
         }
       }
     },
+    "Telefon şarj aleti" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phone charger"
+          }
+        }
+      }
+    },
     "Tema parkı" : {
       "localizations" : {
         "en" : {
@@ -7220,6 +8132,18 @@
         }
       }
     },
+    "Tüm pasaport türleri vizeye tabi; e-vize alınabilir." : {
+      "comment" : "TravellerKit VisaRules",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All passport types need a visa; an e-visa is available."
+          }
+        }
+      }
+    },
     "Tüm seyahatler silinsin mi?" : {
       "localizations" : {
         "en" : {
@@ -7256,6 +8180,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Type"
+          }
+        }
+      }
+    },
+    "Türkiye'den çıkışta gerekir; e-Devlet, banka ya da vergi dairesinden pasaport numarasıyla alınır." : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Required when leaving Türkiye; buy it with your passport number via e-Devlet, a bank or a tax office."
           }
         }
       }
@@ -7350,6 +8286,30 @@
         }
       }
     },
+    "Uçuş %@ · 3 saat kaldı" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flight %@ · 3 hours to go"
+          }
+        }
+      }
+    },
+    "Uçuş başka bir havalimanına yönlendirildi." : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flight diverted to another airport."
+          }
+        }
+      }
+    },
     "Uçuş bulunamadı. Başka bir sayfa ya da daha net bir ekran görüntüsü dene." : {
       "localizations" : {
         "en" : {
@@ -7396,6 +8356,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No flight added"
+          }
+        }
+      }
+    },
+    "Uçuş iptal edildi. Havayolunun bildirimini kontrol et." : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flight cancelled. Check the airline's notice."
           }
         }
       }
@@ -7520,6 +8492,18 @@
         }
       }
     },
+    "Ulaşım, bahşiş ve kart geçmeyen yerler için küçük miktar." : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A small amount for transport, tips and places that don't take cards."
+          }
+        }
+      }
+    },
     "Umuma mahsus (bordo)" : {
       "localizations" : {
         "en" : {
@@ -7560,6 +8544,18 @@
         }
       }
     },
+    "Valiz hazır görünüyor. İyi yolculuklar!" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your bag looks ready. Have a great trip!"
+          }
+        }
+      }
+    },
     "Valiz listesi boş. Önerilerle başla." : {
       "localizations" : {
         "en" : {
@@ -7586,6 +8582,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Packing, flights, the day's plan and changes from your crew."
+          }
+        }
+      }
+    },
+    "Valizde %lld madde eksik. Son kontrol için iyi bir zaman." : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld items still to pack. A good time for a final check."
+          }
+        }
+      }
+    },
+    "Valize konuldu: %@%@" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Packed: %1$@%2$@"
           }
         }
       }
@@ -7660,6 +8680,30 @@
         }
       }
     },
+    "Vize başvurusu" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Visa application"
+          }
+        }
+      }
+    },
+    "Vize başvurusunda da istenir; seyahatin tüm günlerini kapsamalı." : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Also required for the visa application; it must cover every day of the trip."
+          }
+        }
+      }
+    },
     "Vize bilgileri Dışişleri Bakanlığı'nın listesinden T.C. pasaport türlerine (umuma mahsus, hususi, hizmet, diplomatik) göre elle derlenmiştir; son gözden geçirme %@. Seyahatten önce resmî kaynaktan doğrula." : {
       "localizations" : {
         "en" : {
@@ -7707,6 +8751,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Visa rules depend on passport type: green, grey and diplomatic passports are visa-free in Schengen for 90 days in any 180."
+          }
+        }
+      }
+    },
+    "Vize randevusu 2 saat sonra" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Visa appointment in 2 hours"
+          }
+        }
+      }
+    },
+    "Vize ve başvuru belgelerinin kopyası" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copies of visa and application documents"
           }
         }
       }
@@ -7841,6 +8909,42 @@
         }
       }
     },
+    "Yarın %@!" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ tomorrow!"
+          }
+        }
+      }
+    },
+    "Yarın vize randevusu: %@" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Visa appointment tomorrow: %@"
+          }
+        }
+      }
+    },
+    "Yağmurluk" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Raincoat"
+          }
+        }
+      }
+    },
     "Yedi" : {
       "localizations" : {
         "en" : {
@@ -7941,6 +9045,18 @@
         }
       }
     },
+    "Yönlendirildi" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diverted"
+          }
+        }
+      }
+    },
     "Yılda kaç kez yurt dışına çıkıyorsun?" : {
       "localizations" : {
         "en" : {
@@ -7957,6 +9073,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Move up"
+          }
+        }
+      }
+    },
+    "Yurt dışı internet paketi ya da eSIM" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Roaming plan or eSIM"
+          }
+        }
+      }
+    },
+    "Yurt dışı çıkış harç pulu" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turkish exit fee stamp"
           }
         }
       }

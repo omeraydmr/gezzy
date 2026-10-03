@@ -7,18 +7,18 @@ public struct FlightLiveStatus: Codable, Hashable, Sendable {
 
         public var title: String {
             switch self {
-            case .scheduled: "Zamanında"
-            case .checkIn: "Check-in açık"
-            case .boarding: "Biniş"
-            case .gateClosed: "Kapı kapandı"
-            case .departed: "Kalktı"
-            case .enRoute: "Havada"
-            case .approaching: "İnişe geçti"
-            case .arrived: "İndi"
-            case .delayed: "Rötarlı"
-            case .canceled: "İptal"
-            case .diverted: "Yönlendirildi"
-            case .unknown: "Bilinmiyor"
+            case .scheduled: String(localized: "Zamanında")
+            case .checkIn: String(localized: "Check-in açık")
+            case .boarding: String(localized: "Biniş")
+            case .gateClosed: String(localized: "Kapı kapandı")
+            case .departed: String(localized: "Kalktı")
+            case .enRoute: String(localized: "Havada")
+            case .approaching: String(localized: "İnişe geçti")
+            case .arrived: String(localized: "İndi")
+            case .delayed: String(localized: "Rötarlı")
+            case .canceled: String(localized: "İptal")
+            case .diverted: String(localized: "Yönlendirildi")
+            case .unknown: String(localized: "Bilinmiyor")
             }
         }
 
@@ -76,9 +76,9 @@ extension FlightSegment {
         guard let live else { return nil }
         if live.phase == .canceled { return live.phase.title }
         if isDelayed && !live.phase.isAirborneOrDone && live.phase != .boarding {
-            return "Rötarlı +\(delayMinutes) dk"
+            return String(localized: "Rötarlı +\(delayMinutes) dk")
         }
-        return live.phase == .delayed ? "Rötarlı" : live.phase.title
+        return live.phase == .delayed ? String(localized: "Rötarlı") : live.phase.title
     }
 
     /// Servisten gelen durumu uygular; kapı bilgisi geldiyse elle girilen kapının yerini alır.
@@ -101,30 +101,30 @@ public enum FlightStatusChange {
         let oldPhase = old.live?.phase
 
         if status.phase == .canceled {
-            return oldPhase == .canceled ? [] : ["Uçuş iptal edildi. Havayolunun bildirimini kontrol et."]
+            return oldPhase == .canceled ? [] : [String(localized: "Uçuş iptal edildi. Havayolunun bildirimini kontrol et.")]
         }
         if status.phase == .diverted && oldPhase != .diverted {
-            lines.append("Uçuş başka bir havalimanına yönlendirildi.")
+            lines.append(String(localized: "Uçuş başka bir havalimanına yönlendirildi."))
         }
 
         if let gate = new.gate, gate != old.gate {
             if let previous = old.gate {
-                lines.append("Kapı değişti: \(previous) → \(gate)")
+                lines.append(String(localized: "Kapı değişti: \(previous) → \(gate)"))
             } else {
-                lines.append("Kapı belli oldu: \(gate)")
+                lines.append(String(localized: "Kapı belli oldu: \(gate)"))
             }
         }
 
         let before = old.isDelayed ? old.delayMinutes : 0
         let after = new.isDelayed ? new.delayMinutes : 0
         if after > 0, abs(after - before) >= 10 {
-            lines.append("Rötar: kalkış \(time(new.effectiveDeparture)) (+\(after) dk)")
+            lines.append(String(localized: "Rötar: kalkış \(time(new.effectiveDeparture)) (+\(after) dk)"))
         } else if after == 0, before > 0, !status.phase.isAirborneOrDone {
-            lines.append("Rötar kalktı, kalkış \(time(new.departure))")
+            lines.append(String(localized: "Rötar kalktı, kalkış \(time(new.departure))"))
         }
 
         if status.phase == .boarding, oldPhase != .boarding {
-            lines.append(new.gate.map { "Biniş başladı · Kapı \($0)" } ?? "Biniş başladı")
+            lines.append(new.gate.map { String(localized: "Biniş başladı · Kapı \($0)") } ?? String(localized: "Biniş başladı"))
         }
         return lines
     }

@@ -21,9 +21,11 @@ public struct CountryEntry: Hashable, Sendable {
     /// Pasaport yerine yeni çipli kimlik kartıyla giriş mümkün mü.
     public var idCardAccepted: Bool
     public var note: String?
+    /// Dışişleri Bakanlığı listesindeki resmî metin (Türkçe; yalnızca Türkçe arayüzde gösterilir).
+    public var officialText: String?
 
     public init(code: String, rule: EntryRule, rulesByType: [PassportType: EntryRule] = [:], passportValidityMonths: Int = 6,
-                validityIsMandatory: Bool = false, idCardAccepted: Bool = false, note: String? = nil) {
+                validityIsMandatory: Bool = false, idCardAccepted: Bool = false, note: String? = nil, officialText: String? = nil) {
         self.code = code
         self.rule = rule
         self.rulesByType = rulesByType
@@ -31,6 +33,7 @@ public struct CountryEntry: Hashable, Sendable {
         self.validityIsMandatory = validityIsMandatory
         self.idCardAccepted = idCardAccepted
         self.note = note
+        self.officialText = officialText
     }
 
     public func rule(for type: PassportType) -> EntryRule {
@@ -64,7 +67,11 @@ public enum VisaRules {
     /// (Schengen bölgesi, vize bölgeleri, pasaport geçerlilik süresi, kimlik kartıyla giriş).
     public static let entries: [String: CountryEntry] = {
         var map = loadDataset()
-        for (code, entry) in curated { map[code] = entry }
+        for (code, entry) in curated {
+            var merged = entry
+            merged.officialText = map[code]?.officialText
+            map[code] = merged
+        }
         return map
     }()
 
@@ -80,7 +87,7 @@ public enum VisaRules {
                 if let rule = rule(parts[2 + index]), rule != ordinary { byType[type] = rule }
             }
             map[parts[0]] = CountryEntry(code: parts[0], rule: ordinary, rulesByType: byType,
-                                         note: parts.count > 5 && !parts[5].isEmpty ? parts[5] : nil)
+                                         officialText: parts.count > 5 && !parts[5].isEmpty ? parts[5] : nil)
         }
         return map
     }
@@ -105,7 +112,7 @@ public enum VisaRules {
             map[code] = CountryEntry(
                 code: code, rule: .visaRequired(zone: .schengen), rulesByType: CountryEntry.official(.visaFree(maxDays: 90)),
                 passportValidityMonths: 3, validityIsMandatory: true,
-                note: "Schengen: 180 gün içinde en fazla 90 gün. Pasaport son 10 yıl içinde verilmiş olmalı.")
+                note: String(localized: "Schengen: 180 gün içinde en fazla 90 gün. Pasaport son 10 yıl içinde verilmiş olmalı."))
         }
         // Bulgaristan: hizmet ve diplomatik pasaport 30 güne kadar muaf.
         map["BG"]?.rulesByType = [.special: .visaFree(maxDays: 90), .service: .visaFree(maxDays: 30), .diplomatic: .visaFree(maxDays: 30)]
@@ -127,10 +134,10 @@ public enum VisaRules {
             CountryEntry(code: "BR", rule: .visaFree(maxDays: 90)),
             CountryEntry(code: "AR", rule: .visaFree(maxDays: 90)),
             CountryEntry(code: "MY", rule: .visaOnArrival(maxDays: 90), rulesByType: CountryEntry.official(.visaFree(maxDays: 90)),
-                         note: "Bordo pasaporta girişte ücretsiz 90 günlük turist vizesi verilir."),
+                         note: String(localized: "Bordo pasaporta girişte ücretsiz 90 günlük turist vizesi verilir.")),
             CountryEntry(code: "SG", rule: .visaFree(maxDays: 30)),
-            CountryEntry(code: "ID", rule: .visaFree(maxDays: 30), note: "Girişten önce internet üzerinden varış bildirimi yapılmalı."),
-            CountryEntry(code: "AM", rule: .eVisa, note: "Tüm pasaport türleri vizeye tabi; e-vize alınabilir."),
+            CountryEntry(code: "ID", rule: .visaFree(maxDays: 30), note: String(localized: "Girişten önce internet üzerinden varış bildirimi yapılmalı.")),
+            CountryEntry(code: "AM", rule: .eVisa, note: String(localized: "Tüm pasaport türleri vizeye tabi; e-vize alınabilir.")),
         ]
         for entry in others { map[entry.code] = entry }
         return map
@@ -140,10 +147,11 @@ public enum VisaRules {
         entries[countryCode.uppercased()]
     }
 
-    /// Ekipten herhangi birinin pasaport türüne göre vize gerekiyor mu (pasaport bilgisi yoksa bordo sayılır).
+    /// Ekipten herhangi birinin pasaport türüne göre vize gerekiyor mu (pasaport bilgisi girilmemiş kişi bordo sayılır).
     public static func requiresVisa(countryCode: String, members: [Member]) -> Bool {
         guard let entry = entry(for: countryCode) else { return false }
-        let types = members.compactMap { $0.passport?.type }
+        // Pasaport bilgisi girilmemiş kişi bordo sayılır.
+        let types = members.map { $0.passport?.type ?? .ordinary }
         return (types.isEmpty ? [.ordinary] : types).contains { type in
             if case .visaRequired = entry.rule(for: type) { return true }
             return false

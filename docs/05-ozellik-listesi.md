@@ -65,7 +65,7 @@ Listedeki tüm adaylar yapıldı:
 | K | Acil durum kartı | Vize sekmesinde; ülkenin acil numaraları, konsolosluk çağrı merkezi, cihazda kalan sağlık bilgileri, yerel dilde alerji kartı |
 | L | Paylaşılabilir seyahat özeti | Anılar sekmesinde; gün, durak, rota, harcama ve öne çıkanlar görsel olarak paylaşılır (HealthKit adım sayısı yok) |
 | M | Canlı kartı sunucu push'u ile güncelleme | `server/` Cloudflare Worker + APNs; kurulum ve anahtarlar gerekli, henüz canlıya alınmadı |
-| N | İngilizce yerelleştirme | Arayüz String Catalog ile İngilizce; TravellerKit'in ürettiği metinler (vize notları, öneriler, bildirimler) henüz Türkçe |
+| N | İngilizce yerelleştirme | Arayüz ve TravellerKit metinleri (valiz ve yola çıkış önerileri, uçuş durumu, bildirimler, açılış saatleri, vize notları) İngilizce. Öneriden gelen ve düzenlenmemiş yola çıkış maddeleri cihaz dilinde gösterilir; Dışişleri'nin Türkçe resmî vize metni yalnızca Türkçe arayüzde |
 
 Daha önce yapılanlar (ayrıntı §1 ve §2'de): B Anılar · C Biletten doldurma (PDF, ekran görüntüsü, Wallet `.pkpass`) ·
 D Schengen 90/180 · E Vize randevu ve belge takibi · H Hesaplaşma (IBAN, ödendi, özet) ·

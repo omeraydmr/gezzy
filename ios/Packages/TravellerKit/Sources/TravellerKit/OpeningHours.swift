@@ -14,7 +14,10 @@ public struct OpeningHours: Hashable, Sendable {
     public private(set) var days: [[Interval]] = Array(repeating: [], count: 7)
 
     static let dayCodes = ["mo", "tu", "we", "th", "fr", "sa", "su"]
-    public static let turkishDayNames = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"]
+    public static var turkishDayNames: [String] {
+        [String(localized: "Pzt"), String(localized: "Sal"), String(localized: "Çar"), String(localized: "Per"),
+         String(localized: "Cum"), String(localized: "Cmt"), String(localized: "Paz")]
+    }
 
     public init?(_ raw: String) {
         let text = raw.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -167,7 +170,7 @@ public struct OpeningHours: Hashable, Sendable {
 
     /// "Pzt–Cum 09:00–18:00 · Cmt 10:00–14:00 · Paz kapalı"
     public var turkishSummary: String {
-        if days.allSatisfy({ $0 == [Interval(start: 0, end: 24 * 60)] }) { return "Her gün 24 saat" }
+        if days.allSatisfy({ $0 == [Interval(start: 0, end: 24 * 60)] }) { return String(localized: "Her gün 24 saat") }
         var groups: [(from: Int, to: Int, intervals: [Interval])] = []
         for day in 0..<7 {
             if let last = groups.last, last.intervals == days[day], last.to == day - 1 {
@@ -181,7 +184,7 @@ public struct OpeningHours: Hashable, Sendable {
                 ? Self.turkishDayNames[group.from]
                 : "\(Self.turkishDayNames[group.from])–\(Self.turkishDayNames[group.to])"
             let hours = group.intervals.isEmpty
-                ? "kapalı"
+                ? String(localized: "kapalı")
                 : group.intervals.map { "\(Self.clock($0.start))–\(Self.clock($0.end))" }.joined(separator: ", ")
             return "\(names) \(hours)"
         }.joined(separator: " · ")

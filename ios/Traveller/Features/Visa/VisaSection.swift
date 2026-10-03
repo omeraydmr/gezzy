@@ -76,7 +76,7 @@ struct VisaSection: View {
                     Text("\(Countries.flag(trip.destination.countryCode)) \(Countries.name(trip.destination.countryCode))")
                         .font(.tBodyStrong)
                         .foregroundStyle(Color.ink)
-                    if let note = VisaRules.entry(for: trip.destination.countryCode)?.note {
+                    if let note = visaNote(VisaRules.entry(for: trip.destination.countryCode)) {
                         Text(note).font(.tBody).foregroundStyle(Color.ink2)
                     }
                     SourceFootnote()
@@ -87,6 +87,13 @@ struct VisaSection: View {
             DocumentsCard(trip: trip)
             EmergencyCard(trip: trip)
         }
+    }
+
+    /// Elle yazılmış not her dilde; Dışişleri'nin Türkçe resmî metni yalnızca Türkçe arayüzde.
+    private func visaNote(_ entry: CountryEntry?) -> String? {
+        guard let entry else { return nil }
+        if let note = entry.note { return note }
+        return Bundle.main.preferredLocalizations.first == "tr" ? entry.officialText : nil
     }
 
     private func focusedRow(_ rows: [Row]) -> Row? {

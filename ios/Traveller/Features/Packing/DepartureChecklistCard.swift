@@ -78,9 +78,18 @@ struct DepartureChecklistCard: View {
         }
         .tray()
         .sheet(item: $editing) { item in
-            ChecklistItemEditor(item: item) { updated in
+            // Düzenleyici gösterilen (cihaz dilindeki) metinle açılır; metin değişmediyse kayıttaki hali korunur.
+            let shown = DepartureChecklist.displayText(of: item, in: trip)
+            ChecklistItemEditor(item: { var copy = item; copy.title = shown.title; copy.note = shown.note; return copy }()) { updated in
+                var saved = updated
+                if saved.title == shown.title && saved.note == shown.note {
+                    saved.title = item.title
+                    saved.note = item.note
+                } else {
+                    saved.textEdited = true
+                }
                 store.update(trip.id) { trip in
-                    if let index = trip.checklist?.firstIndex(where: { $0.id == updated.id }) { trip.checklist?[index] = updated }
+                    if let index = trip.checklist?.firstIndex(where: { $0.id == saved.id }) { trip.checklist?[index] = saved }
                 }
             }
             .presentationDetents([.medium])
@@ -100,13 +109,14 @@ struct DepartureChecklistCard: View {
                 Image(systemName: item.isDone ? "checkmark.circle.fill" : "circle")
                     .font(.title3)
                     .foregroundStyle(item.isDone ? Color.success : Color.ink3)
+                let text = DepartureChecklist.displayText(of: item, in: trip)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(item.title)
+                    Text(text.title)
                         .font(.tBodyStrong)
                         .foregroundStyle(item.isDone ? Color.ink3 : Color.ink)
                         .strikethrough(item.isDone)
-                    if !item.note.isEmpty && !item.isDone {
-                        Text(item.note).font(.caption).foregroundStyle(Color.ink2).fixedSize(horizontal: false, vertical: true)
+                    if !text.note.isEmpty && !item.isDone {
+                        Text(text.note).font(.caption).foregroundStyle(Color.ink2).fixedSize(horizontal: false, vertical: true)
                     }
                 }
                 Spacer(minLength: 8)

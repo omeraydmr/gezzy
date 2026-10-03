@@ -167,4 +167,19 @@ final class LiveActivityRegistrationTests: XCTestCase {
         let json = String(decoding: try LiveActivityRegistration.encoder.encode(registration), as: UTF8.self)
         XCTAssertTrue(json.contains("\"scheduledDeparture\":\"2026-10-19T21:30:00Z\""), json)
     }
+
+    func testChecklistDisplayTextFollowsSuggestionUnlessEdited() throws {
+        var trip = Trip(name: "Lizbon", destination: Destination(countryCode: "PT", city: "Lizbon"),
+                        startDate: TestCalendar.date(2026, 10, 10), endDate: TestCalendar.date(2026, 10, 13))
+        let suggestion = try XCTUnwrap(DepartureChecklist.suggestions(for: trip).first { $0.key == "exit-fee" })
+        var stored = suggestion.item()
+        stored.title = "Eski dildeki başlık"
+        trip.checklist = [stored]
+        XCTAssertEqual(DepartureChecklist.displayText(of: stored, in: trip).title, suggestion.title,
+                       "Öneriden gelen madde güncel dildeki metinle gösterilir")
+        stored.textEdited = true
+        XCTAssertEqual(DepartureChecklist.displayText(of: stored, in: trip).title, "Eski dildeki başlık")
+        let custom = ChecklistItem(title: "Kediye mama bırak")
+        XCTAssertEqual(DepartureChecklist.displayText(of: custom, in: trip).title, "Kediye mama bırak")
+    }
 }
