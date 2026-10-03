@@ -26,7 +26,7 @@ enum LiveActivityController {
         let attributes = FlightActivityAttributes(
             tripID: trip.id.uuidString, tripName: trip.name, flightNumber: flight.flightNumber,
             fromCode: flight.fromCode, fromCity: flight.fromCity, toCode: flight.toCode, toCity: flight.toCity,
-            scheduledDeparture: flight.departure, tint: trip.tint.rgbHex)
+            tint: trip.tint.rgbHex)
         _ = try? Activity.request(attributes: attributes,
                                   content: ActivityContent(state: state(for: flight), staleDate: flight.arrival))
     }
@@ -59,9 +59,8 @@ enum LiveActivityController {
 
     static func state(for flight: FlightSegment, now: Date = .now) -> FlightActivityAttributes.ContentState {
         FlightActivityAttributes.ContentState(
-            gate: flight.gate, seat: flight.seat, terminal: nil,
-            status: status(for: flight, now: now), departure: flight.departure, arrival: flight.arrival,
-            isDelayed: false, isCanceled: false)
+            gate: flight.gate, seat: flight.seat,
+            status: status(for: flight, now: now), departure: flight.departure, arrival: flight.arrival)
     }
 
     /// Saate göre aşama (canlı durum servisi yok; güncel durum için havayolunun uygulamasına bakılır).

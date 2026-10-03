@@ -31,8 +31,7 @@ struct FlightLiveActivity: Widget {
                 DynamicIslandExpandedRegion(.leading) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(context.attributes.fromCode).font(.title2.weight(.semibold))
-                        Text(context.state.departure, style: .time).font(.caption)
-                            .foregroundStyle(context.state.isDelayed ? Color.orange : .secondary)
+                        Text(context.state.departure, style: .time).font(.caption).foregroundStyle(.secondary)
                     }
                 }
                 DynamicIslandExpandedRegion(.trailing) {
@@ -51,14 +50,10 @@ struct FlightLiveActivity: Widget {
                     HStack {
                         Label(context.state.gate.map { String(localized: "Kapı \($0)") } ?? String(localized: "Kapı —"), systemImage: "door.left.hand.open")
                         Spacer()
-                        if context.state.isCanceled {
-                            Text("İptal").foregroundStyle(.red)
-                        } else {
-                            Text(timerInterval: Date.now...max(Date.now, context.state.departure), countsDown: true)
-                                .monospacedDigit()
-                                .multilineTextAlignment(.trailing)
-                                .frame(maxWidth: 90, alignment: .trailing)
-                        }
+                        Text(timerInterval: Date.now...max(Date.now, context.state.departure), countsDown: true)
+                            .monospacedDigit()
+                            .multilineTextAlignment(.trailing)
+                            .frame(maxWidth: 90, alignment: .trailing)
                     }
                     .font(.subheadline.weight(.medium))
                 }
@@ -71,7 +66,6 @@ struct FlightLiveActivity: Widget {
                 Text(timerInterval: Date.now...max(Date.now, context.state.departure), countsDown: true)
                     .monospacedDigit()
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(context.state.isDelayed ? Color.orange : .primary)
                     .frame(maxWidth: 56)
             } minimal: {
                 Image(systemName: "airplane").foregroundStyle(tint)
@@ -96,25 +90,17 @@ struct LockScreenTicket: View {
             HStack {
                 Text(attributes.tripName).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
                 Spacer()
-                let statusColor: Color = state.isCanceled ? .red : (state.isDelayed ? .orange : tint)
                 Text(state.status)
                     .font(.caption.weight(.bold))
-                    .foregroundStyle(statusColor)
+                    .foregroundStyle(tint)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 3)
-                    .background(statusColor.opacity(0.15), in: Capsule())
+                    .background(tint.opacity(0.15), in: Capsule())
             }
             HStack(alignment: .center) {
                 VStack(alignment: .leading, spacing: 0) {
                     Text(attributes.fromCode).font(.system(size: 30, weight: .semibold))
-                    HStack(spacing: 4) {
-                        if state.isDelayed {
-                            Text(attributes.scheduledDeparture, style: .time).strikethrough().foregroundStyle(.secondary)
-                        }
-                        Text(state.departure, style: .time)
-                            .foregroundStyle(state.isDelayed ? Color.orange : .secondary)
-                    }
-                    .font(.caption)
+                    Text(state.departure, style: .time).font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
                 VStack(spacing: 2) {
@@ -128,18 +114,15 @@ struct LockScreenTicket: View {
                 }
             }
             HStack(spacing: 8) {
-                if let terminal = state.terminal { chip(String(localized: "Terminal"), terminal) }
                 chip(String(localized: "Kapı"), state.gate ?? "—")
                 chip(String(localized: "Koltuk"), state.seat ?? "—")
                 Spacer()
-                if !state.isCanceled {
-                    VStack(alignment: .trailing, spacing: 0) {
-                        Text("Kalkışa").font(.caption2).foregroundStyle(.secondary)
-                        Text(timerInterval: Date.now...max(Date.now, state.departure), countsDown: true)
-                            .font(.headline.weight(.semibold))
-                            .monospacedDigit()
-                            .multilineTextAlignment(.trailing)
-                    }
+                VStack(alignment: .trailing, spacing: 0) {
+                    Text("Kalkışa").font(.caption2).foregroundStyle(.secondary)
+                    Text(timerInterval: Date.now...max(Date.now, state.departure), countsDown: true)
+                        .font(.headline.weight(.semibold))
+                        .monospacedDigit()
+                        .multilineTextAlignment(.trailing)
                 }
             }
         }
