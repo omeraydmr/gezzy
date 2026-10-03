@@ -142,9 +142,9 @@ struct TripTicketCard: View, Equatable {
                     .foregroundStyle(Color.ink2)
                     .lineLimit(1)
                 Spacer(minLength: 4)
-                Barcode()
-                    .frame(width: 34, height: 22)
-                    .opacity(0.8)
+                TicketQR(tripID: trip.id)
+                    .frame(width: 30, height: 30)
+                    .opacity(0.85)
             }
         }
         .padding(.horizontal, 18)
@@ -412,9 +412,9 @@ private struct CityTicket: View {
                 }
                 Spacer(minLength: 4)
                 if isLast {
-                    Barcode()
-                        .frame(width: 34, height: 22)
-                        .opacity(0.8)
+                    TicketQR(tripID: trip.id)
+                        .frame(width: 30, height: 30)
+                        .opacity(0.85)
                 }
             }
         }

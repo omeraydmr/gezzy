@@ -291,6 +291,8 @@ struct MemberEditor: View {
 /// iCloud paylaşım davetini (Mesajlar, Mail, AirDrop…) gönderen kart.
 struct InviteCard: View {
     let trip: Trip
+    @Environment(TripStore.self) private var store
+    @State private var isShowingQR = false
     private var sync: CloudSync { .shared }
 
     var body: some View {
@@ -314,9 +316,49 @@ struct InviteCard: View {
                           systemImage: "square.and.arrow.up")
                 }
                 .buttonStyle(.primary)
+
+                if !sync.sharedWithMe.contains(trip.id) {
+                    Button {
+                        isShowingQR = true
+                    } label: {
+                        Label(sync.openInviteLinks.contains(trip.id) ? String(localized: "QR davet açık · göster") : String(localized: "QR ile davet et"),
+                              systemImage: "qrcode")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(Color.ink)
+                }
+            }
+
+            // QR bağlantısıyla katılıp ekipte olmayanlar: salt okur; ekibe eklenince düzenleyebilir.
+            if let joiners = sync.linkJoiners[trip.id], !joiners.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("QR ile katılanlar · şimdilik sadece görür").font(.caption).foregroundStyle(Color.ink2)
+                    ForEach(joiners) { joiner in
+                        HStack {
+                            Label(joiner.name, systemImage: "person.crop.circle")
+                                .font(.subheadline)
+                                .foregroundStyle(Color.ink)
+                            Spacer()
+                            Button("Ekibe ekle") { add(joiner) }
+                                .font(.system(.footnote, weight: .semibold))
+                                .buttonStyle(.bordered)
+                        }
+                    }
+                }
             }
         }
         .tray()
+        .sheet(isPresented: $isShowingQR) { InviteQRSheet(trip: trip) }
+    }
+
+    /// Bağlantıyla katılanı düzenleyebilir olarak ekibe ekler; iCloud izni bir sonraki eşitlemede yükseltilir.
+    private func add(_ joiner: CloudSync.LinkJoiner) {
+        store.update(trip.id) { trip in
+            trip.members.append(Member(name: joiner.name, role: .editor, colorIndex: trip.members.count,
+                                       cloudUserID: joiner.id))
+        }
+        sync.forgetJoiner(joiner.id, in: trip.id)
     }
 
     private var title: String {

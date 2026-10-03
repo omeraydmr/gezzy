@@ -31,6 +31,17 @@ final class CloudSync {
     private(set) var sharedByMe: Set<UUID> = []
     /// Bize paylaşılan seyahatlerde iCloud'daki iznimiz (sahip "sadece görür" yaptıysa salt okunur).
     private(set) var myAccess: [UUID: ShareAccess] = [:]
+    /// QR davet bağlantısı açık olan (bağlantıya sahip herkesin salt okur katılabildiği) kendi seyahatlerimiz.
+    private(set) var openInviteLinks: Set<UUID> = []
+    /// Kendi seyahatlerimizde bağlantıyla katılıp ekipte henüz olmayan kişiler; sahip onları ekibe ekleyip yetki verir.
+    private(set) var linkJoiners: [UUID: [LinkJoiner]] = [:]
+
+    struct LinkJoiner: Identifiable, Hashable {
+        /// iCloud kullanıcı kayıt adı (ekipte `Member.cloudUserID`).
+        let id: String
+        let name: String
+    }
+
     /// Bu cihazdaki iCloud kullanıcısının kayıt adı; ekipte kendimizi paylaşım katılımcısıyla eşleştirmek için.
     private(set) var currentUserID: String?
     /// Son uygulanan rol → izin eşlemesi; aynıysa paylaşım kaydı yeniden okunmaz.
@@ -181,6 +192,12 @@ final class CloudSync {
                 myAccess[removed] = nil
             }
             sharedWithMe = seenShared
+            // QR bağlantısının durumu ve bağlantıyla katılıp ekipte olmayanlar.
+            openInviteLinks = Set(ownShares.filter { $0.value.publicPermission != .none }.keys)
+            linkJoiners = [:]
+            for (tripID, share) in ownShares {
+                linkJoiners[tripID] = Self.joiners(of: share, members: store.trip(tripID)?.members ?? [])
+            }
             // Sahibi olduğumuz paylaşımlarda iCloud izinlerini ekipteki rollere uydur.
             for tripID in sharedByMe {
                 if let trip = store.trip(tripID) { await applyPermissions(of: trip, to: ownShares[tripID]) }
@@ -383,6 +400,47 @@ final class CloudSync {
         _ = try await database.modifyRecords(saving: [record, share], deleting: [])
         sharedByMe.insert(tripID)
         return share
+    }
+
+    /// QR davet bağlantısı: paylaşımı "bağlantıya sahip herkes, salt okur" yapar ve adresini döndürür.
+    /// Katılan kişi seyahati görür; düzenleme yetkisini sahip ekibe ekleyerek verir.
+    func openInviteLink(for tripID: UUID) async throws -> URL {
+        let share = try await share(for: tripID)
+        if share.publicPermission != .readOnly {
+            share.publicPermission = .readOnly
+            _ = try await container.privateCloudDatabase.modifyRecords(saving: [share], deleting: [])
+        }
+        openInviteLinks.insert(tripID)
+        guard let url = share.url else { throw CKError(.internalError) }
+        return url
+    }
+
+    /// QR bağlantısını kapatır: eski QR ile artık kimse katılamaz.
+    func closeInviteLink(for tripID: UUID) async throws {
+        let share = try await share(for: tripID)
+        if share.publicPermission != .none {
+            share.publicPermission = .none
+            _ = try await container.privateCloudDatabase.modifyRecords(saving: [share], deleting: [])
+        }
+        openInviteLinks.remove(tripID)
+    }
+
+    /// Bağlantıyı kabul etmiş, ekipte iCloud kimliğiyle eşleşmeyen katılımcılar.
+    private static func joiners(of share: CKShare, members: [Member]) -> [LinkJoiner] {
+        let known = Set(members.compactMap(\.cloudUserID))
+        return share.participants.compactMap { participant in
+            guard participant.role != .owner, participant.acceptanceStatus == .accepted,
+                  let id = participant.userIdentity.userRecordID?.recordName, !known.contains(id) else { return nil }
+            let name = participant.userIdentity.nameComponents
+                .map { PersonNameComponentsFormatter.localizedString(from: $0, style: .default) }
+                .flatMap { $0.isEmpty ? nil : $0 } ?? String(localized: "iCloud kullanıcısı")
+            return LinkJoiner(id: id, name: name)
+        }
+    }
+
+    /// Bağlantıyla katılan kişi ekibe eklendi; listeden düşer (yetkisi bir sonraki eşitlemede iCloud'a yazılır).
+    func forgetJoiner(_ joinerID: String, in tripID: UUID) {
+        linkJoiners[tripID]?.removeAll { $0.id == joinerID }
     }
 
     /// Ekipteki "sadece görür" / "düzenleyebilir" rollerini paylaşım katılımcılarının iCloud iznine yansıtır.

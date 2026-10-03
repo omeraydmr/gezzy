@@ -16,6 +16,7 @@ struct TripsView: View {
     @State private var path: [TripRoute] = []
     @State private var coverTarget: Trip.ID?
     @State private var editing: Trip?
+    @State private var inviting: Trip?
     @State private var pendingDelete: Trip?
     @State private var isShowingProfile = false
     @State private var arrivingID: Trip.ID?
@@ -44,6 +45,7 @@ struct TripsView: View {
                         onChangeCover: { coverTarget = $0.id },
                         onRemoveCover: { trip in withAnimation { store.removeCoverPhoto(for: trip.id) } },
                         onDelete: { pendingDelete = $0 },
+                        onInvite: { inviting = $0 },
                         arrivingID: arrivingID
                     )
                     .frame(maxWidth: .infinity)
@@ -97,6 +99,7 @@ struct TripsView: View {
             .coverPhotoPicker(for: $coverTarget)
             .sheet(isPresented: $isShowingProfile) { ProfileView() }
             .sheet(item: $editing) { trip in TripEditSheet(trip: trip) }
+            .sheet(item: $inviting) { trip in InviteQRSheet(trip: trip) }
             .sheet(item: Binding(get: { AppRouter.shared.pendingImport }, set: { AppRouter.shared.pendingImport = $0 })) { file in
                 IncomingBookingSheet(url: file.url)
             }

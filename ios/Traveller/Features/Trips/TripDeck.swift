@@ -11,6 +11,8 @@ struct TripDeck: View {
     var onChangeCover: (Trip) -> Void
     var onRemoveCover: (Trip) -> Void
     var onDelete: (Trip) -> Void
+    /// Kartın köşesindeki QR'a dokununca davet ekranı.
+    var onInvite: (Trip) -> Void
     /// Yeni oluşturulup damgalanan seyahat; yukarıdan uçarak girer ve kısa süre damga izini taşır.
     var arrivingID: Trip.ID?
 
@@ -38,6 +40,17 @@ struct TripDeck: View {
                                     StampImprint(subtitle: StampImprint.subtitle(for: trip), scale: side / 280)
                                         .offset(y: side * 0.18)
                                         .transition(.opacity)
+                                }
+                            }
+                            .overlay(alignment: .bottomTrailing) {
+                                // Koçandaki QR'ın üstünde dokunma alanı (yalnızca öndeki kartta).
+                                if position == index {
+                                    Color.clear
+                                        .frame(width: 56, height: 56)
+                                        .contentShape(Rectangle())
+                                        .onTapGesture { onInvite(trip) }
+                                        .accessibilityLabel(Text("QR ile davet et"))
+                                        .accessibilityAddTraits(.isButton)
                                 }
                             }
                             .transition(.asymmetric(
@@ -100,6 +113,7 @@ struct TripDeck: View {
     private func menu(for trip: Trip) -> some View {
         Button("Aç", systemImage: "arrow.up.forward.app") { onOpen(trip) }
         Button("Düzenle", systemImage: "pencil") { onEdit(trip) }
+        Button("QR ile davet et", systemImage: "qrcode") { onInvite(trip) }
         Button("Kapak fotoğrafı seç", systemImage: "photo") { onChangeCover(trip) }
         if trip.coverPhoto != nil {
             Button("Fotoğrafı kaldır", systemImage: "photo.badge.minus") { onRemoveCover(trip) }

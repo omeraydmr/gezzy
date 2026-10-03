@@ -88,13 +88,19 @@ struct FlightArc: View {
     }
 }
 
-struct Barcode: View {
-    private static let widths: [CGFloat] = [2, 1, 3, 1, 1, 2, 1, 3, 2, 1, 1, 2, 3, 1, 2, 1, 1, 3]
+/// Biletteki QR: seyahatin uygulama adresinden üretilir, davet bağlantısı taşımaz (ekran görüntüsünden davet sızmaz).
+/// Destede dokununca gerçek davet QR'ı ayrı ekranda açılır.
+struct TicketQR: View {
+    let tripID: UUID
 
     var body: some View {
-        HStack(spacing: 1.5) {
-            ForEach(Self.widths.indices, id: \.self) { index in
-                Rectangle().fill(Color.ink).frame(width: Self.widths[index])
+        Group {
+            if let image = QRCode.image(for: "traveller://trip/\(tripID.uuidString)") {
+                Image(uiImage: image)
+                    .renderingMode(.template)
+                    .interpolation(.none)
+                    .resizable()
+                    .foregroundStyle(Color.ink)
             }
         }
         .accessibilityHidden(true)

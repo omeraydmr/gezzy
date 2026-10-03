@@ -458,6 +458,16 @@
         }
       }
     },
+    "%@ davet QR kodu" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ invite QR code"
+          }
+        }
+      }
+    },
     "%@ ekibe katıldı" : {
       "comment" : "TravellerKit",
       "extractionState" : "manual",
@@ -1824,6 +1834,46 @@
         }
       }
     },
+    "Bağlantı hazırlanamadı" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't prepare the link"
+          }
+        }
+      }
+    },
+    "Bağlantı hazırlanıyor…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preparing link…"
+          }
+        }
+      }
+    },
+    "Bağlantıyı kapat" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn off link"
+          }
+        }
+      }
+    },
+    "Bağlantıyı paylaş" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Share link"
+          }
+        }
+      }
+    },
     "Bakiyeler" : {
       "localizations" : {
         "en" : {
@@ -3121,6 +3171,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "ECB euro foreign exchange reference rates"
+          }
+        }
+      }
+    },
+    "Ekibe ekle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add to crew"
           }
         }
       }
@@ -4718,12 +4778,32 @@
         }
       }
     },
+    "iCloud gerekli" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud required"
+          }
+        }
+      }
+    },
     "iCloud ile bağlan" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Connect with iCloud"
+          }
+        }
+      }
+    },
+    "iCloud kullanıcısı" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud user"
           }
         }
       }
@@ -5055,6 +5135,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Close"
+          }
+        }
+      }
+    },
+    "Kapatınca bu QR ve bağlantıyla kimse yeni katılamaz." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Once turned off, no one new can join with this QR code or link."
           }
         }
       }
@@ -7037,6 +7127,46 @@
         }
       }
     },
+    "QR davet açık · göster" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "QR invite on · show"
+          }
+        }
+      }
+    },
+    "QR ile davet et" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invite with QR"
+          }
+        }
+      }
+    },
+    "QR ile davet için iCloud'a giriş yapmış olmalısın." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign in to iCloud to invite with a QR code."
+          }
+        }
+      }
+    },
+    "QR ile katılanlar · şimdilik sadece görür" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Joined via QR · view only for now"
+          }
+        }
+      }
+    },
     "Randevu" : {
       "localizations" : {
         "en" : {
@@ -8214,6 +8344,16 @@
         }
       }
     },
+    "Telefonunun kamerasıyla okutan kişi seyahati görür. Düzenleyebilmesi için Ekip'te onu ekibe ekle." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Whoever scans it with their camera can view the trip. Add them to the crew in Crew so they can edit."
+          }
+        }
+      }
+    },
     "Tema parkı" : {
       "localizations" : {
         "en" : {
@@ -9062,6 +9202,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Only on the device that added it"
+          }
+        }
+      }
+    },
+    "Yalnızca seyahatin sahibi davet edebilir" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only the trip owner can invite"
           }
         }
       }
