@@ -1,6 +1,6 @@
 import Foundation
 
-/// Bir ülkeye giriş kuralı (Türkiye Cumhuriyeti umuma mahsus pasaportu için).
+/// Bir ülkeye giriş kuralı.
 public enum EntryRule: Hashable, Sendable {
     case visaFree(maxDays: Int)
     case eVisa
@@ -10,7 +10,10 @@ public enum EntryRule: Hashable, Sendable {
 
 public struct CountryEntry: Hashable, Sendable {
     public var code: String
+    /// Umuma mahsus (bordo) pasaport için kural.
     public var rule: EntryRule
+    /// Hususi, hizmet ve diplomatik pasaport için farklı kurallar (yoksa bordo ile aynı).
+    public var rulesByType: [PassportType: EntryRule]
     /// Dönüş tarihinden sonra pasaportun geçerli olması gereken/önerilen ay sayısı.
     public var passportValidityMonths: Int
     /// Değer yasal zorunluluk mu, yoksa genel tavsiye mi.
@@ -19,18 +22,29 @@ public struct CountryEntry: Hashable, Sendable {
     public var idCardAccepted: Bool
     public var note: String?
 
-    public init(code: String, rule: EntryRule, passportValidityMonths: Int = 6, validityIsMandatory: Bool = false,
-                idCardAccepted: Bool = false, note: String? = nil) {
+    public init(code: String, rule: EntryRule, rulesByType: [PassportType: EntryRule] = [:], passportValidityMonths: Int = 6,
+                validityIsMandatory: Bool = false, idCardAccepted: Bool = false, note: String? = nil) {
         self.code = code
         self.rule = rule
+        self.rulesByType = rulesByType
         self.passportValidityMonths = passportValidityMonths
         self.validityIsMandatory = validityIsMandatory
         self.idCardAccepted = idCardAccepted
         self.note = note
     }
+
+    public func rule(for type: PassportType) -> EntryRule {
+        type == .ordinary ? rule : rulesByType[type] ?? rule
+    }
+
+    /// Hususi, hizmet ve diplomatik pasaport için aynı kural.
+    static func official(_ rule: EntryRule) -> [PassportType: EntryRule] {
+        [.special: rule, .service: rule, .diplomatic: rule]
+    }
 }
 
-/// Türk vatandaşları için derlenmiş giriş kuralları.
+/// Türk vatandaşları için pasaport türüne göre derlenmiş giriş kuralları. Kaynak: Dışişleri Bakanlığı,
+/// "Türk Vatandaşlarının Tabi Olduğu Vize Uygulamaları" (mfa.gov.tr, Ekim 2026).
 ///
 /// ÖNEMLİ: Bu veri seti elle derlenmiştir ve yayından önce ve düzenli aralıklarla
 /// https://www.konsolosluk.gov.tr üzerinden doğrulanmalıdır. Uygulama her zaman resmî
@@ -38,6 +52,7 @@ public struct CountryEntry: Hashable, Sendable {
 public enum VisaRules {
     public static let lastReviewed = "2026-10"
     public static let officialSourceURL = URL(string: "https://www.konsolosluk.gov.tr")!
+    public static let mfaRulesURL = URL(string: "https://www.mfa.gov.tr/turk-vatandaslarinin-tabi-oldugu-vize-uygulamalari.tr.mfa")!
 
     /// Schengen bölgesi (29 ülke; Bulgaristan ve Romanya 2025'ten itibaren tam üye).
     public static let schengenCountries: Set<String> = [
@@ -47,11 +62,15 @@ public enum VisaRules {
 
     public static let entries: [String: CountryEntry] = {
         var map: [String: CountryEntry] = [:]
+        // Hususi, hizmet ve diplomatik pasaport Schengen ülkelerinde 180 günde 90 gün vizeden muaf.
         for code in schengenCountries {
             map[code] = CountryEntry(
-                code: code, rule: .visaRequired(zone: .schengen), passportValidityMonths: 3, validityIsMandatory: true,
+                code: code, rule: .visaRequired(zone: .schengen), rulesByType: CountryEntry.official(.visaFree(maxDays: 90)),
+                passportValidityMonths: 3, validityIsMandatory: true,
                 note: "Schengen: 180 gün içinde en fazla 90 gün. Pasaport son 10 yıl içinde verilmiş olmalı.")
         }
+        // Bulgaristan: hizmet ve diplomatik pasaport 30 güne kadar muaf.
+        map["BG"]?.rulesByType = [.special: .visaFree(maxDays: 90), .service: .visaFree(maxDays: 30), .diplomatic: .visaFree(maxDays: 30)]
         let others: [CountryEntry] = [
             CountryEntry(code: "GB", rule: .visaRequired(zone: .uk)),
             CountryEntry(code: "US", rule: .visaRequired(zone: .us)),
@@ -61,7 +80,7 @@ public enum VisaRules {
             CountryEntry(code: "AZ", rule: .visaFree(maxDays: 90)),
             CountryEntry(code: "RS", rule: .visaFree(maxDays: 90)),
             CountryEntry(code: "BA", rule: .visaFree(maxDays: 90)),
-            CountryEntry(code: "ME", rule: .visaFree(maxDays: 90)),
+            CountryEntry(code: "ME", rule: .visaFree(maxDays: 30), rulesByType: CountryEntry.official(.visaFree(maxDays: 90))),
             CountryEntry(code: "MK", rule: .visaFree(maxDays: 90)),
             CountryEntry(code: "AL", rule: .visaFree(maxDays: 90)),
             CountryEntry(code: "XK", rule: .visaFree(maxDays: 90)),
@@ -69,10 +88,11 @@ public enum VisaRules {
             CountryEntry(code: "TN", rule: .visaFree(maxDays: 90)),
             CountryEntry(code: "BR", rule: .visaFree(maxDays: 90)),
             CountryEntry(code: "AR", rule: .visaFree(maxDays: 90)),
-            CountryEntry(code: "MY", rule: .visaFree(maxDays: 90)),
+            CountryEntry(code: "MY", rule: .visaOnArrival(maxDays: 90), rulesByType: CountryEntry.official(.visaFree(maxDays: 90)),
+                         note: "Bordo pasaporta girişte ücretsiz 90 günlük turist vizesi verilir."),
             CountryEntry(code: "SG", rule: .visaFree(maxDays: 30)),
-            CountryEntry(code: "ID", rule: .visaOnArrival(maxDays: 30), note: "Kapıda vize veya önceden e-VOA alınabilir."),
-            CountryEntry(code: "AM", rule: .eVisa, note: "Başvuru öncesi güncel kuralları kontrol edin."),
+            CountryEntry(code: "ID", rule: .visaFree(maxDays: 30), note: "Girişten önce internet üzerinden varış bildirimi yapılmalı."),
+            CountryEntry(code: "AM", rule: .eVisa, note: "Tüm pasaport türleri vizeye tabi; e-vize alınabilir."),
         ]
         for entry in others { map[entry.code] = entry }
         return map
@@ -80,6 +100,16 @@ public enum VisaRules {
 
     public static func entry(for countryCode: String) -> CountryEntry? {
         entries[countryCode.uppercased()]
+    }
+
+    /// Ekipten herhangi birinin pasaport türüne göre vize gerekiyor mu (pasaport bilgisi yoksa bordo sayılır).
+    public static func requiresVisa(countryCode: String, members: [Member]) -> Bool {
+        guard let entry = entry(for: countryCode) else { return false }
+        let types = members.compactMap { $0.passport?.type }
+        return (types.isEmpty ? [.ordinary] : types).contains { type in
+            if case .visaRequired = entry.rule(for: type) { return true }
+            return false
+        }
     }
 }
 
@@ -138,9 +168,7 @@ public enum VisaAdvisor {
         if passport.nationality.uppercased() == code {
             return VisaAssessment(status: .domestic, warnings: [], entry: nil)
         }
-        // Veri seti şimdilik yalnızca TC umuma mahsus pasaportu kapsıyor.
-        guard passport.nationality.uppercased() == "TR", passport.type == .ordinary,
-              let entry = VisaRules.entry(for: code)
+        guard passport.nationality.uppercased() == "TR", let entry = VisaRules.entry(for: code)
         else {
             return VisaAssessment(status: .unknown, warnings: passportWarnings(passport: passport, entry: nil,
                                                                                tripEnd: tripEnd, calendar: calendar),
@@ -149,7 +177,7 @@ public enum VisaAdvisor {
 
         var warnings: [VisaWarning] = []
         let status: VisaStatus
-        switch entry.rule {
+        switch entry.rule(for: passport.type) {
         case let .visaFree(maxDays):
             status = .notRequired(maxDays: maxDays)
             let tripDays = (calendar.dateComponents([.day], from: calendar.startOfDay(for: tripStart),

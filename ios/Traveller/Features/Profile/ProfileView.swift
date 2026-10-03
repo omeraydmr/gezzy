@@ -71,7 +71,7 @@ struct ProfileView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(me.name).font(.tTitle).foregroundStyle(Color.ink)
                     if let passport = me.passport {
-                        Text("Pasaport · \(AppFormat.longDate(passport.expiresOn)) tarihine kadar")
+                        Text("\(passport.type.shortTitle) pasaport · \(AppFormat.longDate(passport.expiresOn)) tarihine kadar")
                             .font(.tBody)
                             .foregroundStyle(Color.ink2)
                     }

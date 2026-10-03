@@ -67,4 +67,50 @@ final class VisaTests: XCTestCase {
     func testSchengenListHas29Countries() {
         XCTAssertEqual(VisaRules.schengenCountries.count, 29)
     }
+
+    func typed(_ type: PassportType) -> Passport {
+        Passport(nationality: "TR", type: type, expiresOn: TestCalendar.date(2031, 1, 1))
+    }
+
+    /// Kaynak: Dışişleri Bakanlığı, Türk Vatandaşlarının Tabi Olduğu Vize Uygulamaları (Ekim 2026).
+    func testGreenPassportIsVisaFreeInSchengenButNotUK() {
+        for type in [PassportType.special, .service, .diplomatic] {
+            let schengen = VisaAdvisor.assess(countryCode: "PT", passport: typed(type), tripStart: start, tripEnd: end, calendar: cal)
+            XCTAssertEqual(schengen.status, .notRequired(maxDays: 90), "\(type)")
+            XCTAssertFalse(schengen.needsAction)
+            let uk = VisaAdvisor.assess(countryCode: "GB", passport: typed(type), tripStart: start, tripEnd: end, calendar: cal)
+            XCTAssertEqual(uk.status, .required(zone: .uk), "İngiltere tüm türlere vize ister")
+        }
+    }
+
+    func testTypeSpecificLimits() {
+        func status(_ code: String, _ type: PassportType) -> VisaStatus {
+            VisaAdvisor.assess(countryCode: code, passport: typed(type), tripStart: start, tripEnd: end, calendar: cal).status
+        }
+        XCTAssertEqual(status("ME", .ordinary), .notRequired(maxDays: 30))
+        XCTAssertEqual(status("ME", .special), .notRequired(maxDays: 90))
+        XCTAssertEqual(status("BG", .special), .notRequired(maxDays: 90))
+        XCTAssertEqual(status("BG", .diplomatic), .notRequired(maxDays: 30))
+        XCTAssertEqual(status("MY", .ordinary), .onArrival(maxDays: 90))
+        XCTAssertEqual(status("MY", .service), .notRequired(maxDays: 90))
+        XCTAssertEqual(status("ID", .ordinary), .notRequired(maxDays: 30))
+        XCTAssertEqual(status("AM", .diplomatic), .eVisa)
+        XCTAssertEqual(status("US", .special), .required(zone: .us))
+    }
+
+    func testSchengen90of180StillAppliesToGreenPassport() {
+        let earlier = Schengen.Stay(start: TestCalendar.date(2026, 7, 1), end: TestCalendar.date(2026, 9, 25), label: "")
+        let result = VisaAdvisor.assess(countryCode: "IT", passport: typed(.special), tripStart: start, tripEnd: end,
+                                        otherSchengenStays: [earlier], calendar: cal)
+        XCTAssertTrue(result.warnings.contains { if case .schengenOverstay = $0 { return true }; return false })
+        XCTAssertTrue(result.needsAction)
+    }
+
+    func testCrewVisaNeedFollowsPassportTypes() {
+        let green = Member(name: "A", passport: typed(.special))
+        let burgundy = Member(name: "B", passport: typed(.ordinary))
+        XCTAssertFalse(VisaRules.requiresVisa(countryCode: "FR", members: [green]))
+        XCTAssertTrue(VisaRules.requiresVisa(countryCode: "FR", members: [green, burgundy]))
+        XCTAssertTrue(VisaRules.requiresVisa(countryCode: "FR", members: []), "Pasaport bilgisi yoksa bordo sayılır")
+    }
 }

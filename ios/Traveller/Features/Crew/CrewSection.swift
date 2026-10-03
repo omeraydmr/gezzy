@@ -194,10 +194,17 @@ struct MemberEditor: View {
                         set: { member.passport = $0 ? Passport(expiresOn: Calendar.current.date(byAdding: .year, value: 5, to: .now) ?? .now) : nil }
                     ))
                     if member.passport != nil {
+                        Picker("Tür", selection: passportBinding(\.type)) {
+                            ForEach(PassportType.allCases, id: \.self) { Text($0.title).tag($0) }
+                        }
                         DatePicker("Geçerlilik bitişi", selection: passportBinding(\.expiresOn), displayedComponents: .date)
                     }
                 } header: {
                     Text("Pasaport (T.C.)")
+                } footer: {
+                    if member.passport != nil {
+                        Text("Vize kuralları pasaport türüne göre değişir: yeşil, gri ve diplomatik pasaport Schengen'de 180 günde 90 gün vizesizdir.")
+                    }
                 }
 
                 Section {

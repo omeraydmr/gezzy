@@ -132,7 +132,7 @@ struct AboutView: View {
                 .foregroundStyle(Color.ink2)
 
                 Section {
-                    Text("Vize bilgileri T.C. umuma mahsus (bordo) pasaport için elle derlenmiştir; son gözden geçirme \(VisaRules.lastReviewed). Seyahatten önce resmî kaynaktan doğrula.")
+                    Text("Vize bilgileri Dışişleri Bakanlığı'nın listesinden T.C. pasaport türlerine (umuma mahsus, hususi, hizmet, diplomatik) göre elle derlenmiştir; son gözden geçirme \(VisaRules.lastReviewed). Seyahatten önce resmî kaynaktan doğrula.")
                         .font(.subheadline)
                         .foregroundStyle(Color.ink2)
                     Link("konsolosluk.gov.tr", destination: VisaRules.officialSourceURL)

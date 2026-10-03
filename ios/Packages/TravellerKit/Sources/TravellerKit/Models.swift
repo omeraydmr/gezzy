@@ -11,9 +11,10 @@ public enum MemberRole: String, Codable, CaseIterable, Hashable, Sendable {
     case owner, editor, viewer
 }
 
-/// Türk pasaport türleri. Vize veri seti şimdilik yalnızca umuma mahsus (bordo) pasaportu kapsar.
+/// Türk pasaport türleri: umuma mahsus (bordo), hususi (yeşil), hizmet (gri), diplomatik (siyah).
+/// Vize kuralları türe göre değişir (bkz. `VisaRules`).
 public enum PassportType: String, Codable, CaseIterable, Hashable, Sendable {
-    case ordinary, special, service
+    case ordinary, special, service, diplomatic
 }
 
 /// Kullanıcının elinde olabilecek ve başka ülkelere girişte de işe yarayan vize bölgeleri.

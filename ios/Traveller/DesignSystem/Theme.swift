@@ -107,6 +107,36 @@ extension SpendCategory {
     }
 }
 
+extension PassportType {
+    var title: String {
+        switch self {
+        case .ordinary: String(localized: "Umuma mahsus (bordo)")
+        case .special: String(localized: "Hususi (yeşil)")
+        case .service: String(localized: "Hizmet (gri)")
+        case .diplomatic: String(localized: "Diplomatik (siyah)")
+        }
+    }
+
+    var shortTitle: String {
+        switch self {
+        case .ordinary: String(localized: "Bordo")
+        case .special: String(localized: "Yeşil")
+        case .service: String(localized: "Gri")
+        case .diplomatic: String(localized: "Diplomatik")
+        }
+    }
+
+    /// Pasaport kapağının renkleri (açık → koyu).
+    var coverColors: [Color] {
+        switch self {
+        case .ordinary: [Color(hex: 0x8A2433), Color(hex: 0x5A1420)]
+        case .special: [Color(hex: 0x2F6B45), Color(hex: 0x1B442B)]
+        case .service: [Color(hex: 0x6B7078), Color(hex: 0x42464C)]
+        case .diplomatic: [Color(hex: 0x2B2B2E), Color(hex: 0x111113)]
+        }
+    }
+}
+
 extension StopKind {
     var title: String {
         switch self {

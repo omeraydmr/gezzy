@@ -57,8 +57,7 @@ public enum DepartureChecklist {
                                      note: "Ulaşım, bahşiş ve kart geçmeyen yerler için küçük miktar.", daysBefore: 2))
         }
         let isSchengen = VisaRules.schengenCountries.contains(country)
-        var needsVisa = false
-        if case .visaRequired = entry?.rule { needsVisa = true }
+        let needsVisa = VisaRules.requiresVisa(countryCode: country, members: trip.members)
         if isSchengen || needsVisa {
             result.append(Suggestion(key: "insurance", title: "Seyahat sağlık sigortası",
                                      note: needsVisa ? "Vize başvurusunda da istenir; seyahatin tüm günlerini kapsamalı."

@@ -101,13 +101,14 @@ struct VisaSection: View {
     }
 }
 
-/// Bordo T.C. pasaportu görünümünde kart; üzerinde seyahatin vize durumu damga olarak basılı.
+/// T.C. pasaportu görünümünde kart (türüne göre bordo, yeşil, gri ya da siyah); üzerinde seyahatin vize durumu
+/// damga olarak basılı.
 struct PassportCard: View {
     let member: Member
     let result: VisaAssessment
     let countryCode: String
 
-    private static let burgundy = [Color(hex: 0x8A2433), Color(hex: 0x5A1420)]
+    private var cover: [Color] { (member.passport?.type ?? .ordinary).coverColors }
     private static let gold = Color(hex: 0xE2C27A)
 
     var body: some View {
@@ -146,7 +147,7 @@ struct PassportCard: View {
         .padding(16)
         .frame(width: 250, height: 156)
         .background(
-            LinearGradient(colors: Self.burgundy, startPoint: .topLeading, endPoint: .bottomTrailing)
+            LinearGradient(colors: cover, startPoint: .topLeading, endPoint: .bottomTrailing)
                 .overlay(Hatch(spacing: 7).stroke(Color.white.opacity(0.04), lineWidth: 1))
         )
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
@@ -155,7 +156,7 @@ struct PassportCard: View {
                 .rotationEffect(.degrees(-12))
                 .offset(x: -14, y: 46)
         }
-        .shadow(color: Color(hex: 0x5A1420).opacity(0.3), radius: 12, y: 8)
+        .shadow(color: cover[1].opacity(0.3), radius: 12, y: 8)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text("\(member.name), \(VisaText.subtitle(result))"))
         .accessibilityAddTraits(.isButton)
@@ -163,7 +164,9 @@ struct PassportCard: View {
 
     private var passportLine: String {
         guard let passport = member.passport else { return String(localized: "Pasaport bilgisi yok") }
-        return String(localized: "Geçerlilik \(AppFormat.longDate(passport.expiresOn))")
+        return passport.type == .ordinary
+            ? String(localized: "Geçerlilik \(AppFormat.longDate(passport.expiresOn))")
+            : String(localized: "\(passport.type.shortTitle) · geçerlilik \(AppFormat.longDate(passport.expiresOn))")
     }
 }
 
@@ -224,7 +227,7 @@ struct VisaPreview: View {
 struct SourceFootnote: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Bilgiler T.C. umuma mahsus (bordo) pasaport içindir; son gözden geçirme \(VisaRules.lastReviewed). Seyahatten önce resmî kaynaktan doğrula.")
+            Text("Bilgiler her kişinin pasaport türüne göredir (bordo, yeşil, gri, diplomatik); kaynak Dışişleri Bakanlığı, son gözden geçirme \(VisaRules.lastReviewed). Seyahatten önce resmî kaynaktan doğrula.")
                 .font(.footnote)
                 .foregroundStyle(Color.ink3)
             Link("konsolosluk.gov.tr", destination: VisaRules.officialSourceURL)

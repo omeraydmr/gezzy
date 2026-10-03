@@ -34,7 +34,7 @@ public enum PackingAdvisor {
         if VisaRules.schengenCountries.contains(country) {
             items.append("Seyahat sağlık sigortası poliçesi")
         }
-        if case .visaRequired = entry?.rule {
+        if VisaRules.requiresVisa(countryCode: country, members: trip.members) {
             items.append("Vize ve başvuru belgelerinin kopyası")
         }
         if trip.flights.isEmpty == false {

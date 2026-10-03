@@ -286,6 +286,22 @@
         }
       }
     },
+    "%@ · geçerlilik %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · valid until %2$@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ · geçerlilik %2$@"
+          }
+        }
+      }
+    },
     "%@ · havalimanı kodu (%@)" : {
       "localizations" : {
         "en" : {
@@ -572,6 +588,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ summary"
+          }
+        }
+      }
+    },
+    "%@ pasaport · %@ tarihine kadar" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ passport · until %2$@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ pasaport · %2$@ tarihine kadar"
           }
         }
       }
@@ -1912,7 +1944,18 @@
         }
       }
     },
+    "Bilgiler her kişinin pasaport türüne göredir (bordo, yeşil, gri, diplomatik); kaynak Dışişleri Bakanlığı, son gözden geçirme %@. Seyahatten önce resmî kaynaktan doğrula." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Information follows each person's passport type (burgundy, green, grey, diplomatic); source: Turkish Ministry of Foreign Affairs, last reviewed %@. Check the official source before travelling."
+          }
+        }
+      }
+    },
     "Bilgiler T.C. umuma mahsus (bordo) pasaport içindir; son gözden geçirme %@. Seyahatten önce resmî kaynaktan doğrula." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2028,6 +2071,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Booking.com, Airbnb or hotel confirmation PDF or screenshot. Text is read on device and never sent anywhere."
+          }
+        }
+      }
+    },
+    "Bordo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Burgundy"
           }
         }
       }
@@ -2434,6 +2487,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Other allergies"
+          }
+        }
+      }
+    },
+    "Diplomatik" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diplomatic"
+          }
+        }
+      }
+    },
+    "Diplomatik (siyah)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diplomatic (black)"
           }
         }
       }
@@ -3453,6 +3526,16 @@
         }
       }
     },
+    "Gri" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grey"
+          }
+        }
+      }
+    },
     "gün" : {
       "localizations" : {
         "en" : {
@@ -3999,6 +4082,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "When settling up, anyone who owes this person can copy the IBAN with one tap."
+          }
+        }
+      }
+    },
+    "Hizmet (gri)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Service (grey)"
+          }
+        }
+      }
+    },
+    "Hususi (yeşil)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Special (green)"
           }
         }
       }
@@ -5679,6 +5782,7 @@
       }
     },
     "Pasaport · %@ tarihine kadar" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -5754,6 +5858,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "The passport expires before the trip ends (%@). It needs renewing."
+          }
+        }
+      }
+    },
+    "Pasaport türü" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passport type"
           }
         }
       }
@@ -7386,6 +7500,16 @@
         }
       }
     },
+    "Umuma mahsus (bordo)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ordinary (burgundy)"
+          }
+        }
+      }
+    },
     "Uyarı" : {
       "localizations" : {
         "en" : {
@@ -7516,7 +7640,18 @@
         }
       }
     },
+    "Vize bilgileri Dışişleri Bakanlığı'nın listesinden T.C. pasaport türlerine (umuma mahsus, hususi, hizmet, diplomatik) göre elle derlenmiştir; son gözden geçirme %@. Seyahatten önce resmî kaynaktan doğrula." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Visa information is compiled by hand from the Turkish Ministry of Foreign Affairs list for each Turkish passport type (ordinary, special, service, diplomatic); last reviewed %@. Check the official source before travelling."
+          }
+        }
+      }
+    },
     "Vize bilgileri T.C. umuma mahsus (bordo) pasaport için elle derlenmiştir; son gözden geçirme %@. Seyahatten önce resmî kaynaktan doğrula." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -7542,6 +7677,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "We'll check your visa status and passport validity for you."
+          }
+        }
+      }
+    },
+    "Vize kuralları pasaport türüne göre değişir: yeşil, gri ve diplomatik pasaport Schengen'de 180 günde 90 gün vizesizdir." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Visa rules depend on passport type: green, grey and diplomatic passports are visa-free in Schengen for 90 days in any 180."
           }
         }
       }
@@ -7732,6 +7877,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Your places were added to community suggestions. Thank you!"
+          }
+        }
+      }
+    },
+    "Yeşil" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Green"
           }
         }
       }

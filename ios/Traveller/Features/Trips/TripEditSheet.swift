@@ -128,7 +128,8 @@ struct TripEditSheet: View {
         store.update(trip.id) { trip in
             trip.name = trimmedName
             if trip.destination != destination { trip.destination = destination }
-            trip.reschedule(start: startDate, end: endDate, shiftPlan: shiftPlan)
+            // Tarihler değişmediyse plana dokunulmaz (aralık dışında kalmış eski duraklar da yerinde kalır).
+            if datesChanged { trip.reschedule(start: startDate, end: endDate, shiftPlan: shiftPlan) }
             trip.currency = currency
             trip.status = isDraft ? .draft : .planned
             trip.coverSeed = coverSeed

@@ -224,6 +224,15 @@ struct OnboardingView: View {
                     }
                 }
                 if hasPassport {
+                    Picker("Pasaport türü", selection: Binding(
+                        get: { profile.passport?.type ?? .ordinary },
+                        set: { type in
+                            var passport = profile.passport ?? Passport(expiresOn: Self.defaultExpiry)
+                            passport.type = type
+                            profile.passport = passport
+                        })) {
+                        ForEach(PassportType.allCases, id: \.self) { Text($0.title).tag($0) }
+                    }
                     DatePicker("Geçerlilik bitişi", selection: Binding(
                         get: { profile.passport?.expiresOn ?? Self.defaultExpiry },
                         set: { date in
