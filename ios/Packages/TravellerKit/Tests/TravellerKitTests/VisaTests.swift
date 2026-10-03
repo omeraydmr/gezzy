@@ -113,4 +113,30 @@ final class VisaTests: XCTestCase {
         XCTAssertTrue(VisaRules.requiresVisa(countryCode: "FR", members: [green, burgundy]))
         XCTAssertTrue(VisaRules.requiresVisa(countryCode: "FR", members: []), "Pasaport bilgisi yoksa bordo sayılır")
     }
+
+    func testDatasetCoversMostCountries() {
+        XCTAssertGreaterThan(VisaRules.entries.count, 190)
+        func status(_ code: String, _ type: PassportType = .ordinary) -> VisaStatus {
+            VisaAdvisor.assess(countryCode: code, passport: typed(type), tripStart: start, tripEnd: end, calendar: cal).status
+        }
+        XCTAssertEqual(status("TH"), .notRequired(maxDays: 30), "15 Eylül 2026'dan itibaren 30 gün")
+        XCTAssertEqual(status("KR"), .notRequired(maxDays: 90))
+        XCTAssertEqual(status("AU"), .required(zone: nil))
+        XCTAssertEqual(status("MV"), .onArrival(maxDays: 30))
+        XCTAssertEqual(status("SA"), .eVisa)
+        XCTAssertEqual(status("VN"), .eVisa)
+        XCTAssertEqual(status("VN", .special), .notRequired(maxDays: 90))
+        XCTAssertEqual(status("MX", .diplomatic), .notRequired(maxDays: 90))
+        XCTAssertEqual(status("MX", .special), .required(zone: nil))
+        XCTAssertEqual(status("AD"), .required(zone: .schengen), "Andorra'ya Schengen vizesiyle girilir")
+        XCTAssertEqual(status("GB", .special), .required(zone: .uk), "Elle doğrulanan kayıt önceliklidir")
+        XCTAssertNotNil(VisaRules.entry(for: "TH")?.note)
+    }
+
+    func testRuleCodes() {
+        XCTAssertEqual(VisaRules.rule("free:42"), .visaFree(maxDays: 42))
+        XCTAssertEqual(VisaRules.rule("arrival:"), .visaOnArrival(maxDays: nil))
+        XCTAssertEqual(VisaRules.rule("required:schengen"), .visaRequired(zone: .schengen))
+        XCTAssertNil(VisaRules.rule("?"))
+    }
 }

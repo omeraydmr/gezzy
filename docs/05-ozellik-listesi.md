@@ -77,7 +77,7 @@ A (cihazda test turu + TestFlight) listeden çıkarıldı: iPhone 15'te sürüyo
 - Gerçek cihazda performans ölçümü (Instruments: SwiftUI, Time Profiler, Hangs).
 - Uygulama hedefi için UI testleri ve ekran görüntüsü testleri yok; yalnızca TravellerKit birim testleri var.
 - Çökme raporlama yok.
-- Vize kural tablosu elle güncelleniyor; kaynak ve güncelleme tarihi gösterilmeli.
+- Vize kural tablosu (`visa_rules.tsv`, ~195 ülke) Dışişleri sayfasından üretildi; sayfa değişince yeniden üretilmeli (kaynak ve tarih uygulamada gösteriliyor).
 
 ## 5. Performans turu (bu değişiklik)
 

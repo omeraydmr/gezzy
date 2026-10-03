@@ -60,7 +60,45 @@ public enum VisaRules {
         "LI", "LT", "LU", "MT", "NL", "NO", "PL", "PT", "RO", "SK", "SI", "ES", "SE", "CH",
     ]
 
+    /// Tüm ülkeler: Dışişleri listesinden üretilen `visa_rules.tsv` (~195 ülke), üstüne elle doğrulanmış kayıtlar
+    /// (Schengen bölgesi, vize bölgeleri, pasaport geçerlilik süresi, kimlik kartıyla giriş).
     public static let entries: [String: CountryEntry] = {
+        var map = loadDataset()
+        for (code, entry) in curated { map[code] = entry }
+        return map
+    }()
+
+    static func loadDataset() -> [String: CountryEntry] {
+        guard let url = Bundle.module.url(forResource: "visa_rules", withExtension: "tsv"),
+              let text = try? String(contentsOf: url, encoding: .utf8) else { return [:] }
+        var map: [String: CountryEntry] = [:]
+        for line in text.split(separator: "\n") where !line.hasPrefix("#") {
+            let parts = line.split(separator: "\t", omittingEmptySubsequences: false).map(String.init)
+            guard parts.count >= 5, let ordinary = rule(parts[1]) else { continue }
+            var byType: [PassportType: EntryRule] = [:]
+            for (index, type) in [PassportType.special, .service, .diplomatic].enumerated() {
+                if let rule = rule(parts[2 + index]), rule != ordinary { byType[type] = rule }
+            }
+            map[parts[0]] = CountryEntry(code: parts[0], rule: ordinary, rulesByType: byType,
+                                         note: parts.count > 5 && !parts[5].isEmpty ? parts[5] : nil)
+        }
+        return map
+    }
+
+    /// "free:90", "evisa", "arrival:30", "arrival:", "required", "required:schengen"
+    static func rule(_ text: String) -> EntryRule? {
+        let parts = text.split(separator: ":", maxSplits: 1, omittingEmptySubsequences: false).map(String.init)
+        let value = parts.count > 1 ? parts[1] : ""
+        switch parts[0] {
+        case "free": return .visaFree(maxDays: Int(value) ?? 90)
+        case "evisa": return .eVisa
+        case "arrival": return .visaOnArrival(maxDays: Int(value))
+        case "required": return .visaRequired(zone: VisaZone(rawValue: value))
+        default: return nil
+        }
+    }
+
+    static let curated: [String: CountryEntry] = {
         var map: [String: CountryEntry] = [:]
         // Hususi, hizmet ve diplomatik pasaport Schengen ülkelerinde 180 günde 90 gün vizeden muaf.
         for code in schengenCountries {
