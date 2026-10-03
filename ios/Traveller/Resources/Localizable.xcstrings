@@ -4832,6 +4832,16 @@
         }
       }
     },
+    "İYİ\nYOLCULUKLAR" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "BON\nVOYAGE"
+          }
+        }
+      }
+    },
     "Kafe / restoran" : {
       "comment" : "TravellerKit PlaceSuggestions category",
       "extractionState" : "manual",
@@ -6673,16 +6683,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Your passport expires in 1 month"
-          }
-        }
-      }
-    },
-    "PASSED" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "PASSED"
           }
         }
       }

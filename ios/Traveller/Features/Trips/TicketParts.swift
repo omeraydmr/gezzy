@@ -8,31 +8,57 @@ struct TicketShape: Shape {
     var notchY: CGFloat
     var notchRadius: CGFloat = 11
     var cornerRadius: CGFloat = 28
+    /// Çok şehirli bilette komşu panele bitişik kenarlar: köşe yerine çeyrek çentik (iki panel birleşince yarım ay),
+    /// yan çentik yok.
+    var leadingSeam = false
+    var trailingSeam = false
+    /// Yalnızca çerçeve çizimi için: bitişik kenarlar çizilmez (yırtık çizgi ayrıca çizilir).
+    var openSeams = false
 
     func path(in rect: CGRect) -> Path {
         let r = min(cornerRadius, rect.width / 2, rect.height / 2)
         let n = notchRadius
         let notch = min(max(rect.minY + notchY, rect.minY + r + n), rect.maxY - r - n)
         var path = Path()
-        path.move(to: CGPoint(x: rect.minX + r, y: rect.minY))
-        path.addLine(to: CGPoint(x: rect.maxX - r, y: rect.minY))
-        path.addArc(tangent1End: CGPoint(x: rect.maxX, y: rect.minY), tangent2End: CGPoint(x: rect.maxX, y: rect.minY + r), radius: r)
-        path.addLine(to: CGPoint(x: rect.maxX, y: notch - n))
-        // Sağ çentik: kartın içine doğru yarım daire.
-        path.addArc(center: CGPoint(x: rect.maxX, y: notch), radius: n,
-                    startAngle: .degrees(-90), endAngle: .degrees(90), clockwise: true)
-        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - r))
-        path.addArc(tangent1End: CGPoint(x: rect.maxX, y: rect.maxY), tangent2End: CGPoint(x: rect.maxX - r, y: rect.maxY), radius: r)
-        path.addLine(to: CGPoint(x: rect.minX + r, y: rect.maxY))
-        path.addArc(tangent1End: CGPoint(x: rect.minX, y: rect.maxY), tangent2End: CGPoint(x: rect.minX, y: rect.maxY - r), radius: r)
-        path.addLine(to: CGPoint(x: rect.minX, y: notch + n))
-        // Sol çentik.
-        path.addArc(center: CGPoint(x: rect.minX, y: notch), radius: n,
-                    startAngle: .degrees(90), endAngle: .degrees(-90), clockwise: true)
-        path.addLine(to: CGPoint(x: rect.minX, y: rect.minY + r))
-        path.addArc(tangent1End: CGPoint(x: rect.minX, y: rect.minY), tangent2End: CGPoint(x: rect.minX + r, y: rect.minY), radius: r)
-        path.closeSubpath()
+        path.move(to: CGPoint(x: rect.minX + (leadingSeam ? n : r), y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX - (trailingSeam ? n : r), y: rect.minY))
+        if trailingSeam {
+            path.addArc(center: CGPoint(x: rect.maxX, y: rect.minY), radius: n,
+                        startAngle: .degrees(180), endAngle: .degrees(90), clockwise: true)
+            seamEdge(&path, to: CGPoint(x: rect.maxX, y: rect.maxY - n))
+            path.addArc(center: CGPoint(x: rect.maxX, y: rect.maxY), radius: n,
+                        startAngle: .degrees(-90), endAngle: .degrees(-180), clockwise: true)
+        } else {
+            path.addArc(tangent1End: CGPoint(x: rect.maxX, y: rect.minY), tangent2End: CGPoint(x: rect.maxX, y: rect.minY + r), radius: r)
+            path.addLine(to: CGPoint(x: rect.maxX, y: notch - n))
+            // Sağ çentik: kartın içine doğru yarım daire.
+            path.addArc(center: CGPoint(x: rect.maxX, y: notch), radius: n,
+                        startAngle: .degrees(-90), endAngle: .degrees(90), clockwise: true)
+            path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - r))
+            path.addArc(tangent1End: CGPoint(x: rect.maxX, y: rect.maxY), tangent2End: CGPoint(x: rect.maxX - r, y: rect.maxY), radius: r)
+        }
+        path.addLine(to: CGPoint(x: rect.minX + (leadingSeam ? n : r), y: rect.maxY))
+        if leadingSeam {
+            path.addArc(center: CGPoint(x: rect.minX, y: rect.maxY), radius: n,
+                        startAngle: .degrees(0), endAngle: .degrees(-90), clockwise: true)
+            seamEdge(&path, to: CGPoint(x: rect.minX, y: rect.minY + n))
+            path.addArc(center: CGPoint(x: rect.minX, y: rect.minY), radius: n,
+                        startAngle: .degrees(90), endAngle: .degrees(0), clockwise: true)
+        } else {
+            path.addArc(tangent1End: CGPoint(x: rect.minX, y: rect.maxY), tangent2End: CGPoint(x: rect.minX, y: rect.maxY - r), radius: r)
+            path.addLine(to: CGPoint(x: rect.minX, y: notch + n))
+            // Sol çentik.
+            path.addArc(center: CGPoint(x: rect.minX, y: notch), radius: n,
+                        startAngle: .degrees(90), endAngle: .degrees(-90), clockwise: true)
+            path.addLine(to: CGPoint(x: rect.minX, y: rect.minY + r))
+            path.addArc(tangent1End: CGPoint(x: rect.minX, y: rect.minY), tangent2End: CGPoint(x: rect.minX + r, y: rect.minY), radius: r)
+        }
+        if !openSeams { path.closeSubpath() }
         return path
+    }
+
+    private func seamEdge(_ path: inout Path, to point: CGPoint) {
+        if openSeams { path.move(to: point) } else { path.addLine(to: point) }
     }
 }
 

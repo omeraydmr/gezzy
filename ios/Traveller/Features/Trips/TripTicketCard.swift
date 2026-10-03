@@ -2,7 +2,8 @@ import SwiftUI
 import TravellerKit
 
 /// Destedeki bilet kartı: üstte kapak (fotoğraf ya da pastel), altta çentikle ayrılmış bilet koçanı. Tek şehirde kare;
-/// çok şehirli seyahatte daha geniş ve koçan şehir şehir yırtık çizgilerle bölünmüş (şehir eklenince koçanlar birleşir).
+/// çok şehirli seyahatte her şehir baştan aşağı ayrı bir bilet, biletler yırtık çizgiyle bitişik (koparılmamış gibi).
+/// Şehir eklenince yeni bilet önce ayrı durur, sonra diğerlerine yaslanıp birleşir.
 ///
 /// Performans: kart `Equatable`; deste kaydırılırken yalnızca konumu değişir, içeriği yeniden kurulmaz.
 /// İçerik `drawingGroup` ile tek dokuya çizilir, gölge ise yalnızca basit bir şeklin gölgesidir.
@@ -11,6 +12,8 @@ struct TripTicketCard: View, Equatable {
     let side: CGFloat
     /// Çok şehirli kartın en fazla genişliği (deste ya da form genişliği).
     var maxWidth: CGFloat?
+    /// Çok şehirde biletler bitişik mi (şehir eklenince kısa süre ayrı durur).
+    @State private var joined = true
 
     nonisolated static func == (lhs: TripTicketCard, rhs: TripTicketCard) -> Bool {
         lhs.side == rhs.side && lhs.maxWidth == rhs.maxWidth && lhs.trip == rhs.trip
@@ -19,16 +22,27 @@ struct TripTicketCard: View, Equatable {
     /// Çok şehirde her ek şehir için genişler (en fazla `maxWidth`).
     static func width(for trip: Trip, side: CGFloat, maxWidth: CGFloat?) -> CGFloat {
         guard trip.isMultiCity else { return side }
-        let wanted = side * (1 + 0.16 * CGFloat(min(trip.cityLegs.count - 1, 3)))
+        let wanted = side * (1 + 0.3 * CGFloat(min(trip.cityLegs.count - 1, 3)))
         return min(wanted, maxWidth ?? wanted).rounded()
     }
 
     private var width: CGFloat { Self.width(for: trip, side: side, maxWidth: maxWidth) }
     private var coverHeight: CGFloat { (side * 0.6).rounded() }
 
+    /// Çok şehirli bilette panellerin aralığı (birleşikken sıfır).
+    static func gap(joined: Bool) -> CGFloat { joined ? 0 : 12 }
+
     var body: some View {
+        if trip.isMultiCity {
+            multiCity
+        } else {
+            single
+        }
+    }
+
+    private var single: some View {
         let tint = trip.tint
-        VStack(spacing: 0) {
+        return VStack(spacing: 0) {
             cover(tint: tint)
                 .frame(height: coverHeight)
             stub(tint: tint)
@@ -89,9 +103,7 @@ struct TripTicketCard: View, Equatable {
 
     private func stub(tint: Color) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            if trip.isMultiCity {
-                CityStubs(trip: trip, tint: tint)
-            } else if let flight = trip.primaryFlight {
+            if let flight = trip.primaryFlight {
                 HStack(alignment: .center, spacing: 10) {
                     code(flight.fromCode, AppFormat.time(flight.departure, timeZone: flight.departureTimeZone))
                     FlightArc(accent: tint)
@@ -162,7 +174,7 @@ struct TripTicketCard: View, Equatable {
         "\(trip.name), \(trip.cityTitle), \(AppFormat.dateRange(trip.startDate, trip.endDate)), \(trip.countdownTag.text)"
     }
 
-    private struct Line: Shape {
+    fileprivate struct Line: Shape {
         func path(in rect: CGRect) -> Path {
             Path { path in
                 path.move(to: CGPoint(x: rect.minX, y: rect.midY))
@@ -172,66 +184,201 @@ struct TripTicketCard: View, Equatable {
     }
 }
 
-/// Çok şehirli koçan: her şehir kendi bölümü (ad, tarih, gece), aralarında yırtık çizgi. Şehir sayısı değişince
-/// bölümler önce ayrı biletler gibi aralıklı görünür, sonra kayarak birleşir.
-struct CityStubs: View {
-    let trip: Trip
-    let tint: Color
-    @State private var joined = true
+// MARK: - Çok şehir
 
-    var body: some View {
+extension TripTicketCard {
+    private var multiCity: some View {
         let legs = trip.cityLegs
-        HStack(spacing: joined ? 0 : 10) {
+        let tint = trip.tint
+        let total = width
+        let gap = Self.gap(joined: joined)
+        let panel = (total - gap * CGFloat(legs.count - 1)) / CGFloat(legs.count)
+        return HStack(spacing: gap) {
             ForEach(Array(legs.enumerated()), id: \.element.id) { index, leg in
-                if index > 0 {
-                    Perforation()
-                        .stroke(Color.line, style: StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
-                        .frame(width: 1)
-                        .opacity(joined ? 1 : 0)
-                }
-                segment(leg)
-                    .padding(.horizontal, joined ? 0 : 8)
-                    .padding(.vertical, joined ? 0 : 4)
-                    .background(tint.opacity(joined ? 0 : 0.12), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                let seams = (leading: index > 0, trailing: index < legs.count - 1)
+                CityTicket(trip: trip, leg: leg, index: index, count: legs.count, coverWidth: total,
+                           coverOffset: (panel + gap) * CGFloat(index), coverHeight: coverHeight, tint: tint)
+                    .frame(width: panel, height: side)
+                    .background(Color.tray)
+                    .clipShape(TicketShape(notchY: coverHeight, leadingSeam: seams.leading, trailingSeam: seams.trailing))
+                    .overlay(
+                        TicketShape(notchY: coverHeight, leadingSeam: seams.leading, trailingSeam: seams.trailing, openSeams: true)
+                            .stroke(Color.white.opacity(0.35), lineWidth: 1)
+                    )
+                    .overlay(alignment: .trailing) {
+                        if seams.trailing { perforation }
+                    }
                     .transition(.asymmetric(insertion: .move(edge: .trailing).combined(with: .opacity), removal: .opacity))
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(width: total, height: side)
+        .drawingGroup()
+        .background {
+            HStack(spacing: gap) {
+                ForEach(Array(legs.enumerated()), id: \.element.id) { index, _ in
+                    TicketShape(notchY: coverHeight, leadingSeam: index > 0, trailingSeam: index < legs.count - 1)
+                        .fill(Color.tray)
+                        .shadow(color: .black.opacity(0.06), radius: 2, y: 1)
+                        .shadow(color: tint.opacity(0.28), radius: 18, y: 12)
+                }
+            }
+        }
         .onChange(of: legs.map(\.id)) { old, new in
             guard new.count > old.count else { return }
-            // Yeni koçan önce ayrı durur, sonra diğerleriyle birleşir.
+            // Yeni bilet önce ayrı durur, sonra diğerlerine yaslanır.
             joined = false
             Task { @MainActor in
                 try? await Task.sleep(for: .milliseconds(380))
                 withAnimation(.spring(response: 0.5, dampingFraction: 0.72)) { joined = true }
             }
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(accessibilityText))
     }
 
-    private func segment(_ leg: TripLeg) -> some View {
-        let range = trip.dateRange(of: leg)
-        let nights = trip.days(in: leg).count - (leg.id == trip.cityLegs.last?.id ? 1 : 0)
-        return VStack(alignment: .leading, spacing: 1) {
-            Text("\(Countries.flag(leg.destination.countryCode)) \(leg.destination.city)")
-                .font(.system(.subheadline, weight: .semibold))
-                .foregroundStyle(Color.ink)
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
-            Text("\(AppFormat.dayPill(range.start)) · \(String(localized: "\(max(nights, 0)) gece"))")
-                .font(.caption2)
-                .foregroundStyle(Color.ink3)
-                .lineLimit(1)
+    /// Biletler arasındaki yırtık çizgi: kapakta beyaz, koçanda çizgi rengi; uçlarda yarım ay çentikler.
+    private var perforation: some View {
+        let notch: CGFloat = 11
+        return VStack(spacing: 0) {
+            SeamLine()
+                .stroke(Color.white.opacity(0.7), style: StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
+                .frame(width: 1, height: coverHeight - notch)
+            SeamLine()
+                .stroke(Color.line, style: StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
+                .frame(width: 1)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 6)
+        .padding(.top, notch)
+        .padding(.bottom, notch)
+        .opacity(joined ? 1 : 0)
+        .offset(x: 0.5)
     }
 
-    private struct Perforation: Shape {
+    private struct SeamLine: Shape {
         func path(in rect: CGRect) -> Path {
             Path { path in
                 path.move(to: CGPoint(x: rect.midX, y: rect.minY))
                 path.addLine(to: CGPoint(x: rect.midX, y: rect.maxY))
             }
+        }
+    }
+}
+
+/// Çok şehirli kartta bir şehrin bileti: kapak (ortak kapağın kendi dilimi), şehir, tarih ve gece.
+private struct CityTicket: View {
+    let trip: Trip
+    let leg: TripLeg
+    let index: Int
+    let count: Int
+    /// Ortak kapağın tam genişliği ve bu biletin dilime düşen başlangıcı.
+    let coverWidth: CGFloat
+    let coverOffset: CGFloat
+    let coverHeight: CGFloat
+    let tint: Color
+
+    private var isFirst: Bool { index == 0 }
+    private var isLast: Bool { index == count - 1 }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            cover.frame(height: coverHeight)
+            stub.frame(maxHeight: .infinity)
+        }
+    }
+
+    private var cover: some View {
+        let range = trip.dateRange(of: leg)
+        return ZStack(alignment: .bottomLeading) {
+            // Ortak kapak tam genişlikte çizilir, bu bilet yalnızca kendi dilimini gösterir.
+            Color.clear
+                .overlay(alignment: .topLeading) {
+                    TripCover(trip: trip, maxPixelSize: CoverImageStore.cardPixelSize)
+                        .frame(width: coverWidth, height: coverHeight)
+                        .offset(x: -coverOffset)
+                }
+                .clipped()
+            LinearGradient(colors: [.clear, .black.opacity(0.5)], startPoint: .center, endPoint: .bottom)
+            VStack(alignment: .leading, spacing: 2) {
+                if isFirst {
+                    Text(trip.name)
+                        .font(.system(.caption, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.85))
+                        .lineLimit(1)
+                }
+                Text("\(Countries.flag(leg.destination.countryCode)) \(leg.destination.city)")
+                    .font(.system(.title3, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                Text(AppFormat.dateRange(range.start, range.end))
+                    .font(.system(.footnote, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.88))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+            .padding(.leading, 16)
+            .padding(.trailing, 8)
+            .padding(.bottom, 14)
+        }
+        .overlay(alignment: .topTrailing) {
+            if isLast {
+                let tag = trip.countdownTag
+                Text(tag.text)
+                    .font(.system(.footnote, weight: .semibold))
+                    .foregroundStyle(tag.accent == .gray ? Color.ink2 : tag.accent.base)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(Color.tray.opacity(0.92), in: Capsule())
+                    .padding(12)
+            }
+        }
+    }
+
+    private var stub: some View {
+        let nights = max(trip.days(in: leg).count - (isLast ? 1 : 0), 0)
+        return VStack(alignment: .leading, spacing: 4) {
+            Text("\(nights) gece")
+                .font(.system(.title3, weight: .semibold))
+                .foregroundStyle(Color.ink)
+                .lineLimit(1)
+            if isFirst, let flight = trip.primaryFlight {
+                Label("\(flight.fromCode) → \(flight.toCode) · \(AppFormat.time(flight.departure, timeZone: flight.departureTimeZone))",
+                      systemImage: "airplane")
+                    .font(.caption)
+                    .foregroundStyle(Color.ink2)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            } else {
+                Text(AppFormat.dayPill(leg.arrival))
+                    .font(.caption)
+                    .foregroundStyle(Color.ink3)
+                    .lineLimit(1)
+            }
+            Spacer(minLength: 4)
+            HStack(spacing: 8) {
+                if isFirst {
+                    AvatarStack(members: trip.members, size: 24, limit: 3)
+                }
+                Spacer(minLength: 4)
+                if isLast {
+                    Barcode()
+                        .frame(width: 34, height: 22)
+                        .opacity(0.8)
+                }
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 14)
+        .padding(.bottom, 12)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(
+            LinearGradient(colors: [tint.opacity(0.10), tint.opacity(0.02)], startPoint: .top, endPoint: .bottom)
+        )
+        .overlay(alignment: .top) {
+            TripTicketCard.Line()
+                .stroke(Color.line, style: StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
+                .frame(height: 1)
+                .padding(.leading, isFirst ? 16 : 0)
+                .padding(.trailing, isLast ? 16 : 0)
         }
     }
 }

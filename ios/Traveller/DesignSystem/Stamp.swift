@@ -2,7 +2,7 @@ import QuartzCore
 import SwiftUI
 import TravellerKit
 
-// Seyahat onayı: ahşap saplı lastik mühür ve bilete bastığı "PASSED" izi.
+// Seyahat onayı: ahşap saplı lastik mühür ve bilete bastığı "İYİ YOLCULUKLAR" izi (çok şehirde her bilete bir kez).
 
 private enum Wood {
     static let light = Color(hex: 0xD49A5C)
@@ -80,9 +80,11 @@ struct StampBlock: View {
             )
             .overlay {
                 VStack(spacing: 2) {
-                    Text("PASSED")
-                        .font(.system(size: 26, weight: .black, design: .rounded))
-                        .tracking(4)
+                    Text(StampImprint.title)
+                        .font(.system(size: 15, weight: .black, design: .rounded))
+                        .tracking(2)
+                        .multilineTextAlignment(.center)
+                        .lineSpacing(-2)
                     Text(subtitle)
                         .font(.system(size: 10, weight: .bold, design: .monospaced))
                         .tracking(1)
@@ -147,9 +149,10 @@ private struct WoodGrain: Shape {
     }
 }
 
-/// Mürekkep izi: çift çerçeve, "PASSED", tarih ve varış kodu; lastik baskısı gibi yer yer boş.
+/// Mürekkep izi: çift çerçeve, "İYİ YOLCULUKLAR", tarih ve şehir kodu; lastik baskısı gibi yer yer boş.
 struct StampImprint: View {
-    var title = "PASSED"
+    static let title = String(localized: "İYİ\nYOLCULUKLAR")
+    var title = StampImprint.title
     let subtitle: String
     var color: Color = Wood.ink
     var scale: CGFloat = 1
@@ -157,8 +160,10 @@ struct StampImprint: View {
     var body: some View {
         VStack(spacing: 2 * scale) {
             Text(title)
-                .font(.system(size: 30 * scale, weight: .black, design: .rounded))
-                .tracking(4 * scale)
+                .font(.system(size: 20 * scale, weight: .black, design: .rounded))
+                .tracking(2 * scale)
+                .multilineTextAlignment(.center)
+                .lineSpacing(-3 * scale)
             Text(subtitle)
                 .font(.system(size: 10 * scale, weight: .bold, design: .monospaced))
                 .tracking(1 * scale)
@@ -176,12 +181,14 @@ struct StampImprint: View {
         .accessibilityLabel(Text("\(title) \(subtitle)"))
     }
 
-    /// Damganın alt yazısı: "01 EKİ 2026 · LIS".
-    static func subtitle(for trip: Trip, on date: Date = .now) -> String {
+    /// Damganın alt yazısı: "01 EKİ 2026 · LIS". Çok şehirde her bilet kendi şehrinin koduyla.
+    static func subtitle(for trip: Trip, leg: TripLeg? = nil, on date: Date = .now) -> String {
         let day = date.formatted(.dateTime.day(.twoDigits).month(.abbreviated).year().locale(AppFormat.locale))
             .uppercased(with: AppFormat.locale)
-        let code = trip.primaryFlight?.toCode
-            ?? String(trip.destination.city.prefix(3)).uppercased(with: AppFormat.locale)
+        let city = leg?.destination.city ?? trip.destination.city
+        let isFirst = leg == nil || leg?.id == trip.cityLegs.first?.id
+        let code = (isFirst ? trip.primaryFlight?.toCode : nil)
+            ?? String(city.prefix(3)).uppercased(with: AppFormat.locale)
         return "\(day) · \(code)"
     }
 }
@@ -210,7 +217,8 @@ private struct InkMask: View {
 // MARK: - Ceremony
 
 /// Yeni seyahat onayı: bilet masaya yatar, ahşap mühür gölgesiyle süzülerek gelir, bastırır,
-/// "PASSED" izi kalır; mühür kalkar, bilet doğrulur ve desteye uçar.
+/// "İYİ YOLCULUKLAR" izi kalır; çok şehirde mühür bir sonraki bilete kayıp yeniden basar. Sonra mühür kalkar,
+/// bilet doğrulur ve desteye uçar.
 struct StampCeremony: View {
     let trip: Trip
     var coverImage: UIImage?
@@ -223,6 +231,9 @@ struct StampCeremony: View {
     }
 
     @State private var phase: Phase = .appearing
+    /// Mührün üzerinde durduğu bilet ve basılmış iz sayısı.
+    @State private var stampIndex = 0
+    @State private var inkedCount = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private let side: CGFloat = 280
@@ -231,6 +242,15 @@ struct StampCeremony: View {
     private let tiltAngle: Double = 52
 
     private var subtitle: String { StampImprint.subtitle(for: trip) }
+
+    /// Her şehir bileti bir kez damgalanır.
+    private var legs: [TripLeg] { trip.cityLegs }
+    private var cardWidth: CGFloat { TripTicketCard.width(for: trip, side: side, maxWidth: 370) }
+    private var panelWidth: CGFloat { cardWidth / CGFloat(legs.count) }
+    /// Biletin ortasına göre i. şehir biletinin yatay merkezi.
+    private func panelOffset(_ index: Int) -> CGFloat { panelWidth * (CGFloat(index) + 0.5) - cardWidth / 2 }
+    /// Dar biletlerde mühür ve iz küçülür.
+    private var stampScale: CGFloat { min(1, (panelWidth - 12) / 208) }
 
     var body: some View {
         ZStack {
@@ -247,7 +267,7 @@ struct StampCeremony: View {
                         stamp
                     }
                 }
-                .frame(width: side, height: side)
+                .frame(width: cardWidth, height: side)
 
                 confirmation
             }
@@ -267,24 +287,28 @@ struct StampCeremony: View {
 
     /// Masaya yatan bilet: üstünde mührün gölgesi ve mürekkep izi.
     private var ticket: some View {
-        TripTicketCard(trip: trip, side: side, maxWidth: side * 1.5)
+        TripTicketCard(trip: trip, side: side, maxWidth: 370)
             .environment(\.coverOverride, coverImage)
             .overlay {
                 // Mührün gölgesi: yükseldikçe büyür ve dağılır.
                 RoundedRectangle(cornerRadius: StampBlock.corner, style: .continuous)
                     .fill(.black)
-                    .frame(width: StampBlock.face.width * shadow.scale, height: StampBlock.face.height * shadow.scale)
+                    .frame(width: StampBlock.face.width * shadow.scale * stampScale,
+                           height: StampBlock.face.height * shadow.scale * stampScale)
                     .blur(radius: shadow.blur)
                     .opacity(shadow.opacity)
-                    .offset(y: imprintY + shadow.drop)
+                    .offset(x: panelOffset(stampIndex), y: imprintY + shadow.drop)
                     .allowsHitTesting(false)
             }
             .overlay {
-                StampImprint(subtitle: subtitle)
-                    .scaleEffect(isInked ? 1 : 1.12)
-                    .blur(radius: isInked ? 0 : 3)
-                    .opacity(isInked ? 1 : 0)
-                    .offset(y: imprintY)
+                ForEach(Array(legs.enumerated()), id: \.element.id) { index, leg in
+                    let isInked = index < inkedCount
+                    StampImprint(subtitle: StampImprint.subtitle(for: trip, leg: leg), scale: stampScale)
+                        .scaleEffect(isInked ? 1 : 1.12)
+                        .blur(radius: isInked ? 0 : 3)
+                        .opacity(isInked ? 1 : 0)
+                        .offset(x: panelOffset(index), y: imprintY)
+                }
             }
             .scaleEffect(phase == .pressing ? 0.975 : 1)
             .modifier(PerspectivePlane(degrees: planeAngle))
@@ -294,9 +318,10 @@ struct StampCeremony: View {
         let metrics = StampBlock.metrics(angle: planeAngle)
         // Taban ortası: izin alt kenarının yatırılmış bilet üzerindeki yeri.
         let foot = PerspectivePlane.project(
-            CGPoint(x: side / 2, y: side / 2 + imprintY + StampBlock.face.height / 2),
-            degrees: planeAngle, size: CGSize(width: side, height: side))
-        return StampBlock(subtitle: subtitle, angle: planeAngle)
+            CGPoint(x: cardWidth / 2 + panelOffset(stampIndex), y: side / 2 + imprintY + StampBlock.face.height * stampScale / 2),
+            degrees: planeAngle, size: CGSize(width: cardWidth, height: side))
+        return StampBlock(subtitle: StampImprint.subtitle(for: trip, leg: legs[min(stampIndex, legs.count - 1)]), angle: planeAngle)
+            .scaleEffect(stampScale, anchor: .bottom)
             .scaleEffect(x: phase == .pressing ? 1.03 : 1, y: phase == .pressing ? 0.9 : 1, anchor: .bottom)
             .position(x: foot.x, y: foot.y - lift - metrics.height / 2)
             .opacity(phase >= .hovering && phase <= .lifted ? 1 : 0)
@@ -316,8 +341,6 @@ struct StampCeremony: View {
     }
 
     // MARK: Aşamalara göre değerler
-
-    private var isInked: Bool { phase >= .inked }
 
     private var planeAngle: Double {
         guard !reduceMotion else { return 0 }
@@ -363,6 +386,7 @@ struct StampCeremony: View {
 
     private func run() async {
         if reduceMotion {
+            inkedCount = legs.count
             phase = .inked
             try? await Task.sleep(for: .milliseconds(900))
             onFinished()
@@ -370,14 +394,28 @@ struct StampCeremony: View {
         }
         withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { phase = .presented }
         try? await Task.sleep(for: .milliseconds(200))
-        withAnimation(.spring(response: 0.62, dampingFraction: 0.8)) { phase = .hovering }
-        try? await Task.sleep(for: .milliseconds(650))
-        withAnimation(.easeIn(duration: 0.17)) { phase = .pressing }
-        try? await Task.sleep(for: .milliseconds(170))
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.55)) { phase = .inked }
-        try? await Task.sleep(for: .milliseconds(300))
-        withAnimation(.spring(response: 0.5, dampingFraction: 0.78)) { phase = .lifted }
-        try? await Task.sleep(for: .milliseconds(650))
+        for index in legs.indices {
+            if index == 0 {
+                withAnimation(.spring(response: 0.62, dampingFraction: 0.8)) { phase = .hovering }
+                try? await Task.sleep(for: .milliseconds(650))
+            } else {
+                // Mühür bir sonraki bilete kayar.
+                withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
+                    stampIndex = index
+                    phase = .hovering
+                }
+                try? await Task.sleep(for: .milliseconds(450))
+            }
+            withAnimation(.easeIn(duration: 0.17)) { phase = .pressing }
+            try? await Task.sleep(for: .milliseconds(170))
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.55)) {
+                inkedCount = index + 1
+                phase = .inked
+            }
+            try? await Task.sleep(for: .milliseconds(300))
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.78)) { phase = .lifted }
+            try? await Task.sleep(for: .milliseconds(index == legs.count - 1 ? 650 : 250))
+        }
         withAnimation(.spring(response: 0.55, dampingFraction: 0.86)) { phase = .leaving }
         try? await Task.sleep(for: .milliseconds(450))
         withAnimation(.easeIn(duration: 0.42)) { phase = .flying }
