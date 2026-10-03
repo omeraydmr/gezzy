@@ -1,4 +1,4 @@
-// Traveller sunucusu (Cloudflare Worker): topluluk öneri havuzu.
+// Stubly sunucusu (Cloudflare Worker): topluluk öneri havuzu.
 //  POST   /attest/challenge    App Attest için tek kullanımlık challenge (5 dk)
 //  POST   /attest/register     cihaz anahtarının Apple onayı (attestation); açık anahtar saklanır
 //  POST   /places/contribute   seyahati biten kullanıcının onayla paylaştığı yerler ve geçişler (D1)
@@ -30,7 +30,7 @@ const json = (body: unknown, status = 200) =>
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
-    if (env.CLIENT_KEY && request.headers.get("x-traveller-key") !== env.CLIENT_KEY) return json({ error: "unauthorized" }, 401);
+    if (env.CLIENT_KEY && request.headers.get("x-stubly-key") !== env.CLIENT_KEY) return json({ error: "unauthorized" }, 401);
     const url = new URL(request.url);
     if (url.pathname.startsWith("/places/")) return places(request, url, env);
     if (url.pathname.startsWith("/attest/")) return attest(request, url, env);
@@ -70,8 +70,8 @@ async function attest(request: Request, url: URL, env: Env): Promise<Response> {
  *  ya da hata yanıtı döner. */
 async function sender(request: Request, body: Uint8Array, env: Env): Promise<string | Response> {
   if (!env.CONTRIBUTOR_SALT) return json({ error: "contributor" }, 400);
-  const keyID = request.headers.get("x-traveller-attest-key");
-  const assertion = request.headers.get("x-traveller-assertion");
+  const keyID = request.headers.get("x-stubly-attest-key");
+  const assertion = request.headers.get("x-stubly-assertion");
   if (keyID && assertion) {
     const row = await env.DB.prepare("SELECT public_key, counter FROM attested_keys WHERE key_id = ?").bind(keyID)
       .first<{ public_key: string; counter: number }>();
@@ -83,7 +83,7 @@ async function sender(request: Request, body: Uint8Array, env: Env): Promise<str
     return contributorHash(`attest:${keyID}`, env.CONTRIBUTOR_SALT);
   }
   if (env.REQUIRE_APP_ATTEST === "true") return json({ error: "attest required" }, 401);
-  const raw = request.headers.get("x-traveller-contributor") ?? "";
+  const raw = request.headers.get("x-stubly-contributor") ?? "";
   if (!/^[0-9A-Fa-f-]{36}$/.test(raw)) return json({ error: "contributor" }, 400);
   return contributorHash(raw.toLowerCase(), env.CONTRIBUTOR_SALT);
 }

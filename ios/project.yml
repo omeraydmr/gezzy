@@ -1,6 +1,6 @@
-name: Traveller
+name: Stubly
 options:
-  bundleIdPrefix: app.traveller
+  bundleIdPrefix: com.omeraydemir
   deploymentTarget:
     iOS: "17.0"
   developmentLanguage: tr
@@ -11,15 +11,15 @@ configFiles:
   Release: Config/Base.xcconfig
 
 packages:
-  TravellerKit:
-    path: Packages/TravellerKit
+  StublyKit:
+    path: Packages/StublyKit
 
 targets:
-  Traveller:
+  Stubly:
     type: application
     platform: iOS
     sources:
-      - path: Traveller
+      - path: Stubly
       - path: Shared
     info:
       path: Support/Info.plist
@@ -28,12 +28,12 @@ targets:
         UIBackgroundModes:
           - remote-notification
         CFBundleURLTypes:
-          - CFBundleURLName: app.traveller.ios
+          - CFBundleURLName: com.omeraydemir.stubly
             CFBundleURLSchemes:
-              - traveller
-        TravellerServerHost: $(TRAVELLER_SERVER_HOST)
-        TravellerServerKey: $(TRAVELLER_SERVER_KEY)
-        # Wallet'taki kart (••• → Paylaş), Dosyalar ya da Mail'deki PDF "Traveller ile aç" ile içe aktarılır.
+              - stubly
+        StublyServerHost: $(STUBLY_SERVER_HOST)
+        StublyServerKey: $(STUBLY_SERVER_KEY)
+        # Wallet'taki kart (••• → Paylaş), Dosyalar ya da Mail'deki PDF "Stubly ile aç" ile içe aktarılır.
         CFBundleDocumentTypes:
           - CFBundleTypeName: Wallet Pass
             CFBundleTypeRole: Viewer
@@ -59,45 +59,45 @@ targets:
               public.mime-type:
                 - application/vnd.apple.pkpass
     entitlements:
-      path: Support/Traveller.entitlements
+      path: Support/Stubly.entitlements
       properties:
         com.apple.developer.icloud-container-identifiers:
-          - iCloud.app.traveller.ios
+          - iCloud.com.omeraydemir.stubly
         com.apple.developer.icloud-services:
           - CloudKit
         aps-environment: development
         com.apple.security.application-groups:
-          - group.app.traveller.ios
+          - group.com.omeraydemir.stubly
     dependencies:
-      - package: TravellerKit
-      - target: TravellerWidgets
+      - package: StublyKit
+      - target: StublyWidgets
         embed: true
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: app.traveller.ios
+        PRODUCT_BUNDLE_IDENTIFIER: com.omeraydemir.stubly
         DEVELOPMENT_TEAM: 4BAD86T55H
         CODE_SIGN_STYLE: Automatic
-        PRODUCT_NAME: Traveller
+        PRODUCT_NAME: Stubly
         MARKETING_VERSION: "0.1.0"
         CURRENT_PROJECT_VERSION: "1"
         SWIFT_VERSION: "5.0"
         TARGETED_DEVICE_FAMILY: "1"
         GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_KEY_CFBundleDisplayName: Traveller
+        INFOPLIST_KEY_CFBundleDisplayName: Stubly
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
         INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
         INFOPLIST_KEY_NSSupportsLiveActivities: YES
         INFOPLIST_KEY_NSCameraUsageDescription: "Harcama makbuzlarının ve belgelerin fotoğrafını çekmek için kamerayı kullanır."
-        INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription: "Seyahatin uçuşlarını, otel giriş ve çıkışlarını ve saatli duraklarını Takvim'deki Traveller takvimine ekler; tekrar aktarınca günceller."
+        INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription: "Seyahatin uçuşlarını, otel giriş ve çıkışlarını ve saatli duraklarını Takvim'deki Stubly takvimine ekler; tekrar aktarınca günceller."
         INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "Seyahat tarihlerindeki fotoğraflarını anlara ayırıp haritada göstermek için fotoğraf arşivini okur; fotoğraflar cihazdan çıkmaz."
         DEVELOPMENT_LANGUAGE: tr
         ENABLE_PREVIEWS: YES
         SWIFT_EMIT_LOC_STRINGS: YES
         LOCALIZATION_PREFERS_STRING_CATALOGS: YES
 
-  TravellerWidgets:
+  StublyWidgets:
     type: app-extension
     platform: iOS
     sources:
@@ -106,22 +106,22 @@ targets:
     info:
       path: Support/Widgets-Info.plist
       properties:
-        CFBundleDisplayName: Traveller
+        CFBundleDisplayName: Stubly
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     entitlements:
       path: Support/Widgets.entitlements
       properties:
         com.apple.security.application-groups:
-          - group.app.traveller.ios
+          - group.com.omeraydemir.stubly
     dependencies:
-      - package: TravellerKit
+      - package: StublyKit
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: app.traveller.ios.widgets
+        PRODUCT_BUNDLE_IDENTIFIER: com.omeraydemir.stubly.widgets
         DEVELOPMENT_TEAM: 4BAD86T55H
         CODE_SIGN_STYLE: Automatic
-        PRODUCT_NAME: TravellerWidgets
+        PRODUCT_NAME: StublyWidgets
         SWIFT_EMIT_LOC_STRINGS: YES
         LOCALIZATION_PREFERS_STRING_CATALOGS: YES
         MARKETING_VERSION: "0.1.0"
@@ -132,10 +132,10 @@ targets:
         SKIP_INSTALL: YES
 
 schemes:
-  Traveller:
+  Stubly:
     build:
       targets:
-        Traveller: all
+        Stubly: all
     run:
       config: Debug
     archive:

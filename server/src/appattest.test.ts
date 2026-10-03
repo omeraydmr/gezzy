@@ -7,7 +7,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { base64ToBytes, decodeCBOR, parseCertificate, verifyAssertion, verifyAttestation, APPLE_APP_ATTEST_ROOT } from "./appattest.ts";
 
-const APP_ID = "4BAD86T55H.app.traveller.ios";
+const APP_ID = "4BAD86T55H.com.omeraydemir.stubly";
 
 // Sınama için küçük CBOR yazıcı.
 function encode(value: unknown): Uint8Array {

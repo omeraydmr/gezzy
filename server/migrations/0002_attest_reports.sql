@@ -1,4 +1,4 @@
--- App Attest ile onaylanmış cihaz anahtarları: yalnızca gerçek Traveller uygulaması katkı ve bildirim gönderebilsin.
+-- App Attest ile onaylanmış cihaz anahtarları: yalnızca gerçek Stubly uygulaması katkı ve bildirim gönderebilsin.
 -- Kişi bilgisi yok; anahtar kimliği cihazdaki uygulama kurulumuna özeldir.
 CREATE TABLE IF NOT EXISTS attested_keys (
   key_id TEXT PRIMARY KEY,

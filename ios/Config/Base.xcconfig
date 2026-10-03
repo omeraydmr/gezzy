@@ -1,7 +1,7 @@
 // Ortak derleme ayarları. Gizli değerler Secrets.xcconfig'te (git'e girmez):
-//   TRAVELLER_SERVER_HOST = traveller-live.<hesabın>.workers.dev   (şemasız; xcconfig'te "//" yorumdur)
-//   TRAVELLER_SERVER_KEY = <sunucudaki CLIENT_KEY>
-TRAVELLER_SERVER_HOST =
-TRAVELLER_SERVER_KEY =
+//   STUBLY_SERVER_HOST = traveller-live.<hesabın>.workers.dev   (şemasız; xcconfig'te "//" yorumdur)
+//   STUBLY_SERVER_KEY = <sunucudaki CLIENT_KEY>
+STUBLY_SERVER_HOST =
+STUBLY_SERVER_KEY =
 
 #include? "Secrets.xcconfig"

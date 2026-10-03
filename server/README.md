@@ -1,4 +1,4 @@
-# Traveller sunucusu
+# Stubly sunucusu
 
 Cloudflare Worker + D1: topluluk öneri havuzu ve App Attest doğrulaması. Uçuş durumu takibi yok (güncel kapı,
 rötar ve iptal bilgisi için havayolunun uygulaması kullanılır); kilit ekranındaki uçuş kartı cihazda, planlanmış
@@ -19,8 +19,8 @@ npx wrangler deploy
 
 Uygulamada `ios/Config/Secrets.xcconfig` (git'e girmez):
 ```
-TRAVELLER_SERVER_HOST = traveller-live.<hesabın>.workers.dev
-TRAVELLER_SERVER_KEY = <CLIENT_KEY ile aynı>
+STUBLY_SERVER_HOST = traveller-live.<hesabın>.workers.dev
+STUBLY_SERVER_KEY = <CLIENT_KEY ile aynı>
 ```
 Adreste `https://` yazma: xcconfig'te `//` yorum başlatır; uygulama şemayı kendisi ekler. Adres boşsa topluluk
 önerileri kapalıdır, uygulamanın geri kalanı çalışır.
@@ -28,11 +28,11 @@ Adreste `https://` yazma: xcconfig'te `//` yorum başlatır; uygulama şemayı k
 ## Topluluk öneri havuzu
 
 Seyahati biten kullanıcı Anılar'daki kartla onay verirse gittiği yerler ve aynı gün art arda gidilen yer çiftleri D1'e yazılır.
-Veritabanı gizlidir (yalnızca Worker erişir); uç noktalar `X-Traveller-Key` ister.
+Veritabanı gizlidir (yalnızca Worker erişir); uç noktalar `X-Stubly-Key` ister.
 
 | Uç nokta | İş |
 |---|---|
-| `POST /places/contribute` | `X-Traveller-Contributor: <cihaz UUID'si>`; gövde `{country, places[], transitions[[ref, ref]]}`. Günde 300 yer sınırı (429) |
+| `POST /places/contribute` | `X-Stubly-Contributor: <cihaz UUID'si>`; gövde `{country, places[], transitions[[ref, ref]]}`. Günde 300 yer sınırı (429) |
 | `GET /places/nearby?lat&lon` | 8 km içinde en az 3 farklı gezginin gittiği, beğenisi beğenmemesinden az olmayan yerler |
 | `GET /places/next?lat&lon` | Bu yerden sonra aynı gün en az 3 gezginin gittiği yerler |
 
@@ -40,7 +40,7 @@ Veritabanı gizlidir (yalnızca Worker erişir); uç noktalar `X-Traveller-Key` 
 - Cihaz kimliği `SHA-256(CONTRIBUTOR_SALT + UUID)` olarak tutulur; yalnızca "aynı kişi iki kez sayılmasın" ve kota için.
 - Aynı yer farklı dillerde/küçük konum farkıyla gelirse 60 m içinde ve adı örtüşüyorsa (ya da 15 m içindeyse) birleştirilir.
 - Yerelde denemek: `npx wrangler d1 migrations apply traveller-community --local` ve `npx wrangler dev`; uygulamayı
-  `TRAVELLER_SERVER_HOST='http:/$()/localhost:8787'` ile derle.
+  `STUBLY_SERVER_HOST='http:/$()/localhost:8787'` ile derle.
 - Yanlış/spam yer bildirimi: `POST /places/report {placeId, reason}` (wrong, closed, spam, offensive). En az 3 farklı
   kişi bildirdiğinde ya da bildirenler katkı verenlerin yarısına ulaştığında yer önerilerden düşer. Bağlantı, e-posta,
   telefon numarası içeren yer adları katkıda reddedilir.
@@ -48,7 +48,7 @@ Veritabanı gizlidir (yalnızca Worker erişir); uç noktalar `X-Traveller-Key` 
 ### App Attest
 
 Uygulama gerçek cihazda bir kez anahtar üretip Apple'a onaylatır (`POST /attest/challenge`, `POST /attest/register`),
-sonra katkı ve bildirim gövdelerini bu anahtarla imzalar (`X-Traveller-Attest-Key`, `X-Traveller-Assertion`). Sunucu
+sonra katkı ve bildirim gövdelerini bu anahtarla imzalar (`X-Stubly-Attest-Key`, `X-Stubly-Assertion`). Sunucu
 sertifika zincirini Apple App Attestation kök sertifikasına kadar, challenge'ı, uygulama kimliğini (`APP_ID`) ve artan
 sayacı doğrular (`src/appattest.ts`). Kimlik, anahtar kimliğinin tuzlanmış özetidir.
 
