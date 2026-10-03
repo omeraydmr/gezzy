@@ -299,8 +299,6 @@ struct FlightSheet: View {
         let trimmedGate = gate.trimmingCharacters(in: .whitespaces)
         flight.seat = trimmedSeat.isEmpty ? nil : trimmedSeat.uppercased(with: Locale(identifier: "en_US"))
         flight.gate = trimmedGate.isEmpty ? nil : trimmedGate.uppercased(with: Locale(identifier: "en_US"))
-        // Başka bir uçuşa dönüştüyse eski canlı durum geçersiz.
-        if changedFlight { flight.live = nil }
 
         store.update(trip.id) { trip in
             if let index = trip.flights.firstIndex(where: { $0.id == flight.id }) {

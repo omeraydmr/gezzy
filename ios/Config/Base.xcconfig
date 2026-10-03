@@ -1,9 +1,7 @@
 // Ortak derleme ayarları. Gizli değerler Secrets.xcconfig'te (git'e girmez):
-//   FLIGHT_STATUS_API_KEY = <RapidAPI anahtarın>
-FLIGHT_STATUS_API_KEY =
-//   LIVE_ACTIVITY_SERVER_HOST = traveller-live.<hesabın>.workers.dev   (şemasız; xcconfig'te "//" yorumdur)
-//   LIVE_ACTIVITY_SERVER_KEY = <sunucudaki CLIENT_KEY>
-LIVE_ACTIVITY_SERVER_HOST =
-LIVE_ACTIVITY_SERVER_KEY =
+//   TRAVELLER_SERVER_HOST = traveller-live.<hesabın>.workers.dev   (şemasız; xcconfig'te "//" yorumdur)
+//   TRAVELLER_SERVER_KEY = <sunucudaki CLIENT_KEY>
+TRAVELLER_SERVER_HOST =
+TRAVELLER_SERVER_KEY =
 
 #include? "Secrets.xcconfig"

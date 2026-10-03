@@ -26,7 +26,7 @@ final class WidgetBridge {
             tint: { $0.tint.rgbHex },
             symbol: { $0.symbol },
             flightLabel: { flight in
-                "\(flight.fromCode) → \(flight.toCode) · \(AppFormat.time(flight.effectiveDeparture, timeZone: flight.departureTimeZone))"
+                "\(flight.fromCode) → \(flight.toCode) · \(AppFormat.time(flight.departure, timeZone: flight.departureTimeZone))"
             })
         guard snapshot != lastWritten, let url = SharedContainer.snapshotURL,
               let data = try? JSONEncoder().encode(snapshot) else { return }

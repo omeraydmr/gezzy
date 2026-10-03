@@ -2,7 +2,8 @@ import ActivityKit
 import SwiftUI
 import TravellerKit
 
-/// Seyahat günü kilit ekranındaki canlı uçuş kartını başlatır ve günceller.
+/// Seyahat günü kilit ekranındaki uçuş kartı: planlanmış saatlerle geri sayım, kapı ve koltuk. Tamamen cihazda
+/// çalışır (push yok); uygulama öne geldiğinde güncellenir, uçuş inince kapanır.
 @MainActor
 enum LiveActivityController {
     /// Kalkıştan bu kadar önce otomatik başlatılır (canlı etkinlikler en fazla ~8 saat güncel kalır).
@@ -17,8 +18,7 @@ enum LiveActivityController {
     /// Kalkışa 24 saatten az kaldıysa elle başlatılabilir.
     static func canStart(for trip: Trip, now: Date = .now) -> Bool {
         guard isAvailable, let flight = trip.primaryFlight else { return false }
-        let departure = flight.effectiveDeparture
-        return departure > now && departure.timeIntervalSince(now) < 24 * 3600
+        return flight.departure > now && flight.departure.timeIntervalSince(now) < 24 * 3600
     }
 
     static func start(for trip: Trip) {
@@ -27,70 +27,46 @@ enum LiveActivityController {
             tripID: trip.id.uuidString, tripName: trip.name, flightNumber: flight.flightNumber,
             fromCode: flight.fromCode, fromCity: flight.fromCity, toCode: flight.toCode, toCity: flight.toCity,
             scheduledDeparture: flight.departure, tint: trip.tint.rgbHex)
-        // Sunucu tanımlıysa kart push token'la başlar; sunucu uçuşu izleyip uygulama kapalıyken de günceller.
-        let activity = try? Activity.request(attributes: attributes,
-                                             content: ActivityContent(state: state(for: flight), staleDate: flight.effectiveArrival),
-                                             pushType: LiveActivityPushClient.isConfigured ? .token : nil)
-        if let activity { observePushToken(activity, flight: flight) }
+        _ = try? Activity.request(attributes: attributes,
+                                  content: ActivityContent(state: state(for: flight), staleDate: flight.arrival))
     }
-
-    /// Token ilk verildiğinde ve iOS yenilediğinde sunucuya kaydeder.
-    private static func observePushToken(_ activity: Activity<FlightActivityAttributes>, flight: FlightSegment) {
-        guard LiveActivityPushClient.isConfigured, !observed.contains(activity.id) else { return }
-        observed.insert(activity.id)
-        Task {
-            for await token in activity.pushTokenUpdates {
-                await LiveActivityPushClient.register(token: token, flight: flight)
-            }
-        }
-    }
-
-    private static var observed: Set<String> = []
 
     static func stop(for trip: Trip) {
         for activity in activities(for: trip) {
-            Task {
-                if let token = activity.pushToken { await LiveActivityPushClient.unregister(token: token) }
-                await activity.end(nil, dismissalPolicy: .immediate)
-            }
+            Task { await activity.end(nil, dismissalPolicy: .immediate) }
         }
     }
 
-    /// Uygulama öne geldiğinde ya da uçuş durumu değişince: yaklaşan uçuşları başlat, kartı güncelle, inenleri kapat.
+    /// Uygulama öne geldiğinde: yaklaşan uçuşları başlat, kartı güncelle, inenleri kapat.
     static func refresh(trips: [Trip], now: Date = .now) {
         guard isAvailable else { return }
         for trip in trips {
             guard let flight = trip.primaryFlight else { continue }
             let running = activities(for: trip)
-            // Uygulama yeniden açıldığında süren kartların token'ını yeniden dinle.
-            running.forEach { observePushToken($0, flight: flight) }
-            if flight.effectiveArrival < now || flight.live?.phase == .arrived {
+            if flight.arrival < now {
                 running.forEach { activity in Task { await activity.end(nil, dismissalPolicy: .default) } }
                 continue
             }
-            let departure = flight.effectiveDeparture
-            if running.isEmpty, departure > now, departure.timeIntervalSince(now) < autoStartWindow,
-               flight.live?.phase != .canceled {
+            if running.isEmpty, flight.departure > now, flight.departure.timeIntervalSince(now) < autoStartWindow {
                 start(for: trip)
             }
             let latest = state(for: flight, now: now)
             for activity in running where activity.content.state != latest {
-                Task { await activity.update(ActivityContent(state: latest, staleDate: flight.effectiveArrival)) }
+                Task { await activity.update(ActivityContent(state: latest, staleDate: flight.arrival)) }
             }
         }
     }
 
     static func state(for flight: FlightSegment, now: Date = .now) -> FlightActivityAttributes.ContentState {
         FlightActivityAttributes.ContentState(
-            gate: flight.gate, seat: flight.seat, terminal: flight.live?.departureTerminal,
-            status: status(for: flight, now: now), departure: flight.effectiveDeparture, arrival: flight.effectiveArrival,
-            isDelayed: flight.isDelayed, isCanceled: flight.live?.phase == .canceled)
+            gate: flight.gate, seat: flight.seat, terminal: nil,
+            status: status(for: flight, now: now), departure: flight.departure, arrival: flight.arrival,
+            isDelayed: false, isCanceled: false)
     }
 
-    /// Servisten durum geldiyse onu, yoksa saate göre tahmini gösterir.
+    /// Saate göre aşama (canlı durum servisi yok; güncel durum için havayolunun uygulamasına bakılır).
     static func status(for flight: FlightSegment, now: Date = .now) -> String {
-        if let text = flight.statusText { return text }
-        let minutes = flight.effectiveDeparture.timeIntervalSince(now) / 60
+        let minutes = flight.departure.timeIntervalSince(now) / 60
         if minutes <= 0 { return String(localized: "Havada") }
         if minutes <= 40 { return String(localized: "Biniş") }
         return String(localized: "Zamanında")

@@ -27,16 +27,12 @@ targets:
         CKSharingSupported: true
         UIBackgroundModes:
           - remote-notification
-          - fetch
-        BGTaskSchedulerPermittedIdentifiers:
-          - app.traveller.ios.flightstatus
         CFBundleURLTypes:
           - CFBundleURLName: app.traveller.ios
             CFBundleURLSchemes:
               - traveller
-        FlightStatusAPIKey: $(FLIGHT_STATUS_API_KEY)
-        LiveActivityServerHost: $(LIVE_ACTIVITY_SERVER_HOST)
-        LiveActivityServerKey: $(LIVE_ACTIVITY_SERVER_KEY)
+        TravellerServerHost: $(TRAVELLER_SERVER_HOST)
+        TravellerServerKey: $(TRAVELLER_SERVER_KEY)
         # Wallet'taki kart (••• → Paylaş), Dosyalar ya da Mail'deki PDF "Traveller ile aç" ile içe aktarılır.
         CFBundleDocumentTypes:
           - CFBundleTypeName: Wallet Pass

@@ -10,7 +10,7 @@ final class CommunityService {
 
     enum Choice: String { case shared, declined }
 
-    var isConfigured: Bool { LiveActivityPushClient.isConfigured }
+    var isConfigured: Bool { TravellerServer.isConfigured }
 
     private static let contributorKey = "traveller.community.contributor"
     private static let choicesKey = "traveller.community.choices"
@@ -63,11 +63,11 @@ final class CommunityService {
 
     /// İmzalı gönderim: App Attest varsa gövde cihaz anahtarıyla imzalanır, yoksa cihaz kimliği gider.
     private func send(_ path: String, body: Data) async throws {
-        guard var post = request(path), let base = LiveActivityPushClient.baseURL else { throw Failure.notConfigured }
+        guard var post = request(path), let base = TravellerServer.baseURL else { throw Failure.notConfigured }
         post.httpMethod = "POST"
         post.setValue("application/json", forHTTPHeaderField: "Content-Type")
         post.httpBody = body
-        if let headers = await AppAttestClient.shared.headers(for: body, base: base, apiKey: LiveActivityPushClient.apiKey) {
+        if let headers = await AppAttestClient.shared.headers(for: body, base: base, apiKey: TravellerServer.apiKey) {
             for (field, value) in headers { post.setValue(value, forHTTPHeaderField: field) }
         } else {
             post.setValue(contributorID, forHTTPHeaderField: "X-Traveller-Contributor")
@@ -99,9 +99,9 @@ final class CommunityService {
     }
 
     private func request(_ path: String) -> URLRequest? {
-        guard let baseURL = LiveActivityPushClient.baseURL else { return nil }
+        guard let baseURL = TravellerServer.baseURL else { return nil }
         var request = URLRequest(url: baseURL.appendingPathComponent(path), timeoutInterval: 10)
-        if let key = LiveActivityPushClient.apiKey { request.setValue(key, forHTTPHeaderField: "X-Traveller-Key") }
+        if let key = TravellerServer.apiKey { request.setValue(key, forHTTPHeaderField: "X-Traveller-Key") }
         return request
     }
 }

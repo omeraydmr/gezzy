@@ -26,7 +26,7 @@ Gerçek cihaz (iPhone 15) testi sürüyor; iCloud paylaşım/yetki akışları i
 | Ekip | iCloud ile paylaşım, eşitleme, anlık güncelleme, değişiklik bildirimi | ✅ | |
 | Ekip | Kapak/makbuz fotoğrafı eşitleme | ✅ | |
 | Bildirim | Valiz, uçuş, günün planı, durak hatırlatmaları; dokununca ilgili sekme | ✅ | |
-| Uçuş | Rötar/kapı/terminal (AeroDataBox), değişiklik bildirimi | ✅ | API anahtarı gerekir |
+| Uçuş | Kapı, koltuk ve saatler elle ya da biletten; kilit ekranında geri sayım kartı | ✅ | Canlı rötar/kapı takibi kaldırıldı: havayolunun uygulaması bunu zaten yapıyor |
 | Uçuş | Kilit ekranı ve Dynamic Island canlı kartı | ✅ | Push'suz güncelleme |
 | Widget | Sıradaki seyahate kalan gün, günün sıradaki durağı | ✅ | |
 | İlk açılış | Tanıtım, profil ("hesap") oluşturma, 3 soruluk anket, iCloud bağlantı durumu ve hatırlatma izni | ✅ | Ayrı şifre yok: hesap = cihazdaki profil + iCloud kimliği (`Member.cloudUserID`). Anketteki ilk ilgi alanı seyahat açılınca ilk sekmeyi belirler. Profil'den yeniden gösterilebilir |
@@ -64,7 +64,7 @@ Listedeki tüm adaylar yapıldı:
 | G | Gidiş öncesi kontrol listesi | Valiz sekmesinde; harç pulu, eSIM, kartlar, sigorta, vize, check-in… son günü gelince sabah bildirimi |
 | K | Acil durum kartı | Vize sekmesinde; ülkenin acil numaraları, konsolosluk çağrı merkezi, cihazda kalan sağlık bilgileri, yerel dilde alerji kartı |
 | L | Paylaşılabilir seyahat özeti | Anılar sekmesinde; gün, durak, rota, harcama ve öne çıkanlar görsel olarak paylaşılır (HealthKit adım sayısı yok) |
-| M | Canlı kartı sunucu push'u ile güncelleme | `server/` Cloudflare Worker + APNs; kurulum ve anahtarlar gerekli, henüz canlıya alınmadı |
+| M | ~~Canlı kartı sunucu push'u ile güncelleme~~ | Kaldırıldı (uçuş durumu servisiyle birlikte); kart cihazda planlanmış saatlerle çalışır |
 | N | İngilizce yerelleştirme | Arayüz ve TravellerKit metinleri (valiz ve yola çıkış önerileri, uçuş durumu, bildirimler, açılış saatleri, vize notları) İngilizce. Öneriden gelen ve düzenlenmemiş yola çıkış maddeleri cihaz dilinde gösterilir; Dışişleri'nin Türkçe resmî vize metni yalnızca Türkçe arayüzde |
 
 Daha önce yapılanlar (ayrıntı §1 ve §2'de): B Anılar · C Biletten doldurma (PDF, ekran görüntüsü, Wallet `.pkpass`) ·

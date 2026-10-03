@@ -1,23 +1,18 @@
-// Traveller sunucusu (Cloudflare Worker).
-//  POST   /activities          uygulama canlı uçuş kartının push token'ını ve uçuşu kaydeder
-//  DELETE /activities/:token   kart kapatıldı
+// Traveller sunucusu (Cloudflare Worker): topluluk öneri havuzu.
 //  POST   /attest/challenge    App Attest için tek kullanımlık challenge (5 dk)
 //  POST   /attest/register     cihaz anahtarının Apple onayı (attestation); açık anahtar saklanır
 //  POST   /places/contribute   seyahati biten kullanıcının onayla paylaştığı yerler ve geçişler (D1)
 //  POST   /places/report       yanlış ya da spam yer bildirimi
 //  GET    /places/nearby       ?lat&lon  en az 3 kişinin önerdiği yerler
 //  GET    /places/next         ?lat&lon  bu yerden sonra en sık gidilenler
-//  cron   */5                  izlenen uçuşları AeroDataBox'tan sorgular, değişeni APNs ile gönderir
 
-import { sendLiveActivity, type ApnsEnv } from "./apns.ts";
 import { base64ToBytes, verifyAssertion, verifyAttestation } from "./appattest.ts";
 import { contribute, contributorHash, nearby, nextPlaces, report, validate, type Database } from "./community.ts";
-import { contentState, isFinished, isWatchWindow, parseAeroDataBox, type Registration } from "./flight.ts";
 
-interface Env extends ApnsEnv {
-  ACTIVITIES: KVNamespace;
+interface Env {
+  /** App Attest challenge'ları (kısa ömürlü). */
+  KV: KVNamespace;
   CLIENT_KEY: string;
-  RAPIDAPI_KEY: string;
   /** Topluluk öneri havuzu (D1). */
   DB: Database;
   /** Katkı veren kimliklerini özetlemek için gizli tuz. */
@@ -30,47 +25,16 @@ interface Env extends ApnsEnv {
   ALLOW_DEV_ATTEST?: string;
 }
 
-interface Stored {
-  registration: Registration;
-  lastState?: string;
-}
-
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
-
-function isValid(r: Partial<Registration>): r is Registration {
-  return typeof r.pushToken === "string" && /^[0-9a-f]{16,256}$/.test(r.pushToken) &&
-    (r.environment === "development" || r.environment === "production") &&
-    typeof r.flightNumber === "string" && /^[A-Z0-9]{3,8}$/.test(r.flightNumber) &&
-    typeof r.localDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(r.localDate) &&
-    !isNaN(Date.parse(r.scheduledDeparture ?? "")) && !isNaN(Date.parse(r.scheduledArrival ?? ""));
-}
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     if (env.CLIENT_KEY && request.headers.get("x-traveller-key") !== env.CLIENT_KEY) return json({ error: "unauthorized" }, 401);
     const url = new URL(request.url);
-    if (request.method === "POST" && url.pathname === "/activities") {
-      const body = (await request.json().catch(() => ({}))) as Partial<Registration>;
-      if (!isValid(body)) return json({ error: "invalid registration" }, 400);
-      const stored: Stored = { registration: body };
-      // Varıştan 12 saat sonra kendiliğinden silinir.
-      const ttl = Math.max(60, Math.floor((Date.parse(body.scheduledArrival) - Date.now()) / 1000) + 12 * 3600);
-      await env.ACTIVITIES.put(body.pushToken, JSON.stringify(stored), { expirationTtl: ttl });
-      return json({ ok: true });
-    }
     if (url.pathname.startsWith("/places/")) return places(request, url, env);
     if (url.pathname.startsWith("/attest/")) return attest(request, url, env);
-    const match = url.pathname.match(/^\/activities\/([0-9a-f]+)$/);
-    if (request.method === "DELETE" && match) {
-      await env.ACTIVITIES.delete(match[1]);
-      return json({ ok: true });
-    }
     return json({ error: "not found" }, 404);
-  },
-
-  async scheduled(_event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
-    ctx.waitUntil(checkAll(env));
   },
 };
 
@@ -78,15 +42,15 @@ async function attest(request: Request, url: URL, env: Env): Promise<Response> {
   if (request.method !== "POST") return json({ error: "not found" }, 404);
   if (url.pathname === "/attest/challenge") {
     const challenge = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(32))));
-    await env.ACTIVITIES.put(`challenge:${challenge}`, "1", { expirationTtl: 300 });
+    await env.KV.put(`challenge:${challenge}`, "1", { expirationTtl: 300 });
     return json({ challenge });
   }
   if (url.pathname === "/attest/register") {
     const body = (await request.json().catch(() => ({}))) as { keyId?: string; attestation?: string; challenge?: string };
     if (!body.keyId || !body.attestation || !body.challenge || !env.APP_ID) return json({ error: "invalid" }, 400);
     // Challenge tek kullanımlık.
-    if (!(await env.ACTIVITIES.get(`challenge:${body.challenge}`))) return json({ error: "challenge" }, 400);
-    await env.ACTIVITIES.delete(`challenge:${body.challenge}`);
+    if (!(await env.KV.get(`challenge:${body.challenge}`))) return json({ error: "challenge" }, 400);
+    await env.KV.delete(`challenge:${body.challenge}`);
     try {
       const key = await verifyAttestation(base64ToBytes(body.attestation), body.keyId, new TextEncoder().encode(body.challenge),
                                           { appID: env.APP_ID, allowDevelopment: env.ALLOW_DEV_ATTEST !== "false" });
@@ -152,50 +116,4 @@ async function places(request: Request, url: URL, env: Env): Promise<Response> {
     });
   }
   return json({ error: "not found" }, 404);
-}
-
-async function checkAll(env: Env, now = new Date()): Promise<void> {
-  let cursor: string | undefined;
-  const statuses = new Map<string, unknown>();
-  do {
-    const page = await env.ACTIVITIES.list({ cursor });
-    for (const key of page.keys) {
-      const raw = await env.ACTIVITIES.get(key.name);
-      if (!raw) continue;
-      const stored = JSON.parse(raw) as Stored;
-      const registration = stored.registration;
-      if (!isWatchWindow(registration, now)) continue;
-
-      // Aynı uçuşu izleyen birden çok kart için tek sorgu.
-      const flightKey = `${registration.flightNumber}/${registration.localDate}`;
-      if (!statuses.has(flightKey)) statuses.set(flightKey, await fetchFlight(env, registration));
-      const status = parseAeroDataBox(statuses.get(flightKey), new Date(registration.scheduledDeparture));
-      if (!status) continue;
-
-      const state = contentState(registration, status);
-      const serialized = JSON.stringify(state);
-      const finished = isFinished(status);
-      if (serialized === stored.lastState && !finished) continue;
-
-      const result = await sendLiveActivity(env, registration.pushToken, registration.environment,
-        finished ? "end" : "update", state, finished ? Math.floor(now.getTime() / 1000) + 3600 : undefined);
-      if (result.gone || finished) {
-        await env.ACTIVITIES.delete(key.name);
-      } else if (result.ok) {
-        await env.ACTIVITIES.put(key.name, JSON.stringify({ ...stored, lastState: serialized }), {
-          expiration: key.expiration,
-        });
-      }
-    }
-    cursor = page.list_complete ? undefined : page.cursor;
-  } while (cursor);
-}
-
-async function fetchFlight(env: Env, registration: Registration): Promise<unknown> {
-  const response = await fetch(
-    `https://aerodatabox.p.rapidapi.com/flights/number/${registration.flightNumber}/${registration.localDate}?withAircraftImage=false&withLocation=false`,
-    { headers: { "X-RapidAPI-Key": env.RAPIDAPI_KEY, "X-RapidAPI-Host": "aerodatabox.p.rapidapi.com" } },
-  );
-  if (!response.ok) return undefined;
-  return response.json().catch(() => undefined);
 }

@@ -17,12 +17,10 @@ struct TravellerApp: App {
                 .environment(\.locale, AppFormat.locale)
                 .tint(Color.ink)
                 .task {
-                    FlightStatusService.shared.attach(store)
                     WidgetBridge.shared.tripsChanged(store.trips)
                     await CloudSync.shared.start(with: store)
                     NotificationScheduler.shared.tripsChanged(store.trips)
                     LiveActivityController.refresh(trips: store.trips)
-                    await FlightStatusService.shared.refreshAll()
                 }
                 .onOpenURL { url in
                     if let link = TripLink(url: url) {
@@ -35,15 +33,9 @@ struct TravellerApp: App {
         .onChange(of: scenePhase) { _, phase in
             if phase == .background { store.flush() }
             if phase == .active {
-                Task {
-                    await CloudSync.shared.refresh()
-                    await FlightStatusService.shared.refreshAll()
-                }
+                Task { await CloudSync.shared.refresh() }
                 LiveActivityController.refresh(trips: store.trips)
             }
-        }
-        .backgroundTask(.appRefresh(FlightStatusService.backgroundTaskID)) {
-            _ = await FlightStatusService.shared.refreshAll()
         }
     }
 }

@@ -2045,48 +2045,12 @@
         }
       }
     },
-    "Bilinmiyor" : {
-      "comment" : "TravellerKit",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Unknown"
-          }
-        }
-      }
-    },
     "Biniş" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Boarding"
-          }
-        }
-      }
-    },
-    "Biniş başladı" : {
-      "comment" : "TravellerKit",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Boarding started"
-          }
-        }
-      }
-    },
-    "Biniş başladı · Kapı %@" : {
-      "comment" : "TravellerKit",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Boarding · Gate %@"
           }
         }
       }
@@ -2609,18 +2573,6 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Çevrimdışı kayıtlı · %1$@ %2$@"
-          }
-        }
-      }
-    },
-    "Check-in açık" : {
-      "comment" : "TravellerKit",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Check-in open"
           }
         }
       }
@@ -4678,30 +4630,6 @@
         }
       }
     },
-    "İndi" : {
-      "comment" : "TravellerKit",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Landed"
-          }
-        }
-      }
-    },
-    "İnişe geçti" : {
-      "comment" : "TravellerKit",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Approaching"
-          }
-        }
-      }
-    },
     "İnternet bağlantını kontrol edip tekrar dene; uygulama bu sırada yerel çalışır." : {
       "localizations" : {
         "en" : {
@@ -4720,18 +4648,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Online and foreign spending, contactless payments and card limits."
-          }
-        }
-      }
-    },
-    "İptal" : {
-      "comment" : "TravellerKit",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cancelled"
           }
         }
       }
@@ -4836,18 +4752,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Departure"
-          }
-        }
-      }
-    },
-    "Kalktı" : {
-      "comment" : "TravellerKit",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Departed"
           }
         }
       }
@@ -4981,42 +4885,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "gate %@"
-          }
-        }
-      }
-    },
-    "Kapı belli oldu: %@" : {
-      "comment" : "TravellerKit",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Gate assigned: %@"
-          }
-        }
-      }
-    },
-    "Kapı değişti: %@ → %@" : {
-      "comment" : "TravellerKit",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Gate changed: %1$@ → %2$@"
-          }
-        }
-      }
-    },
-    "Kapı kapandı" : {
-      "comment" : "TravellerKit",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Gate closed"
           }
         }
       }
@@ -7047,54 +6915,6 @@
         }
       }
     },
-    "Rötar kalktı, kalkış %@" : {
-      "comment" : "TravellerKit",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Delay cleared, departs %@"
-          }
-        }
-      }
-    },
-    "Rötar: kalkış %@ (+%lld dk)" : {
-      "comment" : "TravellerKit",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Delay: departs %1$@ (+%2$lld min)"
-          }
-        }
-      }
-    },
-    "Rötarlı" : {
-      "comment" : "TravellerKit",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Delayed"
-          }
-        }
-      }
-    },
-    "Rötarlı +%lld dk" : {
-      "comment" : "TravellerKit",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Delayed +%lld min"
-          }
-        }
-      }
-    },
     "Rotayı açılış saatlerine ve en kısa yürüyüşe göre diz" : {
       "localizations" : {
         "en" : {
@@ -8329,18 +8149,6 @@
         }
       }
     },
-    "Uçuş başka bir havalimanına yönlendirildi." : {
-      "comment" : "TravellerKit",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Flight diverted to another airport."
-          }
-        }
-      }
-    },
     "Uçuş bulunamadı: %@" : {
       "localizations" : {
         "en" : {
@@ -8397,18 +8205,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No flight added"
-          }
-        }
-      }
-    },
-    "Uçuş iptal edildi. Havayolunun bildirimini kontrol et." : {
-      "comment" : "TravellerKit",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Flight cancelled. Check the airline's notice."
           }
         }
       }
@@ -9112,18 +8908,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "How often do you travel abroad each year?"
-          }
-        }
-      }
-    },
-    "Yönlendirildi" : {
-      "comment" : "TravellerKit",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Diverted"
           }
         }
       }

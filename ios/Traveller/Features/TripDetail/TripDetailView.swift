@@ -179,24 +179,20 @@ struct TripStub: View {
     let trip: Trip
     @Environment(\.tripTint) private var tint
     @State private var isLiveActivityRunning = false
-    private var flightStatus: FlightStatusService { .shared }
 
     var body: some View {
         VStack(spacing: 14) {
             if let flight = trip.primaryFlight {
                 HStack(spacing: 12) {
-                    endpoint(flight.fromCode, "\(flight.fromCity) · \(AppFormat.time(flight.effectiveDeparture, timeZone: flight.departureTimeZone))")
+                    endpoint(flight.fromCode, "\(flight.fromCity) · \(AppFormat.time(flight.departure, timeZone: flight.departureTimeZone))")
                     VStack(spacing: 2) {
                         FlightArc(accent: tint).frame(height: 26)
                         Text(AppFormat.duration(minutes: flight.durationMinutes))
                             .font(.caption)
                             .foregroundStyle(Color.ink3)
                     }
-                    endpoint(flight.toCode, "\(AppFormat.time(flight.effectiveArrival, timeZone: flight.arrivalTimeZone)) · \(flight.toCity)",
+                    endpoint(flight.toCode, "\(AppFormat.time(flight.arrival, timeZone: flight.arrivalTimeZone)) · \(flight.toCity)",
                              trailing: true)
-                }
-                if flight.live != nil || (flightStatus.isConfigured && FlightStatusService.isWatched(flight)) {
-                    liveStatus(flight)
                 }
                 Divider().overlay(Color.line)
             }
@@ -233,51 +229,6 @@ struct TripStub: View {
         .cardBackground(Color.tray, in: RoundedRectangle(cornerRadius: Radius.tray, style: .continuous))
         .overlay(alignment: .top) {
             Capsule().fill(tint).frame(width: 36, height: 4).offset(y: -2)
-        }
-    }
-
-    /// Servisten gelen durum: "Rötarlı +40 dk", kapı/terminal, son kontrol zamanı ve yenileme.
-    private func liveStatus(_ flight: FlightSegment) -> some View {
-        let accent: Color = flight.live?.phase == .canceled ? .red : (flight.isDelayed ? Accent.orange.base : Accent.green.base)
-        let checked = flightStatus.lastChecked[flight.id] ?? flight.live?.fetchedAt
-        let isChecking = flightStatus.checking.contains(flight.id)
-        return HStack(spacing: 8) {
-            Text(flight.statusText ?? String(localized: "Durum bekleniyor"))
-                .font(.system(.footnote, weight: .bold))
-                .foregroundStyle(flight.live == nil ? Color.ink2 : accent)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 4)
-                .background((flight.live == nil ? Color.ink3 : accent).opacity(0.14), in: Capsule())
-            if flight.isDelayed {
-                Text(AppFormat.time(flight.departure, timeZone: flight.departureTimeZone))
-                    .font(.footnote)
-                    .strikethrough()
-                    .foregroundStyle(Color.ink3)
-            }
-            if let terminal = flight.live?.departureTerminal {
-                Text("T\(terminal)").font(.footnote.weight(.semibold)).foregroundStyle(Color.ink2)
-            }
-            Spacer(minLength: 4)
-            if let checked {
-                Text(checked, style: .relative)
-                    .font(.caption)
-                    .foregroundStyle(Color.ink3)
-                    .lineLimit(1)
-            }
-            if flightStatus.isConfigured {
-                Button {
-                    Task { await flightStatus.refresh(flightID: flight.id, in: trip.id, force: true) }
-                } label: {
-                    Image(systemName: "arrow.clockwise")
-                        .font(.system(size: 12, weight: .bold))
-                        .rotationEffect(.degrees(isChecking ? 360 : 0))
-                        .animation(isChecking ? .linear(duration: 0.8).repeatForever(autoreverses: false) : .default,
-                                   value: isChecking)
-                }
-                .buttonStyle(.circleIcon(size: 28))
-                .disabled(isChecking)
-                .accessibilityLabel("Uçuş durumunu yenile")
-            }
         }
     }
 

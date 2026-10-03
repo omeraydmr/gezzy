@@ -150,24 +150,7 @@ final class TripSummaryTests: XCTestCase {
     }
 }
 
-final class LiveActivityRegistrationTests: XCTestCase {
-    func testRegistrationUsesAirportLocalDateAndNormalizedNumber() throws {
-        // 00:30 İstanbul = önceki gün 21:30 UTC; sorgu tarihi havalimanının yerel günü olmalı.
-        var istanbul = Calendar(identifier: .gregorian)
-        istanbul.timeZone = TimeZone(identifier: "Europe/Istanbul")!
-        let departure = istanbul.date(from: DateComponents(year: 2026, month: 10, day: 20, hour: 0, minute: 30))!
-        let flight = FlightSegment(flightNumber: "tk 1759", fromCode: "IST", fromCity: "İstanbul", toCode: "LIS",
-                                   toCity: "Lizbon", departure: departure, arrival: departure.addingTimeInterval(5 * 3600),
-                                   departureTimeZone: "Europe/Istanbul", seat: "14C")
-        let registration = LiveActivityRegistration(pushToken: LiveActivityRegistration.hex(Data([0xAB, 0x01])),
-                                                    environment: "development", language: "tr", flight: flight)
-        XCTAssertEqual(registration.pushToken, "ab01")
-        XCTAssertEqual(registration.flightNumber, "TK1759")
-        XCTAssertEqual(registration.localDate, "2026-10-20")
-        let json = String(decoding: try LiveActivityRegistration.encoder.encode(registration), as: UTF8.self)
-        XCTAssertTrue(json.contains("\"scheduledDeparture\":\"2026-10-19T21:30:00Z\""), json)
-    }
-
+final class ChecklistDisplayTests: XCTestCase {
     func testChecklistDisplayTextFollowsSuggestionUnlessEdited() throws {
         var trip = Trip(name: "Lizbon", destination: Destination(countryCode: "PT", city: "Lizbon"),
                         startDate: TestCalendar.date(2026, 10, 10), endDate: TestCalendar.date(2026, 10, 13))
