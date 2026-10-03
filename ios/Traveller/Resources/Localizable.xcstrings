@@ -6121,12 +6121,12 @@
         }
       }
     },
-    "Saat bulunamadı; ekledikten sonra kontrol et." : {
+    "Varış ya da kalkış saati eksik; ekledikten sonra kontrol et." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Time not found; check it after adding."
+            "value" : "Arrival or departure time is missing; check it after adding."
           }
         }
       }

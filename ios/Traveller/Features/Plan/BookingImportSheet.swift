@@ -142,7 +142,7 @@ struct BookingImportSheet: View {
                 .font(.footnote)
                 .foregroundStyle(Color.ink2)
             if !flight.hasTimes {
-                Text("Saat bulunamadı; ekledikten sonra kontrol et.").font(.caption).foregroundStyle(Color.food)
+                Text("Varış ya da kalkış saati eksik; ekledikten sonra kontrol et.").font(.caption).foregroundStyle(Color.food)
             }
         }
     }

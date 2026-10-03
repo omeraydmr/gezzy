@@ -108,4 +108,59 @@ final class BoardingPassBarcodeTests: XCTestCase {
         XCTAssertEqual(flights.last.map { local($0.departure, "Europe/Amsterdam") }?.prefix(2).map { $0 }, [10, 12])
         XCTAssertEqual(flights.last?.hasTimes, false)
     }
+
+    /// Gerçek Pegasus kartının pass.json yapısı (yolcu adı, PNR ve seri numarası değiştirildi). `relevantDate` yok;
+    /// tarih "17 Haziran", saat "Kalkış 09:40" ve barkoddan gelir. Biniş ve kapı kapanış saati kalkış sanılmamalı.
+    static let realPegasusPass = """
+    {
+      "formatVersion": 1,
+      "passTypeIdentifier": "pass.com.flypgs.boarding",
+      "description": "Mobil Biniş Kartı",
+      "organizationName": "Pegasus",
+      "barcodes": [{ "format": "PKBarcodeFormatAztec", "altText": "PNR: TEST01",
+                     "message": "M1TEST/KISI           ETEST01 SAWCPHPC 1071 168Y037A0176 100      M", "messageEncoding": "UTF-8" }],
+      "boardingPass": {
+        "headerFields": [
+          { "key": "gate", "label": "kapi", "value": "502B" },
+          { "key": "flight_number", "label": "", "value": "PC1071" }
+        ],
+        "primaryFields": [
+          { "key": "department", "label": "İstanbul", "value": "SAW" },
+          { "key": "arrival", "label": "Kopenhag", "value": "CPH" }
+        ],
+        "secondaryFields": [
+          { "key": "departure_date", "label": "TARİH", "value": "17 Haziran" },
+          { "key": "boarding_time", "label": "BİNİŞ", "value": "08:55" },
+          { "key": "boarding_end_time", "label": "Kapı Kapanış", "value": "09:20" },
+          { "key": "departure_date_time", "label": "Kalkış", "value": "09:40" }
+        ],
+        "auxiliaryFields": [
+          { "key": "passenger", "label": "YOLCU", "value": "TEST KİŞİ" },
+          { "key": "seat", "label": "KOLTUK", "value": "37A" }
+        ],
+        "backFields": [
+          { "key": "departure_terminal", "label": "Kalkış Terminali", "value": "Ana" },
+          { "key": "arrival_terminal", "label": "Varış Terminali", "value": "2" }
+        ],
+        "transitType": "PKTransitTypeAir"
+      }
+    }
+    """
+
+    func testRealPegasusPass() throws {
+        let leg = try XCTUnwrap(BoardingPassBarcode.parse("M1TEST/KISI           ETEST01 SAWCPHPC 1071 168Y037A0176 100      M").first)
+        XCTAssertEqual(leg.flightCode, "PC1071")
+        XCTAssertEqual(leg.seat, "37A")
+        // Ekim'de okunan geçmiş uçuş: 17 Haziran aynı yıl.
+        let flight = try XCTUnwrap(PassParser.parse(passJSON: Data(Self.realPegasusPass.utf8),
+                                                    now: TestCalendar.date(2026, 10, 3), calendar: cal)?.flights.first)
+        XCTAssertEqual(flight.flightNumber, "PC1071")
+        XCTAssertEqual([flight.fromCode, flight.toCode], ["SAW", "CPH"])
+        var istanbul = Calendar(identifier: .gregorian)
+        istanbul.timeZone = TimeZone(identifier: "Europe/Istanbul")!
+        XCTAssertEqual(istanbul.dateComponents([.year, .month, .day, .hour, .minute], from: flight.departure),
+                       DateComponents(year: 2026, month: 6, day: 17, hour: 9, minute: 40))
+        XCTAssertFalse(flight.hasTimes, "Kartta varış saati yok")
+        XCTAssertEqual(flight.seat, "37A")
+    }
 }
