@@ -1,4 +1,4 @@
-Stubly.xcodeproj/
+*.xcodeproj/
 build/
 DerivedData/
 .build/
