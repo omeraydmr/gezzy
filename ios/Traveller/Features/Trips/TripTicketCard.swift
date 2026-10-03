@@ -19,15 +19,25 @@ struct TripTicketCard: View, Equatable {
         lhs.side == rhs.side && lhs.maxWidth == rhs.maxWidth && lhs.trip == rhs.trip
     }
 
-    /// Çok şehirde her ek şehir için genişler (en fazla `maxWidth`).
+    /// Çok şehirde her ek bilet için genişler (en fazla `maxWidth`).
     static func width(for trip: Trip, side: CGFloat, maxWidth: CGFloat?) -> CGFloat {
         guard trip.isMultiCity else { return side }
-        let wanted = side * (1 + 0.3 * CGFloat(min(trip.cityLegs.count - 1, 3)))
+        let wanted = side * (1 + 0.3 * CGFloat(panels(for: trip).count - 1))
         return min(wanted, maxWidth ?? wanted).rounded()
     }
 
     private var width: CGFloat { Self.width(for: trip, side: side, maxWidth: maxWidth) }
     private var coverHeight: CGFloat { (side * 0.6).rounded() }
+
+    /// Kartta en fazla bu kadar bilet yan yana durur; fazlası son bilette "+N şehir" olarak toplanır.
+    static let maxPanels = 3
+
+    /// Çok şehirli kartın biletleri: ilk şehirler tek tek, sığmayanlar sondaki ortak bilette.
+    static func panels(for trip: Trip) -> [TicketPanel] {
+        let legs = trip.cityLegs
+        guard legs.count > maxPanels else { return legs.map { TicketPanel(legs: [$0]) } }
+        return legs.prefix(maxPanels - 1).map { TicketPanel(legs: [$0]) } + [TicketPanel(legs: Array(legs.dropFirst(maxPanels - 1)))]
+    }
 
     /// Çok şehirli bilette panellerin aralığı (birleşikken sıfır).
     static func gap(joined: Bool) -> CGFloat { joined ? 0 : 12 }
@@ -188,15 +198,16 @@ struct TripTicketCard: View, Equatable {
 
 extension TripTicketCard {
     private var multiCity: some View {
-        let legs = trip.cityLegs
+        let panels = Self.panels(for: trip)
+        let legIDs = trip.cityLegs.map(\.id)
         let tint = trip.tint
         let total = width
         let gap = Self.gap(joined: joined)
-        let panel = (total - gap * CGFloat(legs.count - 1)) / CGFloat(legs.count)
+        let panel = (total - gap * CGFloat(panels.count - 1)) / CGFloat(panels.count)
         return HStack(spacing: gap) {
-            ForEach(Array(legs.enumerated()), id: \.element.id) { index, leg in
-                let seams = (leading: index > 0, trailing: index < legs.count - 1)
-                CityTicket(trip: trip, leg: leg, index: index, count: legs.count, coverWidth: total,
+            ForEach(Array(panels.enumerated()), id: \.element.id) { index, item in
+                let seams = (leading: index > 0, trailing: index < panels.count - 1)
+                CityTicket(trip: trip, panel: item, index: index, count: panels.count, coverWidth: total,
                            coverOffset: (panel + gap) * CGFloat(index), coverHeight: coverHeight, tint: tint)
                     .frame(width: panel, height: side)
                     .background(Color.tray)
@@ -215,15 +226,15 @@ extension TripTicketCard {
         .drawingGroup()
         .background {
             HStack(spacing: gap) {
-                ForEach(Array(legs.enumerated()), id: \.element.id) { index, _ in
-                    TicketShape(notchY: coverHeight, leadingSeam: index > 0, trailingSeam: index < legs.count - 1)
+                ForEach(Array(panels.enumerated()), id: \.element.id) { index, _ in
+                    TicketShape(notchY: coverHeight, leadingSeam: index > 0, trailingSeam: index < panels.count - 1)
                         .fill(Color.tray)
                         .shadow(color: .black.opacity(0.06), radius: 2, y: 1)
                         .shadow(color: tint.opacity(0.28), radius: 18, y: 12)
                 }
             }
         }
-        .onChange(of: legs.map(\.id)) { old, new in
+        .onChange(of: legIDs) { old, new in
             guard new.count > old.count else { return }
             // Yeni bilet önce ayrı durur, sonra diğerlerine yaslanır.
             joined = false
@@ -263,10 +274,17 @@ extension TripTicketCard {
     }
 }
 
-/// Çok şehirli kartta bir şehrin bileti: kapak (ortak kapağın kendi dilimi), şehir, tarih ve gece.
+/// Çok şehirli kartta bir bilet: tek şehir ya da sığmayan şehirlerin toplandığı "+N şehir" bileti.
+struct TicketPanel: Identifiable, Hashable {
+    let legs: [TripLeg]
+    var id: UUID { legs[0].id }
+    var isGroup: Bool { legs.count > 1 }
+}
+
+/// Çok şehirli kartta bir bilet: kapak (ortak kapağın kendi dilimi), şehir, tarih ve gece.
 private struct CityTicket: View {
     let trip: Trip
-    let leg: TripLeg
+    let panel: TicketPanel
     let index: Int
     let count: Int
     /// Ortak kapağın tam genişliği ve bu biletin dilime düşen başlangıcı.
@@ -277,6 +295,7 @@ private struct CityTicket: View {
 
     private var isFirst: Bool { index == 0 }
     private var isLast: Bool { index == count - 1 }
+    private var leg: TripLeg { panel.legs[0] }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -285,8 +304,16 @@ private struct CityTicket: View {
         }
     }
 
+    /// Bir şehirde geçen gece; aynı gün başka şehre geçiliyorsa günübirlik.
+    private func nightsText(_ leg: TripLeg) -> String {
+        let isFinal = leg.id == trip.cityLegs.last?.id
+        let nights = max(trip.days(in: leg).count - (isFinal ? 1 : 0), 0)
+        return nights == 0 ? String(localized: "Günübirlik") : String(localized: "\(nights) gece")
+    }
+
     private var cover: some View {
-        let range = trip.dateRange(of: leg)
+        let start = trip.dateRange(of: panel.legs[0]).start
+        let end = trip.dateRange(of: panel.legs[panel.legs.count - 1]).end
         return ZStack(alignment: .bottomLeading) {
             // Ortak kapak tam genişlikte çizilir, bu bilet yalnızca kendi dilimini gösterir.
             Color.clear
@@ -304,12 +331,18 @@ private struct CityTicket: View {
                         .foregroundStyle(.white.opacity(0.85))
                         .lineLimit(1)
                 }
-                Text("\(Countries.flag(leg.destination.countryCode)) \(leg.destination.city)")
-                    .font(.system(.title3, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-                Text(AppFormat.dateRange(range.start, range.end))
+                Group {
+                    if panel.isGroup {
+                        Text("+\(panel.legs.count) şehir")
+                    } else {
+                        Text("\(Countries.flag(leg.destination.countryCode)) \(leg.destination.city)")
+                    }
+                }
+                .font(.system(.title3, weight: .semibold))
+                .foregroundStyle(.white)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                Text(AppFormat.dateRange(start, end))
                     .font(.system(.footnote, weight: .medium))
                     .foregroundStyle(.white.opacity(0.88))
                     .lineLimit(1)
@@ -325,6 +358,8 @@ private struct CityTicket: View {
                 Text(tag.text)
                     .font(.system(.footnote, weight: .semibold))
                     .foregroundStyle(tag.accent == .gray ? Color.ink2 : tag.accent.base)
+                    .lineLimit(1)
+                    .fixedSize()
                     .padding(.horizontal, 10)
                     .padding(.vertical, 5)
                     .background(Color.tray.opacity(0.92), in: Capsule())
@@ -334,26 +369,43 @@ private struct CityTicket: View {
     }
 
     private var stub: some View {
-        let nights = max(trip.days(in: leg).count - (isLast ? 1 : 0), 0)
-        return VStack(alignment: .leading, spacing: 4) {
-            Text("\(nights) gece")
-                .font(.system(.title3, weight: .semibold))
-                .foregroundStyle(Color.ink)
-                .lineLimit(1)
-            if isFirst, let flight = trip.primaryFlight {
-                Label("\(flight.fromCode) → \(flight.toCode) · \(AppFormat.time(flight.departure, timeZone: flight.departureTimeZone))",
-                      systemImage: "airplane")
-                    .font(.caption)
-                    .foregroundStyle(Color.ink2)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
+        VStack(alignment: .leading, spacing: 4) {
+            if panel.isGroup {
+                // Sığmayan şehirler: bayrak ve ad (dar bilette gece sığmaz); çok uzunsa son satır "+N".
+                let shown = panel.legs.prefix(3)
+                ForEach(Array(shown), id: \.id) { leg in
+                    Text("\(Countries.flag(leg.destination.countryCode)) \(leg.destination.city)")
+                        .font(.system(.caption, weight: .semibold))
+                        .foregroundStyle(Color.ink)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
+                if panel.legs.count > shown.count {
+                    Text("+\(panel.legs.count - shown.count)")
+                        .font(.caption2)
+                        .foregroundStyle(Color.ink3)
+                }
             } else {
-                Text(AppFormat.dayPill(leg.arrival))
-                    .font(.caption)
-                    .foregroundStyle(Color.ink3)
+                Text(nightsText(leg))
+                    .font(.system(.title3, weight: .semibold))
+                    .foregroundStyle(Color.ink)
                     .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                if isFirst, let flight = trip.primaryFlight {
+                    Label("\(flight.fromCode) → \(flight.toCode) · \(AppFormat.time(flight.departure, timeZone: flight.departureTimeZone))",
+                          systemImage: "airplane")
+                        .font(.caption)
+                        .foregroundStyle(Color.ink2)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                } else {
+                    Text(AppFormat.dayPill(leg.arrival))
+                        .font(.caption)
+                        .foregroundStyle(Color.ink3)
+                        .lineLimit(1)
+                }
             }
-            Spacer(minLength: 4)
+            Spacer(minLength: 2)
             HStack(spacing: 8) {
                 if isFirst {
                     AvatarStack(members: trip.members, size: 24, limit: 3)

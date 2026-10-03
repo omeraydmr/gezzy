@@ -243,8 +243,8 @@ struct StampCeremony: View {
 
     private var subtitle: String { StampImprint.subtitle(for: trip) }
 
-    /// Her şehir bileti bir kez damgalanır.
-    private var legs: [TripLeg] { trip.cityLegs }
+    /// Her bilet bir kez damgalanır ("+N şehir" biletinde ilk şehrinin koduyla).
+    private var legs: [TripLeg] { TripTicketCard.panels(for: trip).map { $0.legs[0] } }
     private var cardWidth: CGFloat { TripTicketCard.width(for: trip, side: side, maxWidth: 370) }
     private var panelWidth: CGFloat { cardWidth / CGFloat(legs.count) }
     /// Biletin ortasına göre i. şehir biletinin yatay merkezi.

@@ -1308,6 +1308,16 @@
         }
       }
     },
+    "+%lld şehir" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "+%lld cities"
+          }
+        }
+      }
+    },
     "≈ %@" : {
       "localizations" : {
         "en" : {
@@ -4112,6 +4122,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "End the day · %@"
+          }
+        }
+      }
+    },
+    "Günübirlik" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Day trip"
           }
         }
       }
