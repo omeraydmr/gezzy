@@ -1,20 +1,59 @@
 import Foundation
 
-/// Türkiye'den sık uçulan havalimanları: IATA kodu → şehir, ülke, saat dilimi.
-/// Rezervasyon içe aktarmada uçuşun şehir ve yerel saatlerini doldurmak için.
+/// Havalimanları: IATA kodu → şehir, ülke, saat dilimi, konum. Tarifeli seferi olan ~3.800 havalimanı paketteki
+/// `airports.tsv`'den (OurAirports + mwgg/Airports) okunur; Türkiye'den sık uçulanların şehir adı Türkçedir.
+/// Rezervasyon içe aktarmada uçuşun şehir ve yerel saatlerini doldurmak, varış saatini tahmin etmek için.
 public enum Airports {
     public struct Airport: Hashable, Sendable {
         public var code: String
         public var city: String
         public var countryCode: String
         public var timeZone: String
+        public var coordinate: Coordinate?
     }
 
     public static func airport(_ code: String) -> Airport? {
         table[code.uppercased()]
     }
 
+    /// Türkiye'den sık uçulan (elle seçilmiş) havalimanı mı. Metinde "ABC-XYZ" gibi kodları güzergâh saymak için
+    /// en az birinin bu listede olması ya da ikisinin de bilinen havalimanı olması istenir.
+    public static func isCommon(_ code: String) -> Bool {
+        common[code.uppercased()] != nil
+    }
+
+    /// İki havalimanı arası tahmini uçuş süresi (dakika): büyük daire mesafesi, ~800 km/sa seyir, +30 dk kalkış/iniş.
+    public static func estimatedFlightMinutes(from: String, to: String) -> Int? {
+        guard let a = airport(from)?.coordinate, let b = airport(to)?.coordinate else { return nil }
+        let km = Geo.distance(a, b) / 1000
+        return Int((km / 800 * 60 + 30) / 5) * 5
+    }
+
     static let table: [String: Airport] = {
+        var map = loadDataset()
+        for (code, airport) in common {
+            // Türkçe şehir adı ve elle doğrulanan saat dilimi; konum veri setinden.
+            map[code] = Airport(code: code, city: airport.city, countryCode: airport.countryCode, timeZone: airport.timeZone,
+                                coordinate: map[code]?.coordinate)
+        }
+        return map
+    }()
+
+    static func loadDataset() -> [String: Airport] {
+        guard let url = Bundle.module.url(forResource: "airports", withExtension: "tsv"),
+              let text = try? String(contentsOf: url, encoding: .utf8) else { return [:] }
+        var map: [String: Airport] = [:]
+        for line in text.split(separator: "\n") where !line.hasPrefix("#") {
+            let parts = line.split(separator: "\t", omittingEmptySubsequences: false)
+            guard parts.count >= 6, let lat = Double(parts[4]), let lon = Double(parts[5]) else { continue }
+            let code = String(parts[0])
+            map[code] = Airport(code: code, city: String(parts[1]), countryCode: String(parts[2]), timeZone: String(parts[3]),
+                                coordinate: Coordinate(latitude: lat, longitude: lon))
+        }
+        return map
+    }
+
+    static let common: [String: Airport] = {
         let rows: [(String, String, String, String)] = [
             ("IST", "İstanbul", "TR", "Europe/Istanbul"), ("SAW", "İstanbul", "TR", "Europe/Istanbul"),
             ("ESB", "Ankara", "TR", "Europe/Istanbul"), ("ADB", "İzmir", "TR", "Europe/Istanbul"),
@@ -68,7 +107,7 @@ public enum Airports {
         ]
         var map: [String: Airport] = [:]
         for (code, city, country, zone) in rows {
-            map[code] = Airport(code: code, city: city, countryCode: country, timeZone: zone)
+            map[code] = Airport(code: code, city: city, countryCode: country, timeZone: zone, coordinate: nil)
         }
         return map
     }()

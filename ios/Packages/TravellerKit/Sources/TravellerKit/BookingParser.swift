@@ -302,12 +302,18 @@ public enum BookingParser {
         var range: NSRange
     }
 
+    /// Üç harfli iki kod güzergâh mı: biri sık uçulan havalimanı ya da ikisi de bilinen havalimanı olmalı
+    /// (büyük tabloda "PNR", "TKT" gibi kısaltmalar da tek başına havalimanı kodu olabiliyor).
+    static func looksLikeRoute(_ a: String, _ b: String) -> Bool {
+        Airports.isCommon(a) || Airports.isCommon(b) || (Airports.airport(a) != nil && Airports.airport(b) != nil)
+    }
+
     static func routes(in upper: String) -> [Route] {
         var routes: [Route] = []
         // IST - LIS, SAW→BCN, IST/LIS
         for m in matches(#"\b([A-Z]{3})\s?(?:-|–|—|→|>|/|TO)\s?([A-Z]{3})\b"#, in: upper) {
             guard let a = group(m, 1, in: upper), let b = group(m, 2, in: upper),
-                  Airports.airport(a) != nil || Airports.airport(b) != nil, a != b else { continue }
+                  looksLikeRoute(a, b), a != b else { continue }
             routes.append(Route(from: a, to: b, range: m.range))
         }
         // İstanbul (IST) ... Lizbon (LIS): aynı satırda ya da art arda iki parantezli kod
@@ -316,7 +322,7 @@ public enum BookingParser {
         }
         for pair in zip(codes, codes.dropFirst()) where pair.0.0 != pair.1.0 {
             let gap = pair.1.1.location - (pair.0.1.location + pair.0.1.length)
-            guard gap < 80, Airports.airport(pair.0.0) != nil || Airports.airport(pair.1.0) != nil,
+            guard gap < 80, looksLikeRoute(pair.0.0, pair.1.0),
                   !routes.contains(where: { NSIntersectionRange($0.range, pair.0.1).length > 0 }) else { continue }
             routes.append(Route(from: pair.0.0, to: pair.1.0, range: pair.0.1))
         }

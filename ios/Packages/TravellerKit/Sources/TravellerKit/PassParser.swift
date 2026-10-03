@@ -113,8 +113,10 @@ public enum PassParser {
         var arrival = semanticArrival ?? fieldArrival ?? clockArrival.map { $0 < departure ? $0.addingTimeInterval(86_400) : $0 }
         if let value = arrival, value <= departure { arrival = nil }
 
+        // Varış yoksa havalimanları arası mesafeden tahmin (kullanıcıya yine "kontrol et" denir).
+        let estimate = Airports.estimatedFlightMinutes(from: from, to: to).map { departure.addingTimeInterval(Double($0) * 60) }
         return BookingParser.FlightCandidate(flightNumber: number, fromCode: from, toCode: to, departure: departure,
-                                             arrival: arrival ?? departure.addingTimeInterval(3 * 3600),
+                                             arrival: arrival ?? estimate ?? departure.addingTimeInterval(3 * 3600),
                                              hasTimes: (semanticDeparture ?? fieldDeparture ?? clockDeparture) != nil && arrival != nil,
                                              seat: seat(semantics: semantics, fields: fields) ?? barcode?.seat)
     }

@@ -30,7 +30,17 @@ struct Attribution: Identifiable, Hashable {
         notice: String(localized: "Harita verisi: Apple ve veri sağlayıcıları"), license: String(localized: "Apple MapKit koşulları"),
         url: URL(string: "https://www.apple.com/legal/internet-services/maps/")!)
 
-    static let all = [openStreetMap, openMeteo, frankfurter, appleMaps]
+    static let airports = Attribution(
+        id: "airports", name: "OurAirports · mwgg/Airports", usage: String(localized: "Havalimanı şehirleri, saat dilimleri ve uçuş süresi tahmini"),
+        notice: "OurAirports (public domain); © 2014 mwgg", license: "Public domain · MIT",
+        url: URL(string: "https://github.com/mwgg/Airports/blob/master/LICENSE")!)
+
+    static let wikipedia = Attribution(
+        id: "wikipedia", name: "Wikipedia", usage: String(localized: "Önerilen yerler ve okunma sayıları"),
+        notice: String(localized: "Wikipedia katkıcıları"), license: "CC BY-SA 4.0",
+        url: URL(string: "https://en.wikipedia.org/wiki/Wikipedia:Copyrights")!)
+
+    static let all = [openStreetMap, openMeteo, frankfurter, appleMaps, wikipedia, airports]
 }
 
 struct AboutView: View {

@@ -3866,6 +3866,16 @@
         }
       }
     },
+    "Havalimanı şehirleri, saat dilimleri ve uçuş süresi tahmini" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Airport cities, time zones and flight duration estimates"
+          }
+        }
+      }
+    },
     "Havalimanının yerel saatiyle." : {
       "localizations" : {
         "en" : {
@@ -5535,6 +5545,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Suggested places"
+          }
+        }
+      }
+    },
+    "Önerilen yerler ve okunma sayıları" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suggested places and page views"
           }
         }
       }
@@ -7717,6 +7737,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Couldn't read the Wallet pass."
+          }
+        }
+      }
+    },
+    "Wikipedia katkıcıları" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wikipedia contributors"
           }
         }
       }

@@ -8,7 +8,7 @@ let package = Package(
         .library(name: "TravellerKit", targets: ["TravellerKit"]),
     ],
     targets: [
-        .target(name: "TravellerKit"),
+        .target(name: "TravellerKit", resources: [.copy("Resources/airports.tsv")]),
         .testTarget(name: "TravellerKitTests", dependencies: ["TravellerKit"]),
     ]
 )
