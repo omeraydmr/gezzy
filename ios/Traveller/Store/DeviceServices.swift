@@ -20,6 +20,8 @@ final class NotificationScheduler {
     var isEnabled: Bool = UserDefaults.standard.bool(forKey: NotificationScheduler.enabledKey)
     private(set) var authorizationDenied = false
     private var latestTrips: [Trip] = []
+    /// Kullanıcının pasaportu: süresi ve eldeki vizeler için hatırlatmalar.
+    private var passport: Passport?
     private var task: Task<Void, Never>?
     /// Son kurulan plan; değişmediyse bildirimler silinip yeniden eklenmez.
     @ObservationIgnored private var lastScheduled: [PlannedNotification]?
@@ -50,6 +52,12 @@ final class NotificationScheduler {
         try? await UNUserNotificationCenter.current().add(request)
     }
 
+    func documentsChanged(_ passport: Passport?) {
+        guard passport != self.passport else { return }
+        self.passport = passport
+        tripsChanged(latestTrips)
+    }
+
     func tripsChanged(_ trips: [Trip]) {
         latestTrips = trips
         task?.cancel()
@@ -62,8 +70,8 @@ final class NotificationScheduler {
 
     private func reschedule() async {
         let planned = isEnabled
-            ? Array(latestTrips
-                .flatMap { NotificationPlanner.plan(for: $0) }
+            ? Array((latestTrips.flatMap { NotificationPlanner.plan(for: $0) }
+                     + DocumentReminders.plan(passport: passport, trips: latestTrips))
                 .sorted { $0.date < $1.date }
                 .prefix(Self.globalLimit))
             : []
@@ -72,7 +80,7 @@ final class NotificationScheduler {
         lastScheduled = planned
 
         let center = UNUserNotificationCenter.current()
-        let existing = await center.pendingNotificationRequests().map(\.identifier).filter { $0.hasPrefix("trip-") }
+        let existing = await center.pendingNotificationRequests().map(\.identifier).filter { $0.hasPrefix("trip-") || $0.hasPrefix("doc-") }
         center.removePendingNotificationRequests(withIdentifiers: existing)
         guard isEnabled else { return }
 
@@ -81,7 +89,7 @@ final class NotificationScheduler {
             content.title = item.title
             content.body = item.body
             content.sound = .default
-            content.userInfo = item.link.userInfo
+            content.userInfo = item.link?.userInfo ?? [:]
             let components = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: item.date)
             let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
             try? await center.add(UNNotificationRequest(identifier: item.id, content: content, trigger: trigger))

@@ -7,6 +7,7 @@ struct TripDetailView: View {
     @State private var section: TripSection
     @State private var coverTarget: Trip.ID?
     @State private var isEditingTrip = false
+    @State private var calendarMessage: String?
     @State private var isHeroCollapsed = false
 
     init(tripID: Trip.ID, initialSection: TripSection = .plan) {
@@ -100,6 +101,11 @@ struct TripDetailView: View {
             }
             .coverPhotoPicker(for: $coverTarget)
             .sheet(isPresented: $isEditingTrip) { TripEditSheet(trip: trip) }
+            .alert("Takvim", isPresented: Binding(get: { calendarMessage != nil }, set: { if !$0 { calendarMessage = nil } })) {
+                Button("Tamam", role: .cancel) {}
+            } message: {
+                Text(calendarMessage ?? "")
+            }
             .animation(.easeInOut(duration: 0.2), value: isHeroCollapsed)
             .animation(.easeInOut(duration: 0.2), value: section)
         } else {
@@ -110,6 +116,18 @@ struct TripDetailView: View {
     private func coverMenu(_ trip: Trip) -> some View {
         Menu {
             Button("Seyahati düzenle", systemImage: "pencil") { isEditingTrip = true }
+            Button("Takvime aktar", systemImage: "calendar.badge.plus") {
+                Task {
+                    do {
+                        let count = try await CalendarExporter.export(trip)
+                        calendarMessage = count == 0
+                            ? String(localized: "Aktarılacak uçuş, konaklama ya da saatli durak yok.")
+                            : String(localized: "\(count) etkinlik Takvim'deki Traveller takvimine eklendi. Planı değiştirince tekrar aktarabilirsin.")
+                    } catch {
+                        calendarMessage = error.localizedDescription
+                    }
+                }
+            }
             Button("Kapak fotoğrafı seç", systemImage: "photo") { coverTarget = trip.id }
             if trip.coverPhoto != nil {
                 Button("Fotoğrafı kaldır", systemImage: "photo.badge.minus", role: .destructive) {

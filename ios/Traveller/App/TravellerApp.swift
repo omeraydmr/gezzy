@@ -19,6 +19,7 @@ struct TravellerApp: App {
                 .task {
                     WidgetBridge.shared.tripsChanged(store.trips)
                     await CloudSync.shared.start(with: store)
+                    NotificationScheduler.shared.documentsChanged(store.me.passport)
                     NotificationScheduler.shared.tripsChanged(store.trips)
                     LiveActivityController.refresh(trips: store.trips)
                 }

@@ -2,13 +2,13 @@ import Foundation
 
 /// Seyahat için yerel bildirim planı (saf mantık; zamanlama uygulamada yapılır).
 public struct PlannedNotification: Hashable, Sendable {
-    /// "trip-<id>-<tür>" biçiminde; seyahat değişince aynı kimlikle yeniden kurulur.
+    /// "trip-<id>-<tür>" ya da belge hatırlatmaları için "doc-<tür>"; değişince aynı kimlikle yeniden kurulur.
     public var id: String
     public var date: Date
     public var title: String
     public var body: String
-    /// Dokununca açılacak seyahat ve sekme (`TripLink`).
-    public var link: TripLink
+    /// Dokununca açılacak seyahat ve sekme (`TripLink`); yoksa uygulama açılır.
+    public var link: TripLink?
 }
 
 public enum NotificationPlanner {

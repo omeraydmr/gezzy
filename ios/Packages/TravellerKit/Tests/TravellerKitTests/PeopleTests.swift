@@ -45,7 +45,7 @@ final class PeopleTests: XCTestCase {
 
         let plan = NotificationPlanner.plan(for: merged, now: TestCalendar.date(2026, 10, 1), calendar: cal)
         XCTAssertTrue(plan.contains { $0.title == "Yarın vize randevusu: Elif" && $0.body.hasPrefix("Saat 10:00 · VFS İstanbul") })
-        XCTAssertTrue(plan.contains { $0.title == "Vize randevusu 2 saat sonra" && $0.link.section == "visa" })
+        XCTAssertTrue(plan.contains { $0.title == "Vize randevusu 2 saat sonra" && $0.link?.section == "visa" })
     }
 
     func testDocumentsMergeAndOldMembersDecodeWithoutIBAN() throws {

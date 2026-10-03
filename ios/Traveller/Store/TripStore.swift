@@ -300,6 +300,7 @@ final class TripStore {
         if let data = try? JSONEncoder().encode(me) {
             UserDefaults.standard.set(data, forKey: Self.meKey)
         }
+        NotificationScheduler.shared.documentsChanged(me.passport)
     }
 
     /// Hakkında > "Tüm seyahatleri sil": her seyahat tek tek silinir (fotoğraflar ve iCloud kaydı dahil).

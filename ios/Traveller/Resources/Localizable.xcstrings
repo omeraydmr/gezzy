@@ -694,6 +694,30 @@
         }
       }
     },
+    "%@ vizen 2 ay sonra bitiyor" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your %@ visa expires in 2 months"
+          }
+        }
+      }
+    },
+    "%@ vizen 2 hafta sonra bitiyor" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your %@ visa expires in 2 weeks"
+          }
+        }
+      }
+    },
     "%@ vizen seyahat bitmeden sona eriyor (%@)." : {
       "localizations" : {
         "en" : {
@@ -846,6 +870,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld stops"
+          }
+        }
+      }
+    },
+    "%lld etkinlik Takvim'deki Traveller takvimine eklendi. Planı değiştirince tekrar aktarabilirsin." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld events added to the Traveller calendar. Add again after changing the plan to update them."
           }
         }
       }
@@ -1324,6 +1358,18 @@
         }
       }
     },
+    "ABD" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "US"
+          }
+        }
+      }
+    },
     "Aç" : {
       "localizations" : {
         "en" : {
@@ -1496,6 +1542,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Unnamed place"
+          }
+        }
+      }
+    },
+    "Aktarılacak uçuş, konaklama ya da saatli durak yok." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No flights, stays or timed stops to add."
           }
         }
       }
@@ -2137,6 +2193,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "End"
+          }
+        }
+      }
+    },
+    "Bitiş: %@. Vize sekmesinde gereken geçerlilik süresini gör." : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Expires %@. See the required validity in the Visa tab."
+          }
+        }
+      }
+    },
+    "Bitiş: %@. Yenilemek için randevu almayı unutma; birçok ülke dönüşten sonra 6 ay geçerlilik ister." : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Expires %@. Book a renewal appointment; many countries require 6 months' validity after you return."
           }
         }
       }
@@ -3479,6 +3559,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Expiry date"
+          }
+        }
+      }
+    },
+    "Geçerlilik: %@. Yeni seyahat planlıyorsan başvuruyu erken yap." : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Valid until %@. If you're planning a trip, apply early."
           }
         }
       }
@@ -4901,6 +4993,18 @@
         }
       }
     },
+    "Kapı %@" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gate %@"
+          }
+        }
+      }
+    },
     "Kapıda" : {
       "localizations" : {
         "en" : {
@@ -5245,6 +5349,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "seat %@"
+          }
+        }
+      }
+    },
+    "Koltuk %@" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seat %@"
           }
         }
       }
@@ -6159,6 +6275,30 @@
         }
       }
     },
+    "Otel çıkışı: %@" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check-out: %@"
+          }
+        }
+      }
+    },
+    "Otel girişi: %@" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check-in: %@"
+          }
+        }
+      }
+    },
     "Otel ya da ev adı" : {
       "localizations" : {
         "en" : {
@@ -6425,6 +6565,18 @@
         }
       }
     },
+    "Pasaportun %@ için yeterince geçerli değil" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your passport isn't valid long enough for %@"
+          }
+        }
+      }
+    },
     "Pasaportun dönüşten sonra %lld aydan az geçerli; bazı havayolları ve sınır kapıları sorun çıkarabilir." : {
       "localizations" : {
         "en" : {
@@ -6441,6 +6593,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Visa status for your passport, a Schengen 90/180 counter and a document vault."
+          }
+        }
+      }
+    },
+    "Pasaportunun süresi %lld ay sonra doluyor" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your passport expires in %lld months"
+          }
+        }
+      }
+    },
+    "Pasaportunun süresi 1 ay sonra doluyor" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your passport expires in 1 month"
           }
         }
       }
@@ -7712,6 +7888,46 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Estimate: about 70%% of the %@%% VAT after the refund operator's fee. The shop's minimum amount and the fee may vary."
+          }
+        }
+      }
+    },
+    "Takvim" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calendar"
+          }
+        }
+      }
+    },
+    "Takvim izni verilmedi. Ayarlar > Traveller > Takvimler'den açabilirsin." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calendar access wasn't granted. You can allow it in Settings > Traveller > Calendars."
+          }
+        }
+      }
+    },
+    "Takvim oluşturulamadı; iCloud ya da cihaz takvimi bulunamadı." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't create the calendar; no iCloud or on-device calendar was found."
+          }
+        }
+      }
+    },
+    "Takvime aktar" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add to Calendar"
           }
         }
       }
