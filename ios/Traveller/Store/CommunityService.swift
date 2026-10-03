@@ -38,12 +38,40 @@ final class CommunityService {
     enum Failure: Error { case notConfigured, rejected(Int) }
 
     func contribute(_ contribution: CommunityPlaces.Contribution) async throws {
-        guard let request = request("places/contribute") else { throw Failure.notConfigured }
-        var post = request
+        try await send("places/contribute", body: JSONEncoder().encode(contribution))
+    }
+
+    enum ReportReason: String, CaseIterable, Identifiable {
+        case wrong, closed, spam, offensive
+        var id: String { rawValue }
+        var title: String {
+            switch self {
+            case .wrong: String(localized: "Yanlış bilgi ya da konum")
+            case .closed: String(localized: "Kapanmış")
+            case .spam: String(localized: "Reklam ya da spam")
+            case .offensive: String(localized: "Uygunsuz")
+            }
+        }
+    }
+
+    /// Topluluk yerini bildirir; yeterince bildirilen yer önerilerden düşer.
+    func report(_ suggestion: PlaceSuggestions.Suggestion, reason: ReportReason) async throws {
+        guard let id = Int(suggestion.id.replacingOccurrences(of: "community/", with: "")) else { return }
+        struct Report: Encodable { let placeId: Int; let reason: String }
+        try await send("places/report", body: JSONEncoder().encode(Report(placeId: id, reason: reason.rawValue)))
+    }
+
+    /// İmzalı gönderim: App Attest varsa gövde cihaz anahtarıyla imzalanır, yoksa cihaz kimliği gider.
+    private func send(_ path: String, body: Data) async throws {
+        guard var post = request(path), let base = LiveActivityPushClient.baseURL else { throw Failure.notConfigured }
         post.httpMethod = "POST"
         post.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        post.setValue(contributorID, forHTTPHeaderField: "X-Traveller-Contributor")
-        post.httpBody = try JSONEncoder().encode(contribution)
+        post.httpBody = body
+        if let headers = await AppAttestClient.shared.headers(for: body, base: base, apiKey: LiveActivityPushClient.apiKey) {
+            for (field, value) in headers { post.setValue(value, forHTTPHeaderField: field) }
+        } else {
+            post.setValue(contributorID, forHTTPHeaderField: "X-Traveller-Contributor")
+        }
         let (_, response) = try await URLSession.shared.data(for: post)
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         guard status == 200 else { throw Failure.rejected(status) }

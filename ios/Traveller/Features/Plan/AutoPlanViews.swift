@@ -55,7 +55,7 @@ struct PlaceSuggestionsSheet: View {
                             row(suggestion)
                         }
                     } footer: {
-                        Text("Öneriler Wikipedia'dan; son 30 günde en çok okunan yerler önce gelir. \"Gezginler seçti\" olanlar Traveller kullanıcılarının gidip beğendiği yerler. Açılış saatleri plana eklendikten sonra OpenStreetMap'ten aranır.")
+                        Text("Öneriler Wikipedia'dan; son 30 günde en çok okunan yerler önce gelir. \"Gezginler seçti\" olanlar Traveller kullanıcılarının gidip beğendiği yerler; yanlışsa basılı tutup bildirebilirsin. Açılış saatleri plana eklendikten sonra OpenStreetMap'ten aranır.")
                     }
                 } else {
                     HStack(spacing: 10) {
@@ -114,7 +114,34 @@ struct PlaceSuggestionsSheet: View {
         }
     }
 
+    @ViewBuilder
     private func row(_ suggestion: PlaceSuggestions.Suggestion) -> some View {
+        if suggestion.contributors != nil {
+            rowButton(suggestion)
+                .contextMenu {
+                    Menu("Bildir", systemImage: "flag") {
+                        ForEach(CommunityService.ReportReason.allCases) { reason in
+                            Button(reason.title) { report(suggestion, reason) }
+                        }
+                    }
+                }
+        } else {
+            rowButton(suggestion)
+        }
+    }
+
+    /// Bildirilen topluluk yeri listeden hemen kalkar; sunucuda yeterince bildirilince herkesten gizlenir.
+    private func report(_ suggestion: PlaceSuggestions.Suggestion, _ reason: CommunityService.ReportReason) {
+        withAnimation {
+            suggestions?.removeAll { $0.id == suggestion.id }
+            nextPlaces = nextPlaces.map { ($0.anchor, $0.places.filter { $0.id != suggestion.id }) }.filter { !$0.1.isEmpty }
+                .map { (anchor: $0.0, places: $0.1) }
+            selected.remove(suggestion.id)
+        }
+        Task { try? await CommunityService.shared.report(suggestion, reason: reason) }
+    }
+
+    private func rowButton(_ suggestion: PlaceSuggestions.Suggestion) -> some View {
         let isOn = selected.contains(suggestion.id)
         return Button {
             if isOn { selected.remove(suggestion.id) } else { selected.insert(suggestion.id) }

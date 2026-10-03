@@ -59,7 +59,22 @@ Veritabanı gizlidir (yalnızca Worker erişir); uç noktalar `X-Traveller-Key` 
 - Aynı yer farklı dillerde/küçük konum farkıyla gelirse 60 m içinde ve adı örtüşüyorsa (ya da 15 m içindeyse) birleştirilir.
 - Yerelde denemek: `npx wrangler d1 migrations apply traveller-community --local` ve `npx wrangler dev`; uygulamayı
   `LIVE_ACTIVITY_SERVER_HOST='http:/$()/localhost:8787'` ile derle.
-- Sonraki adım: App Attest ile yalnızca gerçek uygulamanın katkı gönderebilmesi (şimdilik ortak `CLIENT_KEY` + kota).
+- Yanlış/spam yer bildirimi: `POST /places/report {placeId, reason}` (wrong, closed, spam, offensive). En az 3 farklı
+  kişi bildirdiğinde ya da bildirenler katkı verenlerin yarısına ulaştığında yer önerilerden düşer. Bağlantı, e-posta,
+  telefon numarası içeren yer adları katkıda reddedilir.
+
+### App Attest
+
+Uygulama gerçek cihazda bir kez anahtar üretip Apple'a onaylatır (`POST /attest/challenge`, `POST /attest/register`),
+sonra katkı ve bildirim gövdelerini bu anahtarla imzalar (`X-Traveller-Attest-Key`, `X-Traveller-Assertion`). Sunucu
+sertifika zincirini Apple App Attestation kök sertifikasına kadar, challenge'ı, uygulama kimliğini (`APP_ID`) ve artan
+sayacı doğrular (`src/appattest.ts`). Kimlik, anahtar kimliğinin tuzlanmış özetidir.
+
+- `REQUIRE_APP_ATTEST = "false"`: geçiş dönemi; simülatör ve eski sürümler cihaz kimliğiyle katkı verebilir. App
+  Attest'li sürüm App Store'a çıkınca `"true"` yapıp `npx wrangler deploy`.
+- `ALLOW_DEV_ATTEST = "true"`: Xcode'dan kurulan geliştirme sürümleri kabul edilir. App Store sürümü için uygulamaya
+  `com.apple.developer.devicecheck.appattest-environment = production` hakkı eklenmeli; eklenmezse cihaz geliştirme
+  ortamını kullanır.
 
 ## Notlar
 

@@ -51,6 +51,18 @@
         }
       }
     },
+    " ve %lld madde daha" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " and %lld more"
+          }
+        }
+      }
+    },
     " Yarın yola çıkıyorsunuz." : {
       "localizations" : {
         "en" : {
@@ -97,18 +109,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "· check"
-          }
-        }
-      }
-    },
-    " ve %lld madde daha" : {
-      "comment" : "TravellerKit",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : " and %lld more"
           }
         }
       }
@@ -446,6 +446,18 @@
         }
       }
     },
+    "%@ → %@ ödemesi yapıldı · %@" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ paid %2$@ · %3$@"
+          }
+        }
+      }
+    },
     "%@ ekibe katıldı" : {
       "comment" : "TravellerKit",
       "extractionState" : "manual",
@@ -720,18 +732,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ visa required"
-          }
-        }
-      }
-    },
-    "%@ → %@ ödemesi yapıldı · %@" : {
-      "comment" : "TravellerKit",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ paid %2$@ · %3$@"
           }
         }
       }
@@ -1812,18 +1812,6 @@
         }
       }
     },
-    "Bere ve eldiven" : {
-      "comment" : "TravellerKit",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hat and gloves"
-          }
-        }
-      }
-    },
     "Beğendiklerini işaretle; en az üç gezginin gittiği yerler Önerilen yerler'de çıkar. Yalnızca yer adı, konumu, oyun ve aynı gün hangi yerden sonra nereye gittiğin paylaşılır — adın, tarihlerin, notların ve ekibin paylaşılmaz." : {
       "localizations" : {
         "en" : {
@@ -1934,12 +1922,34 @@
         }
       }
     },
+    "Bere ve eldiven" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hat and gloves"
+          }
+        }
+      }
+    },
     "Beş" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Five"
+          }
+        }
+      }
+    },
+    "Bildir" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Report"
           }
         }
       }
@@ -2183,42 +2193,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Biometric photo"
-          }
-        }
-      }
-    },
-    "Bugün otel girişi: %@" : {
-      "comment" : "TravellerKit",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Check-in today: %@"
-          }
-        }
-      }
-    },
-    "Bugün çıkış: %@" : {
-      "comment" : "TravellerKit",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Check-out today: %@"
-          }
-        }
-      }
-    },
-    "Bugün: %@" : {
-      "comment" : "TravellerKit",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Today: %@"
           }
         }
       }
@@ -2485,12 +2459,48 @@
         }
       }
     },
+    "Bugün çıkış: %@" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check-out today: %@"
+          }
+        }
+      }
+    },
     "Bugün için paylaşım sınırına ulaştın; yarın tekrar dene." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "You've reached today's sharing limit; try again tomorrow."
+          }
+        }
+      }
+    },
+    "Bugün otel girişi: %@" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check-in today: %@"
+          }
+        }
+      }
+    },
+    "Bugün: %@" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today: %@"
           }
         }
       }
@@ -2603,14 +2613,14 @@
         }
       }
     },
-    "Çoğu havayolunda kalkıştan 24–48 saat önce açılır; biniş kartını Wallet'a ekle." : {
+    "Check-in açık" : {
       "comment" : "TravellerKit",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Most airlines open it 24–48 hours before departure; add the boarding pass to Wallet."
+            "value" : "Check-in open"
           }
         }
       }
@@ -2625,14 +2635,14 @@
         }
       }
     },
-    "Check-in açık" : {
+    "Çıkış saati en geç %@." : {
       "comment" : "TravellerKit",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Check-in open"
+            "value" : "Check out by %@."
           }
         }
       }
@@ -2645,6 +2655,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sat"
+          }
+        }
+      }
+    },
+    "Çoğu havayolunda kalkıştan 24–48 saat önce açılır; biniş kartını Wallet'a ekle." : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Most airlines open it 24–48 hours before departure; add the boarding pass to Wallet."
           }
         }
       }
@@ -3173,18 +3195,6 @@
         }
       }
     },
-    "Evden çıkmadan son kontrol" : {
-      "comment" : "TravellerKit",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Last check before leaving home"
-          }
-        }
-      }
-    },
     "Eşitleme sorunu: %@" : {
       "localizations" : {
         "en" : {
@@ -3201,6 +3211,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Syncing…"
+          }
+        }
+      }
+    },
+    "Evden çıkmadan son kontrol" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last check before leaving home"
           }
         }
       }
@@ -4012,18 +4034,6 @@
         }
       }
     },
-    "Haritaları çevrimdışı kaydet" : {
-      "comment" : "TravellerKit",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Save maps offline"
-          }
-        }
-      }
-    },
     "Harç pulu, internet paketi, kartlar… Aşağıdaki önerilerden ekle." : {
       "localizations" : {
         "en" : {
@@ -4146,6 +4156,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Open in Maps"
+          }
+        }
+      }
+    },
+    "Haritaları çevrimdışı kaydet" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save maps offline"
           }
         }
       }
@@ -4690,16 +4712,6 @@
         }
       }
     },
-    "İşveren yazısı / SGK dökümü veya öğrenci belgesi" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Employer letter / social security record or student certificate"
-          }
-        }
-      }
-    },
     "İnternet ve yurt dışı harcama izni, temassız ödeme ve kart limitleri." : {
       "comment" : "TravellerKit",
       "extractionState" : "manual",
@@ -4720,6 +4732,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cancelled"
+          }
+        }
+      }
+    },
+    "İşveren yazısı / SGK dökümü veya öğrenci belgesi" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Employer letter / social security record or student certificate"
           }
         }
       }
@@ -4808,6 +4830,16 @@
         }
       }
     },
+    "Kalkış" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Departure"
+          }
+        }
+      }
+    },
     "Kalktı" : {
       "comment" : "TravellerKit",
       "extractionState" : "manual",
@@ -4816,16 +4848,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Departed"
-          }
-        }
-      }
-    },
-    "Kalkış" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Departure"
           }
         }
       }
@@ -4891,6 +4913,18 @@
         }
       }
     },
+    "kapalı" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "closed"
+          }
+        }
+      }
+    },
     "Kapalı (iCloud girişi yok)" : {
       "localizations" : {
         "en" : {
@@ -4911,6 +4945,16 @@
         }
       }
     },
+    "Kapanmış" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Closed"
+          }
+        }
+      }
+    },
     "Kapat" : {
       "localizations" : {
         "en" : {
@@ -4927,18 +4971,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Gate"
-          }
-        }
-      }
-    },
-    "kapalı" : {
-      "comment" : "TravellerKit",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "closed"
           }
         }
       }
@@ -5489,6 +5521,18 @@
         }
       }
     },
+    "Küçük çamaşır torbası" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Small laundry bag"
+          }
+        }
+      }
+    },
     "Kullan" : {
       "localizations" : {
         "en" : {
@@ -5541,18 +5585,6 @@
         }
       }
     },
-    "Küçük çamaşır torbası" : {
-      "comment" : "TravellerKit",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Small laundry bag"
-          }
-        }
-      }
-    },
     "Listedekiler, alerji kartında gidilen ülkenin diline ve İngilizceye çevrilir." : {
       "localizations" : {
         "en" : {
@@ -5579,18 +5611,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Suggest items"
-          }
-        }
-      }
-    },
-    "Matara" : {
-      "comment" : "TravellerKit",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Water bottle"
           }
         }
       }
@@ -5765,6 +5785,18 @@
         }
       }
     },
+    "Matara" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Water bottle"
+          }
+        }
+      }
+    },
     "Merkeze %@" : {
       "localizations" : {
         "en" : {
@@ -5909,14 +5941,14 @@
         }
       }
     },
-    "Çıkış saati en geç %@." : {
+    "Ocak, su, priz, pencereler, çöp ve anahtar." : {
       "comment" : "TravellerKit",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Check out by %@."
+            "value" : "Stove, water, plugs, windows, rubbish and keys."
           }
         }
       }
@@ -5957,18 +5989,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Paid by"
-          }
-        }
-      }
-    },
-    "Ocak, su, priz, pencereler, çöp ve anahtar." : {
-      "comment" : "TravellerKit",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Stove, water, plugs, windows, rubbish and keys."
           }
         }
       }
@@ -6153,7 +6173,18 @@
         }
       }
     },
+    "Öneriler Wikipedia'dan; son 30 günde en çok okunan yerler önce gelir. \"Gezginler seçti\" olanlar Traveller kullanıcılarının gidip beğendiği yerler; yanlışsa basılı tutup bildirebilirsin. Açılış saatleri plana eklendikten sonra OpenStreetMap'ten aranır." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suggestions come from Wikipedia; the most-read places of the last 30 days come first. \"Travellers' pick\" places were visited and liked by Traveller users; long-press to report one that's wrong. Opening hours are looked up on OpenStreetMap once added to the plan."
+          }
+        }
+      }
+    },
     "Öneriler Wikipedia'dan; son 30 günde en çok okunan yerler önce gelir. \"Gezginler seçti\" olanlar Traveller kullanıcılarının gidip beğendiği yerler. Açılış saatleri plana eklendikten sonra OpenStreetMap'ten aranır." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -6389,18 +6420,6 @@
         }
       }
     },
-    "Pasaport ve belgelerin kopyası" : {
-      "comment" : "TravellerKit",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Copies of passport and documents"
-          }
-        }
-      }
-    },
     "Pasaport · %@ tarihine kadar" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -6488,6 +6507,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Passport type"
+          }
+        }
+      }
+    },
+    "Pasaport ve belgelerin kopyası" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copies of passport and documents"
           }
         }
       }
@@ -6734,16 +6765,6 @@
         }
       }
     },
-    "Planı da kaydır" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Shift the plan too"
-          }
-        }
-      }
-    },
     "Plana %lld durak eklendi" : {
       "comment" : "TravellerKit",
       "extractionState" : "manual",
@@ -6764,6 +6785,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Added to the plan: %@"
+          }
+        }
+      }
+    },
+    "Planı da kaydır" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shift the plan too"
           }
         }
       }
@@ -6926,6 +6957,16 @@
         }
       }
     },
+    "Reklam ya da spam" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Advertising or spam"
+          }
+        }
+      }
+    },
     "Renk" : {
       "localizations" : {
         "en" : {
@@ -7006,16 +7047,6 @@
         }
       }
     },
-    "Rotayı açılış saatlerine ve en kısa yürüyüşe göre diz" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Order the route by opening hours and shortest walk"
-          }
-        }
-      }
-    },
     "Rötar kalktı, kalkış %@" : {
       "comment" : "TravellerKit",
       "extractionState" : "manual",
@@ -7060,6 +7091,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Delayed +%lld min"
+          }
+        }
+      }
+    },
+    "Rotayı açılış saatlerine ve en kısa yürüyüşe göre diz" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Order the route by opening hours and shortest walk"
           }
         }
       }
@@ -7148,6 +7189,18 @@
         }
       }
     },
+    "Şapka" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sun hat"
+          }
+        }
+      }
+    },
     "Sayılan ziyaretler" : {
       "localizations" : {
         "en" : {
@@ -7184,24 +7237,24 @@
         }
       }
     },
+    "Schengen: 180 gün içinde en fazla 90 gün. Pasaport son 10 yıl içinde verilmiş olmalı." : {
+      "comment" : "TravellerKit VisaRules",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schengen: at most 90 days in any 180. The passport must have been issued within the last 10 years."
+          }
+        }
+      }
+    },
     "Seç" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Choose"
-          }
-        }
-      }
-    },
-    "Şapka" : {
-      "comment" : "TravellerKit",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sun hat"
           }
         }
       }
@@ -7232,18 +7285,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Couldn't find the city's location."
-          }
-        }
-      }
-    },
-    "Schengen: 180 gün içinde en fazla 90 gün. Pasaport son 10 yıl içinde verilmiş olmalı." : {
-      "comment" : "TravellerKit VisaRules",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Schengen: at most 90 days in any 180. The passport must have been issued within the last 10 years."
           }
         }
       }
@@ -7400,6 +7441,16 @@
         }
       }
     },
+    "Seyahat seçenekleri" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trip options"
+          }
+        }
+      }
+    },
     "Seyahat seninle paylaşıldı." : {
       "comment" : "TravellerKit",
       "extractionState" : "manual",
@@ -7408,16 +7459,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "A trip was shared with you."
-          }
-        }
-      }
-    },
-    "Seyahat seçenekleri" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Trip options"
           }
         }
       }
@@ -7504,18 +7545,6 @@
         }
       }
     },
-    "Seyahatin tüm günlerini kapsamalı; poliçeyi Belge kasasına ekle." : {
-      "comment" : "TravellerKit",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "It must cover every day of the trip; add the policy to the Document vault."
-          }
-        }
-      }
-    },
     "Seyahatin öncesi, sırası ve sonrası — ekibinle, tek yerde." : {
       "localizations" : {
         "en" : {
@@ -7532,6 +7561,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "The trip owner invited you as a viewer only."
+          }
+        }
+      }
+    },
+    "Seyahatin tüm günlerini kapsamalı; poliçeyi Belge kasasına ekle." : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It must cover every day of the trip; add the policy to the Document vault."
           }
         }
       }
@@ -7894,18 +7935,6 @@
         }
       }
     },
-    "Tax-free formlarını onaylat" : {
-      "comment" : "TravellerKit",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Get your tax-free forms stamped"
-          }
-        }
-      }
-    },
     "Taşı: %@" : {
       "localizations" : {
         "en" : {
@@ -7962,6 +7991,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Add tax-free"
+          }
+        }
+      }
+    },
+    "Tax-free formlarını onaylat" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get your tax-free forms stamped"
           }
         }
       }
@@ -8184,18 +8225,6 @@
         }
       }
     },
-    "Türkiye'den çıkışta gerekir; e-Devlet, banka ya da vergi dairesinden pasaport numarasıyla alınır." : {
-      "comment" : "TravellerKit",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Required when leaving Türkiye; buy it with your passport number via e-Devlet, a bank or a tax office."
-          }
-        }
-      }
-    },
     "Türkçe: " : {
       "localizations" : {
         "en" : {
@@ -8212,6 +8241,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "REPUBLIC OF TÜRKİYE"
+          }
+        }
+      }
+    },
+    "Türkiye'den çıkışta gerekir; e-Devlet, banka ya da vergi dairesinden pasaport numarasıyla alınır." : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Required when leaving Türkiye; buy it with your passport number via e-Devlet, a bank or a tax office."
           }
         }
       }
@@ -8276,16 +8317,6 @@
         }
       }
     },
-    "Uçuş bulunamadı: %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Flight not found: %@"
-          }
-        }
-      }
-    },
     "Uçuş %@ · 3 saat kaldı" : {
       "comment" : "TravellerKit",
       "extractionState" : "manual",
@@ -8306,6 +8337,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Flight diverted to another airport."
+          }
+        }
+      }
+    },
+    "Uçuş bulunamadı: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flight not found: %@"
           }
         }
       }
@@ -8452,6 +8493,18 @@
         }
       }
     },
+    "Ulaşım, bahşiş ve kart geçmeyen yerler için küçük miktar." : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A small amount for transport, tips and places that don't take cards."
+          }
+        }
+      }
+    },
     "Ülke" : {
       "localizations" : {
         "en" : {
@@ -8492,18 +8545,6 @@
         }
       }
     },
-    "Ulaşım, bahşiş ve kart geçmeyen yerler için küçük miktar." : {
-      "comment" : "TravellerKit",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "A small amount for transport, tips and places that don't take cards."
-          }
-        }
-      }
-    },
     "Umuma mahsus (bordo)" : {
       "localizations" : {
         "en" : {
@@ -8530,6 +8571,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Apply"
+          }
+        }
+      }
+    },
+    "Uygunsuz" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inappropriate"
           }
         }
       }
@@ -8829,6 +8880,18 @@
         }
       }
     },
+    "Yağmurluk" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Raincoat"
+          }
+        }
+      }
+    },
     "Yakın yerler aynı güne toplanır; açılış saatleri, otel, varış ve dönüş uçuşları dikkate alınır. Mevcut durakların saatleri değişmez." : {
       "localizations" : {
         "en" : {
@@ -8875,6 +8938,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Only on the device that added it"
+          }
+        }
+      }
+    },
+    "Yanlış bilgi ya da konum" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wrong details or location"
           }
         }
       }
@@ -8929,18 +9002,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Visa appointment tomorrow: %@"
-          }
-        }
-      }
-    },
-    "Yağmurluk" : {
-      "comment" : "TravellerKit",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Raincoat"
           }
         }
       }
@@ -9045,6 +9106,16 @@
         }
       }
     },
+    "Yılda kaç kez yurt dışına çıkıyorsun?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How often do you travel abroad each year?"
+          }
+        }
+      }
+    },
     "Yönlendirildi" : {
       "comment" : "TravellerKit",
       "extractionState" : "manual",
@@ -9053,16 +9124,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Diverted"
-          }
-        }
-      }
-    },
-    "Yılda kaç kez yurt dışına çıkıyorsun?" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "How often do you travel abroad each year?"
           }
         }
       }
@@ -9077,18 +9138,6 @@
         }
       }
     },
-    "Yurt dışı internet paketi ya da eSIM" : {
-      "comment" : "TravellerKit",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Roaming plan or eSIM"
-          }
-        }
-      }
-    },
     "Yurt dışı çıkış harç pulu" : {
       "comment" : "TravellerKit",
       "extractionState" : "manual",
@@ -9097,6 +9146,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Turkish exit fee stamp"
+          }
+        }
+      }
+    },
+    "Yurt dışı internet paketi ya da eSIM" : {
+      "comment" : "TravellerKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Roaming plan or eSIM"
           }
         }
       }
