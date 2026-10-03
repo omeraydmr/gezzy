@@ -64,7 +64,14 @@ struct PlanSection: View {
         VStack(alignment: .leading, spacing: 16) {
             DayChips(days: plan.days, selection: Binding(get: { plan.day }, set: { selectedDay = $0 }),
                      stopCount: { plan.stopCounts[Calendar.current.startOfDay(for: $0)] ?? 0 },
-                     onDropStop: { id, target in moveStop(id, before: nil, on: target) })
+                     onDropStop: { id, target in moveStop(id, before: nil, on: target) },
+                     city: trip.isMultiCity ? { day in
+                         let legs = trip.cityLegs
+                         let leg = trip.leg(on: day)
+                         let index = legs.firstIndex { $0.id == leg.id } ?? 0
+                         return (leg.destination.city, Accent.cycle(index + 1).base,
+                                 Calendar.current.isDate(trip.dateRange(of: leg).start, inSameDayAs: day), trip.isTransition(day))
+                     } : nil)
 
             if !plan.coordinates.isEmpty {
                 if !network.isOnline, let offline = offlineMaps.image(tripID: trip.id, day: plan.day) {
@@ -220,7 +227,10 @@ struct PlanSection: View {
 
     private func dayTitle(_ plan: DayPlan) -> String {
         let number = (plan.days.firstIndex(of: plan.day) ?? 0) + 1
-        return String(localized: "\(number). gün · \(AppFormat.dayPill(plan.day)) · \(trip.destination.city)")
+        let city = trip.destination(on: plan.day).city
+        return trip.isTransition(plan.day)
+            ? String(localized: "\(number). gün · \(AppFormat.dayPill(plan.day)) · \(city) · geçiş günü")
+            : String(localized: "\(number). gün · \(AppFormat.dayPill(plan.day)) · \(city)")
     }
 
     @ViewBuilder

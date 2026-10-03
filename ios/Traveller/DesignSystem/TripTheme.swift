@@ -122,6 +122,8 @@ struct DayChips: View {
     let stopCount: (Date) -> Int
     /// Sürüklenen bir durak bu güne bırakıldığında çağrılır.
     var onDropStop: ((UUID, Date) -> Void)?
+    /// Çok şehirli seyahatte günün şehri: ad, renk, şehrin ilk günü mü (ad orada yazılır), geçiş günü mü.
+    var city: ((Date) -> (name: String, color: Color, isFirstDay: Bool, isTransition: Bool))?
     @Environment(\.tripTint) private var tint
     @State private var dropTarget: Date?
 
@@ -130,8 +132,32 @@ struct DayChips: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     ForEach(Array(days.enumerated()), id: \.element) { index, day in
-                        chip(day, number: index + 1)
+                        if let city = city?(day) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(city.isFirstDay ? city.name : " ")
+                                    .font(.system(.caption2, weight: .semibold))
+                                    .foregroundStyle(city.color)
+                                    .lineLimit(1)
+                                    .fixedSize()
+                                    .frame(width: 52, alignment: .leading)
+                                chip(day, number: index + 1)
+                                    .overlay(alignment: .topTrailing) {
+                                        if city.isTransition {
+                                            Image(systemName: "arrow.right.circle.fill")
+                                                .font(.system(size: 13))
+                                                .foregroundStyle(city.color)
+                                                .background(Circle().fill(Color.tray))
+                                                .offset(x: 4, y: -4)
+                                                .accessibilityLabel(String(localized: "Geçiş günü"))
+                                        }
+                                    }
+                                Capsule().fill(city.color).frame(width: 52, height: 3)
+                            }
                             .id(day)
+                        } else {
+                            chip(day, number: index + 1)
+                                .id(day)
+                        }
                     }
                 }
                 .padding(.horizontal, 2)

@@ -267,7 +267,7 @@ struct StampCeremony: View {
 
     /// Masaya yatan bilet: üstünde mührün gölgesi ve mürekkep izi.
     private var ticket: some View {
-        TripTicketCard(trip: trip, side: side)
+        TripTicketCard(trip: trip, side: side, maxWidth: side * 1.5)
             .environment(\.coverOverride, coverImage)
             .overlay {
                 // Mührün gölgesi: yükseldikçe büyür ve dağılır.

@@ -10,11 +10,14 @@ struct SchengenCard: View {
     @Environment(\.tripTint) private var tint
     @State private var isAdding = false
 
+    /// Çok ülkeli seyahatte yalnızca Schengen'de geçen günler.
+    private var range: (start: Date, end: Date) { trip.schengenRange() ?? (trip.startDate, trip.endDate) }
+
     var body: some View {
         let others = store.schengenStays(for: member.id, excluding: trip.id)
-        let current = Schengen.Stay(id: trip.id, start: trip.startDate, end: trip.endDate, label: trip.name)
+        let current = Schengen.Stay(id: trip.id, start: range.start, end: range.end, label: trip.name)
         let evaluation = Schengen.evaluate(current, others: others)
-        let window = Schengen.stays(others, inWindowEnding: trip.endDate)
+        let window = Schengen.stays(others, inWindowEnding: range.end)
         let manualIDs = Set((store.manualStays[member.id] ?? []).map(\.id))
 
         VStack(alignment: .leading, spacing: 14) {
@@ -39,11 +42,11 @@ struct SchengenCard: View {
                     .font(.system(.title3, weight: .medium))
                     .foregroundStyle(Color.ink3)
             }
-            Text("Dönüş günü (\(AppFormat.shortDate(trip.endDate))) itibarıyla son 180 günde Schengen'de geçen gün, bu seyahat dahil.")
+            Text("Dönüş günü (\(AppFormat.shortDate(range.end))) itibarıyla son 180 günde Schengen'de geçen gün, bu seyahat dahil.")
                 .font(.tBody)
                 .foregroundStyle(Color.ink2)
 
-            WindowStrip(current: current, others: others, end: trip.endDate, tint: tint)
+            WindowStrip(current: current, others: others, end: range.end, tint: tint)
 
             if let first = evaluation.firstOverstayDay {
                 overstayBox(first: first, evaluation: evaluation, others: others)
@@ -94,8 +97,8 @@ struct SchengenCard: View {
     static let officialCalculator = URL(string: "https://home-affairs.ec.europa.eu/policies/schengen-borders-and-visa/border-crossing_en")!
 
     private func overstayBox(first: Date, evaluation: Schengen.Evaluation, others: [Schengen.Stay]) -> some View {
-        let length = Schengen.Stay(start: trip.startDate, end: trip.endDate, label: "").days()
-        let suggestion = Schengen.earliestEntry(forDays: length, from: trip.startDate, others: others)
+        let length = Schengen.Stay(start: range.start, end: range.end, label: "").days()
+        let suggestion = Schengen.earliestEntry(forDays: length, from: range.start, others: others)
         return VStack(alignment: .leading, spacing: 6) {
             Label("\(AppFormat.shortDate(first)) günü 90 gün dolmuş oluyor; seyahatin \(evaluation.overstayDays) günü kural dışı.",
                   systemImage: "exclamationmark.triangle.fill")

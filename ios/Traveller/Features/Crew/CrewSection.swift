@@ -11,7 +11,7 @@ struct CrewSection: View {
 
     var body: some View {
         ModuleCard(String(localized: "Ekip"), symbol: "person.2.fill") {
-            StoryHeadline(text: String(localized: "\(trip.members.count) kişi \(trip.destination.city) yolunda."))
+            StoryHeadline(text: String(localized: "\(trip.members.count) kişi \(trip.cityTitle) yolunda."))
 
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
                 ForEach(trip.members) { member in

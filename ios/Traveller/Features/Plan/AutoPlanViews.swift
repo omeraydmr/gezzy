@@ -7,6 +7,8 @@ struct PlaceSuggestionsSheet: View {
     @Environment(TripStore.self) private var store
     @Environment(\.dismiss) private var dismiss
     let trip: Trip
+    /// Açıldığı gün: çok şehirli seyahatte öneriler önce o günün şehrinden gelir.
+    var day: Date?
 
     @State private var suggestions: [PlaceSuggestions.Suggestion]?
     /// Plandaki yerlerden sonra gezginlerin aynı gün genelde gittiği yerler (topluluk havuzu).
@@ -17,10 +19,26 @@ struct PlaceSuggestionsSheet: View {
     @State private var mapResults: [PlaceSuggestions.Suggestion] = []
     @State private var center: Coordinate?
     @State private var errorText: String?
+    /// Çok şehirli seyahatte önerilerin şehri.
+    @State private var legID: UUID?
+
+    private var leg: TripLeg {
+        trip.cityLegs.first { $0.id == legID } ?? day.map { trip.leg(on: $0) } ?? trip.cityLegs[0]
+    }
 
     var body: some View {
         NavigationStack {
             List {
+                if trip.isMultiCity {
+                    Picker("Şehir", selection: Binding(get: { leg.id }, set: { legID = $0 })) {
+                        ForEach(trip.cityLegs) { leg in
+                            Text(leg.destination.city).tag(leg.id)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .listRowBackground(Color.clear)
+                    .listRowInsets(EdgeInsets())
+                }
                 if let errorText {
                     Section {
                         Label(errorText, systemImage: "exclamationmark.triangle").foregroundStyle(Color.food)
@@ -60,7 +78,7 @@ struct PlaceSuggestionsSheet: View {
                 } else {
                     HStack(spacing: 10) {
                         ProgressView()
-                        Text("\(trip.destination.city) için yerler aranıyor…").foregroundStyle(Color.ink2)
+                        Text("\(leg.destination.city) için yerler aranıyor…").foregroundStyle(Color.ink2)
                     }
                 }
             }
@@ -73,7 +91,10 @@ struct PlaceSuggestionsSheet: View {
                         .disabled(selected.isEmpty)
                 }
             }
-            .task { await load() }
+            .task(id: legID) {
+                suggestions = nil
+                await load()
+            }
             .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always),
                         prompt: String(localized: "Önerilerde ya da haritada ara"))
             .task(id: query) { await searchMap() }
@@ -98,7 +119,7 @@ struct PlaceSuggestionsSheet: View {
         }
         try? await Task.sleep(for: .milliseconds(350))
         guard !Task.isCancelled else { return }
-        let found = await PlaceSearch.places(typed, city: trip.destination.city, countryCode: trip.destination.countryCode,
+        let found = await PlaceSearch.places(typed, city: leg.destination.city, countryCode: leg.destination.countryCode,
                                              center: center, limit: 5)
         guard !Task.isCancelled else { return }
         let existing = trip.stops + trip.ideaList
@@ -179,7 +200,7 @@ struct PlaceSuggestionsSheet: View {
 
     private func load() async {
         errorText = nil
-        guard let center = await PlanCenter.find(for: trip) else {
+        guard let center = await PlanCenter.find(for: trip, leg: leg) else {
             self.center = nil
             errorText = String(localized: "Şehrin konumu bulunamadı.")
             return
@@ -228,11 +249,14 @@ struct PlaceSuggestionsSheet: View {
     }
 }
 
-/// Önerilerin merkezi: şehir konumu, yoksa otel ya da duraklar, o da yoksa şehir adından arama.
+/// Önerilerin merkezi: şehir konumu, yoksa otel ya da duraklar, o da yoksa şehir adından arama. Çok şehirli
+/// seyahatte verilen şehrin konumu (yoksa yalnızca adından arama; başka şehrin otel/durakları karışmasın).
 enum PlanCenter {
     @MainActor
-    static func find(for trip: Trip) async -> Coordinate? {
-        if let coordinate = trip.destination.coordinate { return coordinate }
+    static func find(for trip: Trip, leg: TripLeg? = nil) async -> Coordinate? {
+        let destination = leg?.destination ?? trip.destination
+        if let coordinate = destination.coordinate { return coordinate }
+        if trip.isMultiCity { return await DestinationGeocoder.coordinate(for: destination) }
         if let hotel = trip.lodgingList.compactMap(\.coordinate).first { return hotel }
         let points = (trip.stops + trip.ideaList).compactMap(\.coordinate)
         if !points.isEmpty {
@@ -240,7 +264,7 @@ enum PlanCenter {
                               longitude: points.map(\.longitude).reduce(0, +) / Double(points.count))
         }
         let request = MKLocalSearch.Request()
-        request.naturalLanguageQuery = "\(trip.destination.city), \(Countries.name(trip.destination.countryCode))"
+        request.naturalLanguageQuery = "\(destination.city), \(Countries.name(destination.countryCode))"
         request.resultTypes = .address
         guard let item = try? await MKLocalSearch(request: request).start().mapItems.first else { return nil }
         return Coordinate(latitude: item.placemark.coordinate.latitude, longitude: item.placemark.coordinate.longitude)
@@ -305,6 +329,8 @@ struct AutoPlanSheet: View {
                 }
             }
             .navigationTitle("Otomatik rota")
+            // Çok şehirli seyahatte fikirler şehirlerine ayrılabilsin diye konumu bilinmeyen şehirler bulunur.
+            .task { await store.ensureAllCoordinates(for: trip.id) }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Vazgeç") { dismiss() } }

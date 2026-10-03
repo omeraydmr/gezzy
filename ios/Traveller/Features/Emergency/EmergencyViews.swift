@@ -10,7 +10,9 @@ struct EmergencyCard: View {
     @State private var isShowingAllergyCard = false
 
     var body: some View {
-        let country = trip.destination.countryCode
+        // Çok şehirde bugün bulunulan (seyahatten önce ilk, sonra son) şehir.
+        let here = trip.destination(on: .now)
+        let country = here.countryCode
         let numbers = EmergencyNumbers.numbers(for: country)
         let info = store.emergency
         VStack(alignment: .leading, spacing: 14) {
@@ -25,7 +27,7 @@ struct EmergencyCard: View {
             }
 
             VStack(alignment: .leading, spacing: 8) {
-                Text("\(trip.destination.city) · acil numaralar").font(.tCaption).foregroundStyle(Color.ink2)
+                Text("\(here.city) · acil numaralar").font(.tCaption).foregroundStyle(Color.ink2)
                 if let numbers {
                     FlowLayout(spacing: 8) {
                         if let general = numbers.general { callChip(String(localized: "Acil"), general, symbol: "sos") }

@@ -13,6 +13,8 @@ struct NewTripSheet: View {
     @State private var city = ""
     /// Seçilen şehrin konumu; haritalar, öneriler ve hava durumu buradan başlar.
     @State private var cityCoordinate: Coordinate?
+    /// İlk şehirden sonraki şehirler (çok şehirli seyahat).
+    @State private var extraLegs: [TripLeg] = []
     @State private var startDate = Calendar.current.date(byAdding: .day, value: 30, to: .now) ?? .now
     @State private var endDate = Calendar.current.date(byAdding: .day, value: 35, to: .now) ?? .now
     @State private var currency = "EUR"
@@ -54,6 +56,7 @@ struct NewTripSheet: View {
                     DatePicker("Gidiş", selection: $startDate, displayedComponents: .date)
                     DatePicker("Dönüş", selection: $endDate, in: startDate..., displayedComponents: .date)
                 }
+                ExtraCitiesSection(legs: $extraLegs, start: startDate, end: endDate, defaultCountry: countryCode)
                 Section {
                     Picker("Para birimi", selection: $currency) {
                         ForEach(Self.currencies, id: \.self) { Text($0) }
@@ -117,7 +120,8 @@ struct NewTripSheet: View {
 
     /// Formdaki değerlerle canlı önizleme kartı.
     private var preview: some View {
-        TripTicketCard(trip: draftTrip, side: 230)
+        TripTicketCard(trip: draftTrip, side: 230, maxWidth: 340)
+            .animation(.spring(response: 0.5, dampingFraction: 0.75), value: draftTrip.cityLegs.count)
             .environment(\.coverOverride, previewImage)
             .overlay(alignment: .topLeading) {
                 PhotosPicker(selection: $photoItem, matching: .images) {
@@ -138,7 +142,7 @@ struct NewTripSheet: View {
         var owner = store.me
         owner.role = .owner
         let trimmedCity = city.trimmingCharacters(in: .whitespacesAndNewlines)
-        return Trip(name: trimmedName.isEmpty ? String(localized: "Yeni seyahat") : trimmedName,
+        var trip = Trip(name: trimmedName.isEmpty ? String(localized: "Yeni seyahat") : trimmedName,
                     destination: Destination(countryCode: countryCode,
                                              city: trimmedCity.isEmpty ? Countries.name(countryCode) : trimmedCity,
                                              coordinate: cityCoordinate),
@@ -148,6 +152,11 @@ struct NewTripSheet: View {
                     currency: currency,
                     coverSeed: coverSeed,
                     members: [owner])
+        let extra = ExtraCitiesSection.valid(extraLegs, start: startDate, end: endDate)
+        if !extra.isEmpty {
+            trip.setLegs([TripLeg(destination: trip.destination, arrival: trip.startDate)] + extra)
+        }
+        return trip
     }
 
     private func create() {

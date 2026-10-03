@@ -34,7 +34,7 @@ struct IncomingBookingSheet: View {
                                     withAnimation { chosen = trip.id }
                                 } label: {
                                     VStack(alignment: .leading, spacing: 2) {
-                                        Text("\(Countries.flag(trip.destination.countryCode)) \(trip.name)").foregroundStyle(Color.ink)
+                                        Text("\(trip.countryCodes.map(Countries.flag).joined()) \(trip.name)").foregroundStyle(Color.ink)
                                         Text(AppFormat.dateRange(trip.startDate, trip.endDate)).font(.footnote).foregroundStyle(Color.ink2)
                                     }
                                 }

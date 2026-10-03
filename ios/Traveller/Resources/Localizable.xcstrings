@@ -694,6 +694,16 @@
         }
       }
     },
+    "%@ varış" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arrive %@"
+          }
+        }
+      }
+    },
     "%@ vizen 2 ay sonra bitiyor" : {
       "comment" : "TravellerKit",
       "extractionState" : "manual",
@@ -1174,6 +1184,22 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$lld. gün · %2$@ · %3$@"
+          }
+        }
+      }
+    },
+    "%lld. gün · %@ · %@ · geçiş günü" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Day %lld · %@ · %@ · travel day"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld. gün · %2$@ · %3$@ · geçiş günü"
           }
         }
       }
@@ -2155,6 +2181,16 @@
         }
       }
     },
+    "Birden çok şehre gidiyorsan ekle: öneriler, harita ve hava durumu her gün o günün şehrine göre çalışır. Şehir değiştirdiğin gün varılan şehre sayılır ve planda \"geçiş\" olarak işaretlenir." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Going to more than one city? Add them: suggestions, maps and weather follow each day's city. The day you change cities counts toward the city you arrive in and is marked as a \"travel day\" in the plan."
+          }
+        }
+      }
+    },
     "Birden fazla seçebilirsin; ilk seçtiğin, seyahat açılınca ilk gelir." : {
       "localizations" : {
         "en" : {
@@ -2781,6 +2817,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Other allergies"
+          }
+        }
+      }
+    },
+    "Diğer şehirler" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Other cities"
           }
         }
       }
@@ -3591,6 +3637,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Transit"
+          }
+        }
+      }
+    },
+    "Geçiş günü" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Travel day"
           }
         }
       }
@@ -7283,6 +7339,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Search cities"
+          }
+        }
+      }
+    },
+    "Şehir ekle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add city"
+          }
+        }
+      }
+    },
+    "Şehir seç" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose city"
           }
         }
       }

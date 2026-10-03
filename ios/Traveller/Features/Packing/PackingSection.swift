@@ -10,8 +10,9 @@ struct PackingSection: View {
     @FocusState private var isAddFieldFocused: Bool
     @State private var suggestions: [String] = []
     @State private var filter: Filter = .everyone
-    @State private var weather: WeatherSummary?
-    @State private var weatherFailed = false
+    /// Şehir başına hava özeti (tek şehirde tek kayıt).
+    @State private var legWeather: [TripLeg.ID: WeatherSummary] = [:]
+    @State private var failedLegs: Set<TripLeg.ID> = []
     @Environment(\.tripTint) private var tint
 
     enum Filter: Hashable {
@@ -42,7 +43,9 @@ struct PackingSection: View {
                 StoryHeadline(text: headline)
             }
 
-            WeatherStrip(city: trip.destination.city, weather: weather, failed: weatherFailed)
+            ForEach(trip.cityLegs) { leg in
+                WeatherStrip(city: leg.destination.city, weather: legWeather[leg.id], failed: failedLegs.contains(leg.id))
+            }
 
             if !items.isEmpty {
                 filterChips
@@ -86,7 +89,7 @@ struct PackingSection: View {
 
             DepartureChecklistCard(trip: trip)
         }
-        .task(id: "\(trip.id)-\(trip.startDate)-\(trip.endDate)") { await loadWeather() }
+        .task(id: "\(trip.id)-\(trip.startDate)-\(trip.endDate)-\(trip.cityLegs.map(\.arrival))") { await loadWeather() }
     }
 
     private var headline: String {
@@ -264,18 +267,27 @@ struct PackingSection: View {
         }
     }
 
+    /// Valiz önerileri için tüm şehirlerin toplu özeti.
+    private var weather: WeatherSummary? {
+        WeatherSummary.combined(trip.cityLegs.compactMap { legWeather[$0.id] })
+    }
+
     private func loadWeather() async {
-        weatherFailed = false
-        guard !trip.isPast(), let coordinate = await store.ensureCoordinate(for: trip.id) else {
-            weatherFailed = !trip.isPast()
-            return
-        }
-        do {
-            let summary = try await WeatherFetcher.shared.summary(latitude: coordinate.latitude, longitude: coordinate.longitude,
-                                                                  start: trip.startDate, end: trip.endDate)
-            withAnimation(.easeInOut(duration: 0.3)) { weather = summary }
-        } catch {
-            weatherFailed = true
+        failedLegs = []
+        guard !trip.isPast() else { return }
+        for leg in trip.cityLegs {
+            let range = trip.dateRange(of: leg)
+            guard let coordinate = await store.ensureCoordinate(for: trip.id, on: leg.arrival) else {
+                failedLegs.insert(leg.id)
+                continue
+            }
+            do {
+                let summary = try await WeatherFetcher.shared.summary(latitude: coordinate.latitude, longitude: coordinate.longitude,
+                                                                      start: range.start, end: range.end)
+                withAnimation(.easeInOut(duration: 0.3)) { legWeather[leg.id] = summary }
+            } catch {
+                failedLegs.insert(leg.id)
+            }
         }
     }
 

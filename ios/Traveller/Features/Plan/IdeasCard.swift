@@ -112,7 +112,7 @@ struct IdeasCard: View {
             AddStopSheet(trip: trip, day: day, asIdea: true)
         }
         .sheet(isPresented: $isSuggesting) {
-            PlaceSuggestionsSheet(trip: trip)
+            PlaceSuggestionsSheet(trip: trip, day: day)
         }
         .sheet(isPresented: $isPlanning) {
             AutoPlanSheet(trip: trip) { before in

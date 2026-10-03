@@ -21,20 +21,21 @@ public enum PackingAdvisor {
     /// Seyahat için önerilen maddeler; listede zaten bulunanlar (büyük/küçük harf duyarsız) çıkarılır.
     public static func suggestions(for trip: Trip, weather: WeatherSummary? = nil, now: Date = Date(),
                                    calendar: Calendar = .current) -> [String] {
-        let country = trip.destination.countryCode.uppercased()
-        let entry = VisaRules.entry(for: country)
+        // Çok ülkeli seyahatte tüm ülkeler hesaba katılır.
+        let countries = trip.countryCodes
         var items = [String(localized: "Pasaport"), String(localized: "Telefon şarj aleti"), String(localized: "Powerbank")]
 
-        if entry?.idCardAccepted == true {
+        if countries.contains(where: { VisaRules.entry(for: $0)?.idCardAccepted == true }) {
             items.append(String(localized: "Kimlik kartı"))
         }
-        if let adapters = adapterTypes(for: country) {
-            items.append(String(localized: "Priz adaptörü · Tip \(adapters.joined(separator: "/"))"))
+        let adapters = Set(countries.compactMap(adapterTypes(for:)).flatMap { $0 })
+        if !adapters.isEmpty {
+            items.append(String(localized: "Priz adaptörü · Tip \(adapters.sorted().joined(separator: "/"))"))
         }
-        if VisaRules.schengenCountries.contains(country) {
+        if countries.contains(where: VisaRules.schengenCountries.contains) {
             items.append(String(localized: "Seyahat sağlık sigortası poliçesi"))
         }
-        if VisaRules.requiresVisa(countryCode: country, members: trip.members) {
+        if countries.contains(where: { VisaRules.requiresVisa(countryCode: $0, members: trip.members) }) {
             items.append(String(localized: "Vize ve başvuru belgelerinin kopyası"))
         }
         if trip.flights.isEmpty == false {

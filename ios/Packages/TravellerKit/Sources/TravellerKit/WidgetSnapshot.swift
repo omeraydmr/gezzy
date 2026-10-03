@@ -70,7 +70,7 @@ public struct WidgetSnapshot: Codable, Hashable, Sendable {
             .prefix(limit)
         items = active.map { trip in
             let stops = trip.days(calendar: calendar).flatMap { trip.stops(on: $0, calendar: calendar) }
-            return Item(id: trip.id, name: trip.name, city: trip.destination.city, flag: flag(trip.destination.countryCode),
+            return Item(id: trip.id, name: trip.name, city: trip.cityTitle, flag: flag(trip.destination.countryCode),
                         tint: tint(trip), start: calendar.startOfDay(for: trip.startDate),
                         end: calendar.startOfDay(for: trip.endDate), flightLabel: trip.primaryFlight.map(flightLabel),
                         stops: stops.map {

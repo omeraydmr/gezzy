@@ -5,6 +5,15 @@ struct VisaSection: View {
     let trip: Trip
     @Environment(TripStore.self) private var store
     @State private var focusedID: Member.ID?
+    /// Çok ülkeli seyahatte seçili ülke; boşsa işlem gerektiren ilk ülke.
+    @State private var selectedCountry: String?
+
+    private var country: String {
+        if let selectedCountry, trip.countryCodes.contains(selectedCountry) { return selectedCountry }
+        return trip.countryCodes.first { code in
+            trip.members.contains { store.visaAssessment(for: $0, in: trip, country: code).needsAction }
+        } ?? trip.destination.countryCode
+    }
 
     private struct Row {
         let member: Member
@@ -13,15 +22,26 @@ struct VisaSection: View {
 
     private var assessments: [Row] {
         trip.members.map { member in
-            Row(member: member, result: store.visaAssessment(for: member, in: trip))
+            Row(member: member, result: store.visaAssessment(for: member, in: trip, country: country))
         }
     }
 
     var body: some View {
+        let country = country
         let rows = assessments
         let readyCount = rows.filter { !$0.result.needsAction }.count
         VStack(spacing: 16) {
             ModuleCard(String(localized: "Vize"), symbol: "person.text.rectangle.fill") {
+                if trip.countryCodes.count > 1 {
+                    Picker("Ülke", selection: Binding(get: { country }, set: { value in
+                        withAnimation(.spring(duration: 0.35)) { selectedCountry = value }
+                    })) {
+                        ForEach(trip.countryCodes, id: \.self) { code in
+                            Text("\(Countries.flag(code)) \(Countries.name(code))").tag(code)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                }
                 StoryHeadline(text: headline(ready: readyCount, total: rows.count))
 
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -31,7 +51,7 @@ struct VisaSection: View {
                                 withAnimation(.spring(duration: 0.35)) { focusedID = row.member.id }
                             } label: {
                                 PassportCard(member: row.member, result: row.result,
-                                             countryCode: trip.destination.countryCode)
+                                             countryCode: country)
                                     .scaleEffect(row.member.id == focusedRow(rows)?.member.id ? 1 : 0.94)
                                     .opacity(row.member.id == focusedRow(rows)?.member.id ? 1 : 0.7)
                             }
@@ -65,7 +85,7 @@ struct VisaSection: View {
                         .id(row.member.id)
                         .transition(.opacity.combined(with: .move(edge: .trailing)))
 
-                    if Schengen.isSchengen(trip.destination.countryCode) {
+                    if Schengen.isSchengen(country) {
                         SchengenCard(member: row.member, trip: trip)
                             .id("schengen-\(row.member.id)")
                             .transition(.opacity)
@@ -73,10 +93,10 @@ struct VisaSection: View {
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("\(Countries.flag(trip.destination.countryCode)) \(Countries.name(trip.destination.countryCode))")
+                    Text("\(Countries.flag(country)) \(Countries.name(country))")
                         .font(.tBodyStrong)
                         .foregroundStyle(Color.ink)
-                    if let note = visaNote(VisaRules.entry(for: trip.destination.countryCode)) {
+                    if let note = visaNote(VisaRules.entry(for: country)) {
                         Text(note).font(.tBody).foregroundStyle(Color.ink2)
                     }
                     SourceFootnote()

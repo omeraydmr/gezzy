@@ -11,7 +11,7 @@ struct TaxFreeCard: View {
     var body: some View {
         let refunds = trip.taxRefundList
         let summary = TaxRefunds.summary(refunds)
-        let available = TaxRefunds.isAvailable(in: trip.destination.countryCode)
+        let available = trip.countryCodes.contains { TaxRefunds.isAvailable(in: $0) }
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Label("Tax-free", systemImage: "percent")
@@ -135,8 +135,11 @@ struct TaxRefundSheet: View {
         minor % 100 == 0 ? "\(minor / 100)" : String(format: "%d,%02d", minor / 100, minor % 100)
     }
 
+    /// Alışverişin yapıldığı ülke (çok şehirde tarihe göre).
+    private var countryCode: String { trip.destination(on: date).countryCode }
+
     private var amount: Int? { MoneyParser.minorUnits(from: amountText) }
-    private var estimate: Int? { amount.flatMap { TaxRefunds.estimatedRefund(amount: $0, countryCode: trip.destination.countryCode) } }
+    private var estimate: Int? { amount.flatMap { TaxRefunds.estimatedRefund(amount: $0, countryCode: countryCode) } }
     private var refund: Int? { refundEdited ? MoneyParser.minorUnits(from: refundText) : (estimate ?? MoneyParser.minorUnits(from: refundText)) }
 
     var body: some View {
@@ -163,8 +166,8 @@ struct TaxRefundSheet: View {
                     }
                     TextField("Not (ör. Global Blue, karta iade)", text: $note)
                 } footer: {
-                    if let rate = TaxRefunds.vatRates[trip.destination.countryCode.uppercased()],
-                       TaxRefunds.isAvailable(in: trip.destination.countryCode), !refundEdited {
+                    if let rate = TaxRefunds.vatRates[countryCode.uppercased()],
+                       TaxRefunds.isAvailable(in: countryCode), !refundEdited {
                         Text("Tahmin: %\(rate.formatted()) KDV'nin aracı kurum kesintisinden sonra yaklaşık %70'i. Mağazanın asgari tutarı ve kesinti değişebilir.")
                     }
                 }

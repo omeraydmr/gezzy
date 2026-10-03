@@ -173,7 +173,9 @@ struct TripHero: View {
                         .foregroundStyle(.white)
                         .lineLimit(2)
                         .minimumScaleFactor(0.7)
-                    Text("\(Countries.flag(trip.destination.countryCode)) \(trip.destination.city), \(Countries.name(trip.destination.countryCode))")
+                    Text(trip.isMultiCity
+                         ? "\(trip.countryCodes.map(Countries.flag).joined()) \(trip.cityTitle)"
+                         : "\(Countries.flag(trip.destination.countryCode)) \(trip.destination.city), \(Countries.name(trip.destination.countryCode))")
                         .font(.system(.subheadline, weight: .medium))
                         .foregroundStyle(.white.opacity(0.9))
                 }

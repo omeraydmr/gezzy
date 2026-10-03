@@ -122,7 +122,7 @@ public enum NotificationPlanner {
                 body += " · ilk durak \(first.name)"
             }
             result.append(PlannedNotification(id: "\(prefix)-day\(index)", date: morning,
-                                              title: String(localized: "\(index + 1). gün · \(trip.destination.city)"), body: body,
+                                              title: String(localized: "\(index + 1). gün · \(trip.destination(on: day, calendar: calendar).city)"), body: body,
                                               link: TripLink(tripID: trip.id, section: "plan")))
         }
 

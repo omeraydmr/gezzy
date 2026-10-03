@@ -90,3 +90,15 @@ public enum WeatherService {
         return WeatherSummary(minTemperature: lowest, maxTemperature: highest, rainyDays: rainy, dayCount: highs.count, source: source)
     }
 }
+
+public extension WeatherSummary {
+    /// Çok şehirli seyahatte şehirlerin özetlerini tek özete toplar (en düşük/en yüksek sıcaklık, toplam yağışlı gün).
+    static func combined(_ summaries: [WeatherSummary]) -> WeatherSummary? {
+        guard let first = summaries.first else { return nil }
+        return WeatherSummary(minTemperature: summaries.map(\.minTemperature).min() ?? first.minTemperature,
+                              maxTemperature: summaries.map(\.maxTemperature).max() ?? first.maxTemperature,
+                              rainyDays: summaries.map(\.rainyDays).reduce(0, +),
+                              dayCount: summaries.map(\.dayCount).reduce(0, +),
+                              source: summaries.contains { $0.source == .lastYear } ? .lastYear : .forecast)
+    }
+}

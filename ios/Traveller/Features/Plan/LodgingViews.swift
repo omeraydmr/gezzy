@@ -243,7 +243,7 @@ struct LodgingSheet: View {
             let request = MKLocalSearch.Request()
             request.naturalLanguageQuery = trimmed
             request.pointOfInterestFilter = MKPointOfInterestFilter(including: [.hotel])
-            if let center = trip.destination.coordinate {
+            if let center = trip.destination(on: checkIn).coordinate ?? trip.destination.coordinate {
                 request.region = MKCoordinateRegion(
                     center: CLLocationCoordinate2D(latitude: center.latitude, longitude: center.longitude),
                     latitudinalMeters: 60_000, longitudinalMeters: 60_000)

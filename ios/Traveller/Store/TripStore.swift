@@ -171,24 +171,31 @@ final class TripStore {
 
     /// Kişinin bu seyahat dışındaki Schengen kalışları: planlanmış seyahatler ve elle eklenen ziyaretler.
     func schengenStays(for memberID: UUID, excluding tripID: Trip.ID? = nil) -> [Schengen.Stay] {
+        // Çok ülkeli seyahatlerde yalnızca Schengen'de geçen günler sayılır.
         let fromTrips = trips
-            .filter { trip in
-                trip.id != tripID && trip.status == .planned && Schengen.isSchengen(trip.destination.countryCode)
-                    && trip.members.contains { $0.id == memberID }
+            .filter { trip in trip.id != tripID && trip.status == .planned && trip.members.contains { $0.id == memberID } }
+            .compactMap { trip in
+                trip.schengenRange().map { Schengen.Stay(id: trip.id, start: $0.start, end: $0.end, label: trip.name) }
             }
-            .map { Schengen.Stay(id: $0.id, start: $0.startDate, end: $0.endDate, label: $0.name) }
         let manual = (manualStays[memberID] ?? []).map {
             Schengen.Stay(id: $0.id, start: $0.start, end: $0.end, label: $0.note.isEmpty ? String(localized: "Önceki ziyaret") : $0.note)
         }
         return fromTrips + manual
     }
 
-    /// Kişinin bu seyahat için vize değerlendirmesi (diğer Schengen kalışları dahil).
-    func visaAssessment(for member: Member, in trip: Trip) -> VisaAssessment {
-        VisaAdvisor.assess(countryCode: trip.destination.countryCode, passport: member.passport,
-                           tripStart: trip.startDate, tripEnd: trip.endDate,
-                           otherSchengenStays: Schengen.isSchengen(trip.destination.countryCode)
-                               ? schengenStays(for: member.id, excluding: trip.id) : [])
+    /// Kişinin bu seyahatte bir ülke için vize değerlendirmesi (diğer Schengen kalışları dahil). Ülke verilmezse,
+    /// çok ülkeli seyahatte işlem gerektiren ilk ülke (yoksa ilk ülke). Tarihler o ülkede geçen günlerdir; Schengen'de
+    /// bölgede geçen tüm günler.
+    func visaAssessment(for member: Member, in trip: Trip, country: String? = nil) -> VisaAssessment {
+        if country == nil, trip.countryCodes.count > 1 {
+            let all = trip.countryCodes.map { visaAssessment(for: member, in: trip, country: $0) }
+            return all.first(where: \.needsAction) ?? all[0]
+        }
+        let code = country ?? trip.destination.countryCode
+        let schengen = Schengen.isSchengen(code)
+        let range = (schengen ? trip.schengenRange() : nil) ?? trip.dateRange(ofCountry: code) ?? (trip.startDate, trip.endDate)
+        return VisaAdvisor.assess(countryCode: code, passport: member.passport, tripStart: range.start, tripEnd: range.end,
+                                  otherSchengenStays: schengen ? schengenStays(for: member.id, excluding: trip.id) : [])
     }
 
     func addManualStay(_ stay: ManualStay, for memberID: UUID) {

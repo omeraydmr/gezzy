@@ -52,11 +52,10 @@ public enum DepartureChecklist {
 
     /// Seyahat için geçerli tüm öneriler (listede olsun olmasın).
     static func all(for trip: Trip) -> [Suggestion] {
-        let country = trip.destination.countryCode.uppercased()
-        let entry = VisaRules.entry(for: country)
+        let countries = trip.countryCodes
         var result: [Suggestion] = []
 
-        if country != "TR" {
+        if countries.contains(where: { $0 != "TR" }) {
             result.append(Suggestion(key: "exit-fee", title: String(localized: "Yurt dışı çıkış harç pulu"),
                                      note: String(localized: "Türkiye'den çıkışta gerekir; e-Devlet, banka ya da vergi dairesinden pasaport numarasıyla alınır."),
                                      daysBefore: 7))
@@ -71,8 +70,8 @@ public enum DepartureChecklist {
             result.append(Suggestion(key: "cash", title: String(localized: "Biraz nakit \(trip.currency.uppercased())"),
                                      note: String(localized: "Ulaşım, bahşiş ve kart geçmeyen yerler için küçük miktar."), daysBefore: 2))
         }
-        let isSchengen = VisaRules.schengenCountries.contains(country)
-        let needsVisa = VisaRules.requiresVisa(countryCode: country, members: trip.members)
+        let isSchengen = countries.contains(where: VisaRules.schengenCountries.contains)
+        let needsVisa = countries.contains { VisaRules.requiresVisa(countryCode: $0, members: trip.members) }
         if isSchengen || needsVisa {
             result.append(Suggestion(key: "insurance", title: String(localized: "Seyahat sağlık sigortası"),
                                      note: needsVisa ? String(localized: "Vize başvurusunda da istenir; seyahatin tüm günlerini kapsamalı.")

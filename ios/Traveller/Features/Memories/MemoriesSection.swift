@@ -290,7 +290,7 @@ struct PostcardView: View {
                     Text(trip.name)
                         .font(.system(size: 26, weight: .semibold))
                         .foregroundStyle(.white)
-                    Text("\(Countries.flag(trip.destination.countryCode)) \(trip.destination.city) · \(AppFormat.dateRange(trip.startDate, trip.endDate))")
+                    Text("\(trip.countryCodes.map(Countries.flag).joined()) \(trip.cityTitle) · \(AppFormat.dateRange(trip.startDate, trip.endDate))")
                         .font(.system(size: 14, weight: .medium))
                         .foregroundStyle(.white.opacity(0.9))
                 }

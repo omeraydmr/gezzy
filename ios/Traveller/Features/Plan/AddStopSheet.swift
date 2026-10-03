@@ -36,7 +36,7 @@ struct AddStopSheet: View {
         NavigationStack {
             Form {
                 Section {
-                    TextField("\(trip.destination.city) içinde yer ara", text: $query)
+                    TextField("\(trip.destination(on: day).city) içinde yer ara", text: $query)
                         .autocorrectionDisabled()
                         .onChange(of: query) { _, newValue in scheduleSearch(newValue) }
                     if isSearching {
@@ -115,7 +115,7 @@ struct AddStopSheet: View {
                 }
             }
             .onDisappear { searchTask?.cancel() }
-            .task { center = await store.ensureCoordinate(for: trip.id) }
+            .task { center = await store.ensureCoordinate(for: trip.id, on: day) }
         }
     }
 
@@ -183,8 +183,8 @@ struct AddStopSheet: View {
             isSearching = true
             defer { isSearching = false }
 
-            let found = await PlaceSearch.places(trimmed, city: trip.destination.city,
-                                                 countryCode: trip.destination.countryCode, center: center)
+            let city = trip.destination(on: day)
+            let found = await PlaceSearch.places(trimmed, city: city.city, countryCode: city.countryCode, center: center)
             guard !Task.isCancelled else { return }
             results = found
         }

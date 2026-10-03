@@ -71,13 +71,30 @@ enum ServiceError: LocalizedError {
 }
 
 extension TripStore {
-    /// Seyahatin koordinatı yoksa şehirden bulup kaydeder.
-    func ensureCoordinate(for id: Trip.ID) async -> Coordinate? {
+    /// Seyahatin (çok şehirlide verilen günün şehrinin) koordinatı; yoksa şehirden bulup kaydeder.
+    func ensureCoordinate(for id: Trip.ID, on day: Date? = nil) async -> Coordinate? {
         guard let trip = trip(id) else { return nil }
-        if let coordinate = trip.destination.coordinate { return coordinate }
-        guard let found = await DestinationGeocoder.coordinate(for: trip.destination) else { return nil }
-        update(id) { $0.destination.coordinate = found }
+        let leg = trip.leg(on: day ?? trip.startDate)
+        if let coordinate = leg.destination.coordinate { return coordinate }
+        guard let found = await DestinationGeocoder.coordinate(for: leg.destination) else { return nil }
+        update(id) { trip in
+            if trip.isMultiCity, var legs = trip.legs, let index = legs.firstIndex(where: { $0.id == leg.id }) {
+                legs[index].destination.coordinate = found
+                trip.legs = legs
+                if index == 0 || trip.destination == leg.destination { trip.destination.coordinate = found }
+            } else {
+                trip.destination.coordinate = found
+            }
+        }
         return found
+    }
+
+    /// Çok şehirli seyahatte konumu bilinmeyen tüm şehirleri bulur (otomatik rota şehirleri ayırabilsin).
+    func ensureAllCoordinates(for id: Trip.ID) async {
+        guard let trip = trip(id) else { return }
+        for leg in trip.cityLegs where leg.destination.coordinate == nil {
+            _ = await ensureCoordinate(for: id, on: leg.arrival)
+        }
     }
 }
 

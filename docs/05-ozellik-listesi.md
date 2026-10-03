@@ -10,6 +10,7 @@ Gerçek cihaz (iPhone 15) testi sürüyor; iCloud paylaşım/yetki akışları i
 | Ana ekran | Kare bilet kartlı deste, yörüngede kaydırma, arka kartlar bulanık | ✅ | Bu turda performans için yeniden düzenlendi |
 | Ana ekran | Kapak fotoğrafı, fotoğraftan dinamik renk | ✅ | |
 | Ana ekran | Vize / bütçe / valiz özet kutuları | ✅ | |
+| Çok şehir | Seyahate 4 ek şehre kadar ekleme; ana ekranda kart genişler, koçan şehir şehir bölünür ve şehir eklenince koçanlar animasyonla birleşir | ✅ | Geçiş günü varılan şehre sayılır, planda "geçiş günü" olarak işaretlenir. Öneri, harita, otomatik plan, hava ve bildirim o günün şehrine göre; vize ülke ülke (Schengen 90/180 yalnızca Schengen günlerini sayar) |
 | Yeni seyahat | Canlı bilet önizlemesi, 3B "PASSED" mühür animasyonu | ✅ | |
 | Plan | Gün çipleri, harita, numaralı duraklar, sürükle-bırak, başka güne taşıma | ✅ | |
 | Plan | Yer arama + harita önizleme | ✅ | |

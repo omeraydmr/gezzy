@@ -18,6 +18,7 @@ struct TripEditSheet: View {
     @State private var currency: String
     @State private var isDraft: Bool
     @State private var coverSeed: Int
+    @State private var extraLegs: [TripLeg]
 
     init(trip: Trip) {
         self.trip = trip
@@ -30,6 +31,7 @@ struct TripEditSheet: View {
         _currency = State(initialValue: trip.currency)
         _isDraft = State(initialValue: trip.status == .draft)
         _coverSeed = State(initialValue: trip.coverSeed)
+        _extraLegs = State(initialValue: Array(trip.cityLegs.dropFirst()))
     }
 
     private var trimmedName: String { name.trimmingCharacters(in: .whitespacesAndNewlines) }
@@ -79,6 +81,8 @@ struct TripEditSheet: View {
                     }
                 }
 
+                ExtraCitiesSection(legs: $extraLegs, start: startDate, end: endDate, defaultCountry: countryCode)
+
                 Section {
                     Picker("Para birimi", selection: $currency) {
                         ForEach(NewTripSheet.currencies, id: \.self) { Text($0) }
@@ -113,9 +117,14 @@ struct TripEditSheet: View {
                 }
             }
             .onChange(of: startDate) { old, new in
-                // Gidiş kayınca süre korunur.
-                let length = Calendar.current.dateComponents([.day], from: old, to: endDate).day ?? 0
-                endDate = Calendar.current.date(byAdding: .day, value: max(0, length), to: new) ?? new
+                // Gidiş kayınca süre ve diğer şehirlerin varış günleri de aynı kadar kayar.
+                let calendar = Calendar.current
+                let length = calendar.dateComponents([.day], from: old, to: endDate).day ?? 0
+                endDate = calendar.date(byAdding: .day, value: max(0, length), to: new) ?? new
+                let delta = calendar.dateComponents([.day], from: calendar.startOfDay(for: old), to: calendar.startOfDay(for: new)).day ?? 0
+                for index in extraLegs.indices {
+                    extraLegs[index].arrival = calendar.date(byAdding: .day, value: delta, to: extraLegs[index].arrival) ?? extraLegs[index].arrival
+                }
             }
         }
     }
@@ -133,6 +142,9 @@ struct TripEditSheet: View {
             trip.currency = currency
             trip.status = isDraft ? .draft : .planned
             trip.coverSeed = coverSeed
+            let firstID = trip.cityLegs.first?.id ?? UUID()
+            trip.setLegs([TripLeg(id: firstID, destination: trip.destination, arrival: trip.startDate)]
+                         + ExtraCitiesSection.valid(extraLegs, start: startDate, end: endDate))
         }
         dismiss()
     }

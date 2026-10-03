@@ -87,8 +87,18 @@ public enum ItineraryPlanner {
                           existing: trip.stops(on: day, calendar: calendar))
         }
 
+        // Çok şehirli seyahat: her fikir konumuna en yakın şehrin günlerine yerleşir (şehir konumu bilinmiyorsa serbest).
+        let legOfBucket = buckets.map { trip.leg(on: $0.day, calendar: calendar).id }
+        let locatedLegs = trip.cityLegs.compactMap { leg in leg.destination.coordinate.map { (leg.id, $0) } }
+        func leg(of stop: Stop) -> UUID? {
+            guard trip.isMultiCity, locatedLegs.count == trip.cityLegs.count, let point = stop.coordinate else { return nil }
+            return locatedLegs.min { Geo.distance($0.1, point) < Geo.distance($1.1, point) }?.0
+        }
+
         func openDays(_ stop: Stop) -> [Int] {
-            buckets.indices.filter { index in
+            let city = leg(of: stop)
+            return buckets.indices.filter { index in
+                if let city, legOfBucket[index] != city { return false }
                 guard let raw = stop.openingHours, let hours = OpeningHours.cached(raw) else { return true }
                 let intervals = hours.intervals(onDay: buckets[index].weekday)
                 // O gün, ziyaret süresi kadar açık kaldığı bir aralık olmalı.
@@ -103,22 +113,29 @@ public enum ItineraryPlanner {
         }
 
         // Boş günleri birbirinden uzak bölgelerle başlat (ilk fikir, ondan en uzak fikir…). Mevcut bölgelere
-        // `regionSpacing`'den yakın yerler yeni bir gün açmaz: aynı semtteki yerler bölünmesin.
-        var seeds: [Coordinate] = buckets.compactMap(\.center)
-        let fixedSeeds = seeds.count
-        let points = located.compactMap(\.coordinate)
-        while seeds.count - fixedSeeds < buckets.count, let next = points.max(by: { a, b in
-            (seeds.map { Geo.distance($0, a) }.min() ?? .infinity) < (seeds.map { Geo.distance($0, b) }.min() ?? .infinity)
-        }) {
-            if let nearest = seeds.map({ Geo.distance($0, next) }).min(), nearest < regionSpacing { break }
-            seeds.append(next)
-        }
-        seeds.removeFirst(fixedSeeds)
-        var seedIndex = 0
-        for index in buckets.indices where buckets[index].center == nil && seedIndex < seeds.count
-            && buckets[index].end - buckets[index].start >= 120 {
-            buckets[index].anchor = seeds[seedIndex]
-            seedIndex += 1
+        // `regionSpacing`'den yakın yerler yeni bir gün açmaz: aynı semtteki yerler bölünmesin. Çok şehirlide şehir şehir.
+        let groups: [(days: [Int], points: [Coordinate])] = trip.isMultiCity && locatedLegs.count == trip.cityLegs.count
+            ? trip.cityLegs.map { city in
+                (buckets.indices.filter { legOfBucket[$0] == city.id },
+                 located.filter { leg(of: $0) == city.id }.compactMap(\.coordinate))
+            }
+            : [(Array(buckets.indices), located.compactMap(\.coordinate))]
+        for group in groups {
+            var seeds: [Coordinate] = group.days.compactMap { buckets[$0].center }
+            let fixedSeeds = seeds.count
+            while seeds.count - fixedSeeds < group.days.count, let next = group.points.max(by: { a, b in
+                (seeds.map { Geo.distance($0, a) }.min() ?? .infinity) < (seeds.map { Geo.distance($0, b) }.min() ?? .infinity)
+            }) {
+                if let nearest = seeds.map({ Geo.distance($0, next) }).min(), nearest < regionSpacing { break }
+                seeds.append(next)
+            }
+            seeds.removeFirst(fixedSeeds)
+            var seedIndex = 0
+            for index in group.days where buckets[index].center == nil && seedIndex < seeds.count
+                && buckets[index].end - buckets[index].start >= 120 {
+                buckets[index].anchor = seeds[seedIndex]
+                seedIndex += 1
+            }
         }
 
         for stop in ordered {

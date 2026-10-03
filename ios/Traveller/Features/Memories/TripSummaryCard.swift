@@ -40,7 +40,7 @@ struct TripSummaryPoster: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("\(flag(trip.destination.countryCode)) \(trip.destination.city)")
+                Text("\(trip.countryCodes.map(flag).joined()) \(trip.cityTitle)")
                     .font(.system(.subheadline, weight: .semibold))
                     .foregroundStyle(.white.opacity(0.85))
                 Text(trip.name).font(.system(size: 28, weight: .bold)).foregroundStyle(.white)

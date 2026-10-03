@@ -169,9 +169,8 @@ struct AddExpenseSheet: View {
 
     private var currencyOptions: [String] {
         var options = [trip.currency, "TRY", "EUR", "USD", "GBP"] + (inputCurrency.map { [$0] } ?? [])
-        if let local = Locale(identifier: "tr_\(trip.destination.countryCode)").currency?.identifier {
-            options.insert(local, at: 1)
-        }
+        let locals = trip.countryCodes.compactMap { Locale(identifier: "tr_\($0)").currency?.identifier }
+        options.insert(contentsOf: locals, at: 1)
         var seen = Set<String>()
         return options.filter { seen.insert($0).inserted }
     }

@@ -33,9 +33,11 @@ public enum DocumentReminders {
 
         // Yaklaşan seyahatte pasaport yetmiyorsa gidişten 60 gün önce (geçtiyse yarın) uyar.
         for trip in upcoming {
-            let entry = VisaRules.entry(for: trip.destination.countryCode)
-            let warnings = VisaAdvisor.passportWarnings(passport: passport, entry: entry, tripEnd: trip.endDate, calendar: calendar)
-            guard !warnings.isEmpty, trip.destination.countryCode.uppercased() != passport.nationality.uppercased() else { continue }
+            let abroad = trip.countryCodes.filter { $0 != passport.nationality.uppercased() }
+            guard abroad.contains(where: { country in
+                !VisaAdvisor.passportWarnings(passport: passport, entry: VisaRules.entry(for: country), tripEnd: trip.endDate,
+                                              calendar: calendar).isEmpty
+            }) else { continue }
             let lead = calendar.date(byAdding: .day, value: -60, to: trip.startDate) ?? trip.startDate
             let when = lead > now ? lead : calendar.date(byAdding: .day, value: 1, to: now)
             add("passport-trip-\(trip.id.uuidString)", when,

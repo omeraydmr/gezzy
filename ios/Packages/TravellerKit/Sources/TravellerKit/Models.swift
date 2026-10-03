@@ -369,6 +369,21 @@ public struct Lodging: Codable, Hashable, Identifiable, Sendable {
 
 // MARK: - Trip
 
+/// Çok şehirli seyahatin bir şehri: varış gününden bir sonraki şehre varışa (ya da seyahat sonuna) kadar.
+/// Geçiş günü varılan şehre aittir.
+public struct TripLeg: Codable, Hashable, Identifiable, Sendable {
+    public var id: UUID
+    public var destination: Destination
+    /// Bu şehre varış günü (gün başlangıcı); ilk şehir için seyahatin başlangıcı.
+    public var arrival: Date
+
+    public init(id: UUID = UUID(), destination: Destination, arrival: Date) {
+        self.id = id
+        self.destination = destination
+        self.arrival = arrival
+    }
+}
+
 public struct Trip: Codable, Hashable, Identifiable, Sendable {
     public var id: UUID
     public var name: String
@@ -408,6 +423,9 @@ public struct Trip: Codable, Hashable, Identifiable, Sendable {
     public var albumConsents: [AlbumConsent]?
     /// Ortak albümdeki fotoğrafların bilgisi; dosyalar iCloud'da ayrı "Photo" kayıtlarıdır.
     public var albumPhotos: [AlbumPhoto]?
+    /// Çok şehirli seyahatte şehirler (varış gününe göre sıralı); tek şehirde nil. `destination` her zaman ilk şehirdir.
+    /// Eşitlemede ad ve tarihler gibi daha yeni kopyanınki geçerlidir.
+    public var legs: [TripLeg]?
 
     public init(id: UUID = UUID(), name: String, destination: Destination, startDate: Date, endDate: Date,
                 status: TripStatus = .planned, currency: String = "EUR", coverSeed: Int = 0, coverPhoto: String? = nil,

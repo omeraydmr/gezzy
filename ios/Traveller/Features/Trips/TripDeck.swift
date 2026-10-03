@@ -31,7 +31,7 @@ struct TripDeck: View {
                     let relative = Double(position) - progress
                     if geometry.isVisible(relative) {
                         let t = geometry.transform(relative: relative)
-                        TripTicketCard(trip: trip, side: side)
+                        TripTicketCard(trip: trip, side: side, maxWidth: proxy.size.width - 24)
                             .equatable()
                             .overlay {
                                 if trip.id == arrivingID {

@@ -50,7 +50,7 @@ public enum TravelStats {
         let today = calendar.startOfDay(for: now)
         let fromTrips = trips
             .filter { $0.status == .planned && calendar.startOfDay(for: $0.startDate) <= today }
-            .map { $0.destination.countryCode.uppercased() }
+            .flatMap(\.countryCodes)
         return Array(Set(fromTrips).union(extra.map { $0.uppercased() }).subtracting([home.uppercased()])).sorted()
     }
 }
