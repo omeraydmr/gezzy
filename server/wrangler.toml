@@ -1,53 +1,53 @@
-# Stubly sunucusu: iki ortam, ayrı Worker, D1 ve KV.
-#   staging    → stubly-api-staging (Xcode'dan kurulan Debug sürümleri)
-#   production → stubly-api         (TestFlight ve App Store sürümleri)
+# Gezzy sunucusu: iki ortam, ayrı Worker, D1 ve KV.
+#   staging    → gezzy-api-staging (Xcode'dan kurulan Debug sürümleri)
+#   production → gezzy-api         (TestFlight ve App Store sürümleri)
 # Yayın: npx wrangler deploy --env staging | --env production
-# Şema:  npx wrangler d1 migrations apply stubly-staging --env staging --remote
-#        npx wrangler d1 migrations apply stubly-prod --env production --remote
+# Şema:  npx wrangler d1 migrations apply gezzy-staging --env staging --remote
+#        npx wrangler d1 migrations apply gezzy-prod --env production --remote
 # Gizli değerler her ortam için ayrı (npx wrangler secret put <AD> --env <ortam>):
-#   CLIENT_KEY        uygulamanın X-Stubly-Key başlığı (Secrets.xcconfig'teki STUBLY_*_KEY ile aynı)
+#   CLIENT_KEY        uygulamanın X-Gezzy-Key başlığı (Secrets.xcconfig'teki GEZZY_*_KEY ile aynı)
 #   CONTRIBUTOR_SALT  katkı veren kimliklerini özetlemek için uzun rastgele değer (değiştirmeyin)
-name = "stubly-api"
+name = "gezzy-api"
 main = "src/index.ts"
 compatibility_date = "2026-09-01"
 
 [env.staging]
-name = "stubly-api-staging"
+name = "gezzy-api-staging"
 
 # App Attest challenge'ları (5 dk ömürlü).
 [[env.staging.kv_namespaces]]
 binding = "KV"
-id = "19838e84511e4f9c839838ada1d4e9b9"
+id = "548c3aa404184576a2684951a204c36c"
 
 # Topluluk öneri havuzu.
 [[env.staging.d1_databases]]
 binding = "DB"
-database_name = "stubly-staging"
-database_id = "69785075-3d69-44c6-9a4f-615a41b84b19"
+database_name = "gezzy-staging"
+database_id = "2f99088c-f2eb-4f50-890e-b8b2dc50858b"
 migrations_dir = "migrations"
 
 # App Attest: uygulama kimliği; katkıların imzalı olması zorunlu mu; Xcode'dan kurulan geliştirme sürümlerinin
 # attestation'ı kabul edilsin mi.
 [env.staging.vars]
-APP_ID = "4BAD86T55H.com.omeraydemir.stubly"
+APP_ID = "4BAD86T55H.com.omeraydemir.gezzy"
 REQUIRE_APP_ATTEST = "false"
 ALLOW_DEV_ATTEST = "true"
 
 [env.production]
-name = "stubly-api"
+name = "gezzy-api"
 
 [[env.production.kv_namespaces]]
 binding = "KV"
-id = "c62543bd9f50416b9ba0106354ff1419"
+id = "ae80b1060d574d93a0a81f67ba05584f"
 
 [[env.production.d1_databases]]
 binding = "DB"
-database_name = "stubly-prod"
-database_id = "1aacd4b3-c064-4fb9-a26e-643c9fce7f91"
+database_name = "gezzy-prod"
+database_id = "9fb6c973-7afb-4c8f-9ca0-79aceeb5b6f8"
 migrations_dir = "migrations"
 
 # Üretimde yalnızca App Store / TestFlight attestation'ı geçerli; zorunluluk uygulama yayına çıkınca "true" yapılır.
 [env.production.vars]
-APP_ID = "4BAD86T55H.com.omeraydemir.stubly"
+APP_ID = "4BAD86T55H.com.omeraydemir.gezzy"
 REQUIRE_APP_ATTEST = "false"
 ALLOW_DEV_ATTEST = "false"

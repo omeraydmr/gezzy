@@ -1,4 +1,4 @@
-// Apple App Attest doğrulaması: uygulamanın gerçek, değiştirilmemiş Stubly olduğunu kanıtlar.
+// Apple App Attest doğrulaması: uygulamanın gerçek, değiştirilmemiş Gezzy olduğunu kanıtlar.
 //  1. Kayıt: cihaz bir anahtar üretir, Apple onu onaylar (attestation). Sertifika zinciri Apple App Attestation kök
 //     sertifikasına kadar doğrulanır; sunucunun verdiği tek kullanımlık challenge, uygulama kimliği ve anahtar
 //     kimliği karşılaştırılır; açık anahtar saklanır.

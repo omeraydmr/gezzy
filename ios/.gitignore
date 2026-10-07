@@ -6,7 +6,7 @@ DerivedData/
 *.xcuserstate
 build.log
 Support/Info.plist
-Support/Stubly.entitlements
+Support/Gezzy.entitlements
 Support/Widgets-Info.plist
 Support/Widgets.entitlements
 Config/Secrets.xcconfig

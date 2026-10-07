@@ -11,12 +11,12 @@ concurrency:
 
 jobs:
   kit-tests:
-    name: StublyKit tests
+    name: GezzyKit tests
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
       - name: Run tests
-        run: swift test --package-path ios/Packages/StublyKit
+        run: swift test --package-path ios/Packages/GezzyKit
 
   server-tests:
     name: Server tests
@@ -45,8 +45,8 @@ jobs:
         run: |
           set -o pipefail
           xcodebuild build \
-            -project Stubly.xcodeproj \
-            -scheme Stubly \
+            -project Gezzy.xcodeproj \
+            -scheme Gezzy \
             -destination 'generic/platform=iOS Simulator' \
             -configuration Debug \
             CODE_SIGNING_ALLOWED=NO \

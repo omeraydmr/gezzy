@@ -47,7 +47,7 @@ Gerçek cihaz (iPhone 15) testi sürüyor; iCloud paylaşım/yetki akışları i
 | Yer önerileri ve otomatik rota | ✅ | Fikirler kartında "Yer öner": Wikipedia konuma göre arama, son 30 günde en çok okunan yerler (kale, müze, seyir noktası, semt). "Otomatik rota": fikirleri yakınlığa, açılış saatlerine, otele ve varış/dönüş uçuşlarına göre günlere dağıtır, sıralar ve saat verir; önizleme, sığmayanlar listesi ve geri al |
 | Şehir seçimi ve şehirle sınırlı yer arama | ✅ | Yeni seyahatte şehir serbest metin değil: seçili ülkenin şehirleri Apple Haritalar'dan aranır (otomatik tamamlama ülke bölgesiyle sınırlı), konum kaydedilir. Durak eklemede ve "Yer öner"deki arama çubuğunda sonuçlar şehir çevresi ve ülkeyle sınırlanır, sorguya benzerlik + merkeze yakınlıkla sıralanır, mesafe gösterilir; Türkçe yazım (ı, "kulesi", "manastır") İngilizce karşılıklarıyla da aranır |
 | Pasaport türüne göre vize | ✅ | Umuma mahsus (bordo), hususi (yeşil), hizmet (gri), diplomatik (siyah): kişi ve ilk kurulum ekranında seçilir, pasaport kartı türün renginde. Kurallar Dışişleri Bakanlığı listesinden türe göre (ör. yeşil/gri/diplomatik Schengen'de 90/180 vizesiz, İngiltere/ABD/Kanada hepsine vizeli, Karadağ bordoya 30 gün, Bulgaristan gri/diplomatiğe 30 gün); Schengen 90/180 hesabı her türde çalışır; valiz ve yola çıkış listesi ekipteki türlere bakar |
-| Topluluk öneri havuzu ("Gezginler seçti") | ✅ | Seyahat bitince Anılar'da onay kartı: yerlere 👍/👎, istenmeyeni gizleme, fotoğrafla doğrulama. Onaylanırsa yalnızca yer adı/konumu/türü/oy ve aynı gün art arda gidilen yer çiftleri Stubly sunucusuna (Cloudflare D1, gizli) gider; kişi, tarih, not, ekip gitmez. En az 3 farklı gezginin gittiği yerler "Yer öner"de rozetle önce, "X sonrası gezginler genelde" bölümüyle çıkar. Cihaz kimliği sunucuda tuzlanıp özetlenir; günlük kota var |
+| Topluluk öneri havuzu ("Gezginler seçti") | ✅ | Seyahat bitince Anılar'da onay kartı: yerlere 👍/👎, istenmeyeni gizleme, fotoğrafla doğrulama. Onaylanırsa yalnızca yer adı/konumu/türü/oy ve aynı gün art arda gidilen yer çiftleri Gezzy sunucusuna (Cloudflare D1, gizli) gider; kişi, tarih, not, ekip gitmez. En az 3 farklı gezginin gittiği yerler "Yer öner"de rozetle önce, "X sonrası gezginler genelde" bölümüyle çıkar. Cihaz kimliği sunucuda tuzlanıp özetlenir; günlük kota var |
 | Vize başvuru takibi: randevu, belge listesi, durum | ✅ | Durum hapları, randevu tarihi ve yeri, kalıcı belge listesi; randevu öncesi bildirim; ekiple eşitlenir |
 | Belge kasası (pasaport, sigorta, bilet PDF'leri) | ✅ | Vize sekmesinde; dosya/fotoğraf/kamera, önizleme, kişiye bağlama, "yalnızca bu cihazda"; diğerleri iCloud ile eşitlenir |
 | Settle up: IBAN kopyala, "ödendi" işaretle, özet paylaş | ✅ | Kişi kartında IBAN (doğrulamalı), ödeme sorusunda "IBAN'ı kopyala", metin özeti paylaşma |
@@ -66,7 +66,7 @@ Listedeki tüm adaylar yapıldı:
 | K | Acil durum kartı | Vize sekmesinde; ülkenin acil numaraları, konsolosluk çağrı merkezi, cihazda kalan sağlık bilgileri, yerel dilde alerji kartı |
 | L | Paylaşılabilir seyahat özeti | Anılar sekmesinde; gün, durak, rota, harcama ve öne çıkanlar görsel olarak paylaşılır (HealthKit adım sayısı yok) |
 | M | ~~Canlı kartı sunucu push'u ile güncelleme~~ | Kaldırıldı (uçuş durumu servisiyle birlikte); kart cihazda planlanmış saatlerle çalışır |
-| N | İngilizce yerelleştirme | Arayüz ve StublyKit metinleri (valiz ve yola çıkış önerileri, uçuş durumu, bildirimler, açılış saatleri, vize notları) İngilizce. Öneriden gelen ve düzenlenmemiş yola çıkış maddeleri cihaz dilinde gösterilir; Dışişleri'nin Türkçe resmî vize metni yalnızca Türkçe arayüzde |
+| N | İngilizce yerelleştirme | Arayüz ve GezzyKit metinleri (valiz ve yola çıkış önerileri, uçuş durumu, bildirimler, açılış saatleri, vize notları) İngilizce. Öneriden gelen ve düzenlenmemiş yola çıkış maddeleri cihaz dilinde gösterilir; Dışişleri'nin Türkçe resmî vize metni yalnızca Türkçe arayüzde |
 
 Daha önce yapılanlar (ayrıntı §1 ve §2'de): B Anılar · C Biletten doldurma (PDF, ekran görüntüsü, Wallet `.pkpass`) ·
 D Schengen 90/180 · E Vize randevu ve belge takibi · H Hesaplaşma (IBAN, ödendi, özet) ·
@@ -76,7 +76,7 @@ A (cihazda test turu + TestFlight) listeden çıkarıldı: iPhone 15'te sürüyo
 ## 4. Teknik borç / kalite
 
 - Gerçek cihazda performans ölçümü (Instruments: SwiftUI, Time Profiler, Hangs).
-- Uygulama hedefi için UI testleri ve ekran görüntüsü testleri yok; yalnızca StublyKit birim testleri var.
+- Uygulama hedefi için UI testleri ve ekran görüntüsü testleri yok; yalnızca GezzyKit birim testleri var.
 - Çökme raporlama yok.
 - Vize kural tablosu (`visa_rules.tsv`, ~195 ülke) Dışişleri sayfasından üretildi; sayfa değişince yeniden üretilmeli (kaynak ve tarih uygulamada gösteriliyor).
 

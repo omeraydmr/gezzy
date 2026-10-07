@@ -1,5 +1,5 @@
 #include "Base.xcconfig"
 
 // TestFlight ve App Store sürümleri: production sunucusu.
-STUBLY_SERVER_HOST = stubly-api.traveller-live.workers.dev
-STUBLY_SERVER_KEY = $(STUBLY_PROD_KEY)
+GEZZY_SERVER_HOST = gezzy-api.traveller-live.workers.dev
+GEZZY_SERVER_KEY = $(GEZZY_PROD_KEY)

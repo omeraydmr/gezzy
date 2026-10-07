@@ -1,4 +1,4 @@
-# Stubly · iOS
+# Gezzy · iOS
 
 SwiftUI, iOS 17+. Türkiye'den yurt dışına giden gruplar için ilk sürüm.
 
@@ -8,10 +8,10 @@ SwiftUI, iOS 17+. Türkiye'den yurt dışına giden gruplar için ilk sürüm.
 brew install xcodegen
 cd ios
 xcodegen generate
-open Stubly.xcodeproj
+open Gezzy.xcodeproj
 ```
 
-`Stubly.xcodeproj` üretilen bir dosyadır ve repoya eklenmez; yapı `project.yml` içinde tanımlıdır.
+`Gezzy.xcodeproj` üretilen bir dosyadır ve repoya eklenmez; yapı `project.yml` içinde tanımlıdır.
 Yeni dosya eklediğinde `xcodegen generate` komutunu tekrar çalıştır.
 
 Debug derlemeleri staging sunucusuna, Release derlemeleri production sunucusuna bağlanır
@@ -21,7 +21,7 @@ Debug derlemeleri staging sunucusuna, Release derlemeleri production sunucusuna 
 
 ```bash
 cd ios
-scripts/release.sh            # Release arşivi + kayıtlı cihazlara kurulabilir IPA → ios/dist/Stubly.ipa
+scripts/release.sh            # Release arşivi + kayıtlı cihazlara kurulabilir IPA → ios/dist/Gezzy.ipa
 scripts/release.sh --install  # ayrıca bağlı iPhone'a kurar ve açar
 ```
 
@@ -34,8 +34,8 @@ yeterli; otomatik imzalama cihazı profile ekler.
 Ekip paylaşımı ve eşitleme Apple'ın iCloud altyapısını kullanır; ayrı bir sunucu yoktur.
 Gerçek cihazda çalıştırmak için bir kez:
 
-1. Xcode → Stubly hedefi → *Signing & Capabilities* → kendi geliştirici ekibini seç.
-2. *iCloud* yeteneğinde **CloudKit** işaretli olmalı; konteyner `iCloud.com.omeraydemir.stubly`
+1. Xcode → Gezzy hedefi → *Signing & Capabilities* → kendi geliştirici ekibini seç.
+2. *iCloud* yeteneğinde **CloudKit** işaretli olmalı; konteyner `iCloud.com.omeraydemir.gezzy`
    (farklı bir kimlik kullanırsan `CloudConfig.containerIdentifier` ve `project.yml`'i güncelle).
 3. İlk çalıştırmada CloudKit geliştirme şeması kendiliğinden oluşur (`Trip` kaydı: `payload`, `name`, `updatedAt`).
    Yayından önce CloudKit Console'da şemayı **Production**'a taşı.
@@ -61,26 +61,26 @@ Profil > "Tanıtımı ve anketi yeniden göster" ile tekrar açılır.
 
 ## Canlı uçuş kartı (Live Activity)
 
-`StublyWidgets` uzantısı (`Widgets/`) kilit ekranı ve Dynamic Island görünümünü çizer; ortak
-`FlightActivityAttributes` tipi `Shared/` klasöründedir. Uzantının paket kimliği `com.omeraydemir.stubly.widgets`;
+`GezzyWidgets` uzantısı (`Widgets/`) kilit ekranı ve Dynamic Island görünümünü çizer; ortak
+`FlightActivityAttributes` tipi `Shared/` klasöründedir. Uzantının paket kimliği `com.omeraydemir.gezzy.widgets`;
 imzalarken uygulamayla aynı ekibi seç. Kart push'suz, planlanmış saatlerle uygulama içinden güncellenir; güncel kapı ve rötar için havayolunun uygulaması kullanılır.
 
 Aynı uzantıda ana ekran widget'ı (`TripCountdownWidget`) da var. Uygulama özeti App Group klasörüne
-(`group.com.omeraydemir.stubly`) yazar, widget oradan okur; iki hedefte de *App Groups* yeteneği açık olmalı.
+(`group.com.omeraydemir.gezzy`) yazar, widget oradan okur; iki hedefte de *App Groups* yeteneği açık olmalı.
 
 ## Bağlantılar
 
-`stubly://trip/<seyahat-id>?section=money` biçimindeki adres ilgili seyahatin sekmesini açar
+`gezzy://trip/<seyahat-id>?section=money` biçimindeki adres ilgili seyahatin sekmesini açar
 (`plan`, `money`, `packing`, `visa`, `crew`). Bildirimler aynı bilgiyi `userInfo` içinde taşır.
 
-`Support/Info.plist` ve `Support/Stubly.entitlements` `xcodegen generate` ile üretilir.
+`Support/Info.plist` ve `Support/Gezzy.entitlements` `xcodegen generate` ile üretilir.
 
 ## Yapı
 
 ```
 ios/
 ├── project.yml                 XcodeGen proje tanımı
-├── Packages/StublyKit       Saf Swift domain katmanı (UI yok, testli)
+├── Packages/GezzyKit       Saf Swift domain katmanı (UI yok, testli)
 │   ├── Models                  Trip, Member, Stop, Expense, PackingItem…
 │   ├── Settlement              Masraf bölme + borç sadeleştirme
 │   ├── Budget                  Kategori bütçesi ve harcama temposu
@@ -88,7 +88,7 @@ ios/
 │   ├── Packing                 Kural tabanlı valiz önerileri (priz tipi vb.)
 │   ├── Geo                     Mesafe, yürüme süresi, rota sıralama
 │   └── MoneyParser, TurkishGrammar, Countdown
-└── Stubly                   Uygulama
+└── Gezzy                   Uygulama
     ├── DesignSystem            Kartpostal token'ları ve bileşenleri
     ├── Store                   TripStore (cihazda JSON)
     └── Features                Trips, TripDetail, Plan, Money, Packing, Visa, Crew
@@ -96,17 +96,17 @@ ios/
 
 ## Diller
 
-Kaynak dil Türkçe, ikinci dil İngilizce. Arayüz metinleri `Stubly/Resources/Localizable.xcstrings` ve
+Kaynak dil Türkçe, ikinci dil İngilizce. Arayüz metinleri `Gezzy/Resources/Localizable.xcstrings` ve
 `Widgets/Localizable.xcstrings` String Catalog'larında. Yeni metin eklerken SwiftUI'da doğrudan `Text("…")`
 kullan; `String` dönen yerlerde `String(localized: "…")` yaz. Çeviriyi Xcode'da catalog üzerinden ya da
 `xcodebuild -exportLocalizations` / `-importLocalizations` ile ekle.
 
-StublyKit'in ürettiği metinler (vize notları, valiz ve gidiş öncesi önerileri, bildirim metinleri) henüz yalnızca Türkçe.
+GezzyKit'in ürettiği metinler (vize notları, valiz ve gidiş öncesi önerileri, bildirim metinleri) henüz yalnızca Türkçe.
 
 ## Test
 
 ```bash
-swift test --package-path ios/Packages/StublyKit
+swift test --package-path ios/Packages/GezzyKit
 ```
 
 CI (`.github/workflows/ios.yml`) her PR'da paket testlerini çalıştırır ve uygulamayı simülatör için derler.

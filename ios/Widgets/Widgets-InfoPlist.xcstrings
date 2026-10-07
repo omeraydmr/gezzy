@@ -8,13 +8,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Stubly"
+            "value" : "Gezzy"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "Stubly"
+            "value" : "Gezzy"
           }
         }
       }
@@ -26,13 +26,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "StublyWidgets"
+            "value" : "GezzyWidgets"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "StublyWidgets"
+            "value" : "GezzyWidgets"
           }
         }
       }
