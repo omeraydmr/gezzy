@@ -1,9 +1,8 @@
-// Ortak derleme ayarları. Gizli değerler Secrets.xcconfig'te (git'e girmez):
-//   FLIGHT_STATUS_API_KEY = <RapidAPI anahtarın>
-FLIGHT_STATUS_API_KEY =
-//   LIVE_ACTIVITY_SERVER_HOST = traveller-live.<hesabın>.workers.dev   (şemasız; xcconfig'te "//" yorumdur)
-//   LIVE_ACTIVITY_SERVER_KEY = <sunucudaki CLIENT_KEY>
-LIVE_ACTIVITY_SERVER_HOST =
-LIVE_ACTIVITY_SERVER_KEY =
+// Ortak derleme ayarları. Sunucu anahtarları Secrets.xcconfig'te (git'e girmez):
+//   GEZZY_STAGING_KEY = <gezzy-api-staging Worker'ındaki CLIENT_KEY>
+//   GEZZY_PROD_KEY = <gezzy-api Worker'ındaki CLIENT_KEY>
+// Debug derlemeleri staging'e, Release (TestFlight / App Store) derlemeleri production'a bağlanır.
+GEZZY_STAGING_KEY =
+GEZZY_PROD_KEY =
 
 #include? "Secrets.xcconfig"

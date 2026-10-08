@@ -1,0 +1,5 @@
+#include "Base.xcconfig"
+
+// Xcode'dan kurulan geliştirme sürümleri: staging sunucusu (şemasız; xcconfig'te "//" yorumdur).
+GEZZY_SERVER_HOST = gezzy-api-staging.traveller-live.workers.dev
+GEZZY_SERVER_KEY = $(GEZZY_STAGING_KEY)

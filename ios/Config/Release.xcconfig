@@ -1,0 +1,5 @@
+#include "Base.xcconfig"
+
+// TestFlight ve App Store sürümleri: production sunucusu.
+GEZZY_SERVER_HOST = gezzy-api.traveller-live.workers.dev
+GEZZY_SERVER_KEY = $(GEZZY_PROD_KEY)
