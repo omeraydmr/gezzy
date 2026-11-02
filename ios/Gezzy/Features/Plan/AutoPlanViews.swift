@@ -36,7 +36,8 @@ struct AutoPlanSheet: View {
     @State private var dayEnd = 19 * 60
 
     private var plan: ItineraryPlanner.Plan {
-        ItineraryPlanner.plan(trip, settings: .init(dayStart: dayStart, dayEnd: dayEnd))
+        ItineraryPlanner.plan(trip, settings: .init(dayStart: dayStart, dayEnd: dayEnd,
+                                                    nationality: store.me.passport?.nationality ?? "TR"))
     }
 
     var body: some View {

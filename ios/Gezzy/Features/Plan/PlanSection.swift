@@ -76,7 +76,9 @@ struct PlanSection: View {
         }
         var flightWarnings: [Stop.ID: FlightDayTiming.StopWarning] = [:]
         if arrival != nil || departure != nil {
-            let starts = trip.plannedStarts(on: day, from: anchors.start?.coordinate, dayStart: arrival?.readyAt ?? 9 * 60)
+            // readyAt transferi içerir; havalimanından ayrıca yürünmez.
+            let from: Coordinate? = arrival != nil ? nil : anchors.start?.coordinate
+            let starts = trip.plannedStarts(on: day, from: from, dayStart: arrival?.readyAt ?? 9 * 60)
             for stop in stops {
                 guard let start = starts[stop.id] else { continue }
                 let warning = FlightDayTiming.warning(start: start, duration: stop.durationMinutes,
@@ -221,7 +223,7 @@ struct PlanSection: View {
                 AnchorRow(anchor: start, role: .start, timing: plan.arrival.map(AnchorRow.Timing.arrival))
                 if plan.arrival != nil, !dismissedHotelSuggestion.contains(plan.day),
                    let hotel = trip.lodging(forNightOf: plan.day),
-                   !stops.contains(where: { $0.kind == .stay && $0.name == hotel.name }) {
+                   !stops.contains(where: { Self.isVisit($0, to: hotel) }) {
                     HotelVisitSuggestion(lodging: hotel,
                                          onAdd: { addHotelVisit(hotel, on: plan.day) },
                                          onDismiss: { dismissedHotelSuggestion.insert(plan.day) })
@@ -421,9 +423,16 @@ struct PlanSection: View {
         }
     }
 
-    /// Açılış saati henüz aranmamış, konumu olan duraklar (tüm günler).
+    /// Otele uğrama durağı: otelin 100 m yakınındaki konaklama durağı (otel konumsuzsa ada göre).
+    private static func isVisit(_ stop: Stop, to hotel: Lodging) -> Bool {
+        guard stop.kind == .stay else { return false }
+        guard let target = hotel.coordinate else { return stop.name == hotel.name }
+        return stop.coordinate.map { Geo.distance($0, target) <= 100 } ?? false
+    }
+
+    /// Açılış saati henüz aranmamış, konumu olan duraklar (tüm günler); otele uğrama durakları aranmaz.
     private var pendingHoursLookup: [Stop.ID] {
-        trip.stops.filter { $0.coordinate != nil && $0.openingHoursLookedUp != true }.map(\.id)
+        trip.stops.filter { $0.coordinate != nil && $0.kind != .stay && $0.openingHoursLookedUp != true }.map(\.id)
     }
 
     /// OpenStreetMap'ten açılış saatlerini sırayla sorgular; Overpass'ı yormamak için aralarında kısa bekleme var.
@@ -489,10 +498,19 @@ struct PlanSection: View {
                                  open: stop.openingHours.flatMap(OpeningHours.cached)?.intervals(onDay: weekday),
                                  fixedStart: stop.startMinutes)
         }
-        let dayStart = min(9 * 60, located.compactMap(\.startMinutes).min() ?? 9 * 60)
-        // Rota günün başlangıç ve bitiş noktasına (otel ya da havalimanı) bağlanır.
+        // Rota otele bağlanır; havalimanı bacağı transferdir. İniş günü şehre hazır olunan saatten başlar.
         let anchors = trip.anchors(on: day)
-        let order = RouteOptimizer.order(visits, from: anchors.start?.coordinate, to: anchors.end?.coordinate, dayStart: dayStart)
+        var from = anchors.start?.coordinate
+        var readyAt = 9 * 60
+        if case .airport(_, let flight)? = anchors.start {
+            from = trip.lodging(forNightOf: day)?.coordinate
+            readyAt = FlightDayTiming.arrival(flight, firstPoint: from,
+                                              nationality: store.me.passport?.nationality ?? "TR")?.readyAt ?? readyAt
+        }
+        var to = anchors.end?.coordinate
+        if case .airport? = anchors.end { to = nil }
+        let dayStart = min(readyAt, located.compactMap(\.startMinutes).min() ?? readyAt)
+        let order = RouteOptimizer.order(visits, from: from, to: to, dayStart: dayStart)
         lastOrderBeforeOptimize = Dictionary(uniqueKeysWithValues: stops.map { ($0.id, $0.order) })
         withAnimation(.spring(duration: 0.35)) {
             applyOrder(order.map { located[$0].id } + others.map(\.id))
@@ -544,7 +562,7 @@ struct StopRow: View {
                 }
                 if let flightWarning {
                     FlightTimingNote(text: flightText(flightWarning), symbol: "exclamationmark.circle.fill")
-                        .foregroundStyle(Color.food)
+                        .foregroundStyle(HoursLabel.conflictColor)
                 }
                 if let fix {
                     Button {
@@ -677,6 +695,8 @@ struct VerticalLine: Shape {
 /// Durağın açılış saatine göre kısa durum etiketi.
 struct HoursLabel: View {
     let status: OpeningHours.Status
+    /// Kesin çakışma rengi (kapalı; uçuş saatine yetişmiyor).
+    static let conflictColor = Color(hex: 0xD64545)
 
     var body: some View {
         Label(text, systemImage: status.isWarning ? "exclamationmark.circle.fill" : "clock")
@@ -687,7 +707,7 @@ struct HoursLabel: View {
 
     private var color: Color {
         switch status {
-        case .closedAllDay, .alreadyClosed: Color(hex: 0xD64545)
+        case .closedAllDay, .alreadyClosed: Self.conflictColor
         case .opensLater, .closesDuringVisit: .food
         case .open, .openToday: .ink3
         }
