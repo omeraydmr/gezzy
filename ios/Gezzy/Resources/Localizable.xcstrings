@@ -73,6 +73,176 @@
         }
       }
     },
+    "%@ içinde ara" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search in %@"
+          }
+        }
+      }
+    },
+    "%lld. gün" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Day %lld"
+          }
+        }
+      }
+    },
+    "Aramayı temizle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear search"
+          }
+        }
+      }
+    },
+    "Durağı düzenle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit stop"
+          }
+        }
+      }
+    },
+    "Eklemeyi geri al" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Undo add"
+          }
+        }
+      }
+    },
+    "Eklendi" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Added"
+          }
+        }
+      }
+    },
+    "Ekleneceği yer:" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add to:"
+          }
+        }
+      }
+    },
+    "Gitmek istediğin yerleri ekle; sonra otomatik rota günlere dağıtsın." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add places you want to visit; then let auto route spread them over the days."
+          }
+        }
+      }
+    },
+    "Görülecek" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sights"
+          }
+        }
+      }
+    },
+    "Listede yok mu? Elle ekle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not listed? Add it yourself"
+          }
+        }
+      }
+    },
+    "Popüler" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Popular"
+          }
+        }
+      }
+    },
+    "Popülerlik Wikipedia'da son 30 günde okunma ve Gezzy gezginlerinin seçimlerinden gelir." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Popularity comes from Wikipedia views in the last 30 days and picks by Gezzy travellers."
+          }
+        }
+      }
+    },
+    "Tümü" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All"
+          }
+        }
+      }
+    },
+    "Yeme-içme" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Food & drink"
+          }
+        }
+      }
+    },
+    "Yer ekle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add place"
+          }
+        }
+      }
+    },
+    "Çok popüler" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Very popular"
+          }
+        }
+      }
+    },
+    "Şehrin konumu bulunamadı. Aramak için bir yer adı yaz." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't find the city. Type a place name to search."
+          }
+        }
+      }
+    },
     "—" : {
       "localizations" : {
         "en" : {
@@ -3397,16 +3567,6 @@
         }
       }
     },
-    "Fikir ekle" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Add idea"
-          }
-        }
-      }
-    },
     "Fikirler" : {
       "localizations" : {
         "en" : {
@@ -6295,16 +6455,6 @@
         }
       }
     },
-    "Önerilen yerler" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Suggested places"
-          }
-        }
-      }
-    },
     "Önerilen yerler ve okunma sayıları" : {
       "localizations" : {
         "en" : {
@@ -6373,16 +6523,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Suggestions come from Wikipedia; the most-read places of the last 30 days come first. Opening hours are looked up on OpenStreetMap once added to the plan."
-          }
-        }
-      }
-    },
-    "Önerilerde ya da haritada ara" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Search suggestions or the map"
           }
         }
       }
@@ -9326,16 +9466,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Location (e.g. VFS Global Istanbul)"
-          }
-        }
-      }
-    },
-    "Yer öner" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Suggest places"
           }
         }
       }

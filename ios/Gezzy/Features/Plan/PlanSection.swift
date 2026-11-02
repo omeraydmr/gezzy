@@ -115,8 +115,8 @@ struct PlanSection: View {
             IdeasCard(trip: trip, day: plan.day)
             LodgingCard(trip: trip)
         }
-        .sheet(isPresented: $isAddingStop) {
-            AddStopSheet(trip: trip, day: plan.day)
+        .fullScreenCover(isPresented: $isAddingStop) {
+            PlacePickerSheet(trip: trip, target: .day(plan.day), openingDay: plan.day)
         }
         .sheet(item: $editingHours) { stop in
             OpeningHoursEditor(stop: stop) { hours in

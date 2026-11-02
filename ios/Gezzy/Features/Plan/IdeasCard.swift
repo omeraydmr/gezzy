@@ -7,8 +7,7 @@ struct IdeasCard: View {
     @Environment(TripStore.self) private var store
     let trip: Trip
     let day: Date
-    @State private var isAdding = false
-    @State private var isSuggesting = false
+    @State private var isPicking = false
     @State private var isPlanning = false
     /// Son otomatik rotadan önceki duraklar ve fikirler; "Geri al" bunları geri yükler.
     @State private var undo: (stops: [Stop], ideas: [Stop]?)?
@@ -24,24 +23,17 @@ struct IdeasCard: View {
                     Text("\(ideas.count)").font(.tCaption).foregroundStyle(Color.ink3)
                 }
                 Spacer()
-                Button {
-                    isAdding = true
-                } label: {
-                    Image(systemName: "plus")
-                }
-                .buttonStyle(.circleIcon(size: 32))
-                .accessibilityLabel("Fikir ekle")
             }
 
             if ideas.isEmpty {
-                EmptyHint(symbol: "lightbulb", text: String(localized: "Gitmek istediğin yerleri ekle ya da önerilerden seç; sonra otomatik rota günlere dağıtsın."))
+                EmptyHint(symbol: "lightbulb", text: String(localized: "Gitmek istediğin yerleri ekle; sonra otomatik rota günlere dağıtsın."))
             }
 
             HStack(spacing: 8) {
                 Button {
-                    isSuggesting = true
+                    isPicking = true
                 } label: {
-                    Label("Yer öner", systemImage: "sparkle.magnifyingglass")
+                    Label("Yer ekle", systemImage: "plus")
                 }
                 .buttonStyle(PillButtonStyle())
                 if !ideas.isEmpty {
@@ -108,11 +100,8 @@ struct IdeasCard: View {
             }
         }
         .tray()
-        .sheet(isPresented: $isAdding) {
-            AddStopSheet(trip: trip, day: day, asIdea: true)
-        }
-        .sheet(isPresented: $isSuggesting) {
-            PlaceSuggestionsSheet(trip: trip, day: day)
+        .fullScreenCover(isPresented: $isPicking) {
+            PlacePickerSheet(trip: trip, target: .ideas, openingDay: day)
         }
         .sheet(isPresented: $isPlanning) {
             AutoPlanSheet(trip: trip) { before in
