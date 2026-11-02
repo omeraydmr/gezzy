@@ -91,6 +91,33 @@ final class DayAnchorsTests: XCTestCase {
         XCTAssertEqual(value.anchors(on: TestCalendar.date(2026, 10, 20), calendar: cal).start?.name, "A")
     }
 
+    /// Verilen saat dilimiyle uçuş.
+    func segment(_ from: String, _ to: String, day: Int, _ dep: Int, _ arr: Int) -> FlightSegment {
+        func zone(_ code: String) -> String { code == "IST" ? "Europe/Istanbul" : "Europe/Lisbon" }
+        var depCal = Calendar(identifier: .gregorian)
+        depCal.timeZone = TimeZone(identifier: zone(from))!
+        var arrCal = Calendar(identifier: .gregorian)
+        arrCal.timeZone = TimeZone(identifier: zone(to))!
+        return FlightSegment(flightNumber: "TP\(dep)", fromCode: from, fromCity: from, toCode: to, toCity: to,
+                             departure: depCal.date(from: DateComponents(year: 2026, month: 10, day: day, hour: dep))!,
+                             arrival: arrCal.date(from: DateComponents(year: 2026, month: 10, day: day, hour: arr))!,
+                             departureTimeZone: zone(from), arrivalTimeZone: zone(to))
+    }
+
+    func testConnectionHomeEndsAtFirstAirportOfTheDay() {
+        // Porto seyahati; dönüş OPO → LIS → IST aktarmalı.
+        var value = Trip(name: "Porto", destination: Destination(countryCode: "PT", city: "Porto"),
+                         startDate: TestCalendar.date(2026, 10, 20), endDate: TestCalendar.date(2026, 10, 23))
+        value.lodgings = [lodging("A", Coordinate(latitude: 41.1496, longitude: -8.6109), from: 20, to: 23)]
+        value.flights = [segment("OPO", "LIS", day: 23, 8, 9), segment("LIS", "IST", day: 23, 11, 17)]
+        let day = TestCalendar.date(2026, 10, 23)
+        XCTAssertEqual(value.departureFlight(on: day, calendar: cal)?.fromCode, "OPO")
+        let anchors = value.anchors(on: day, calendar: cal)
+        guard case .airport(let airport, _)? = anchors.end else { return XCTFail("Son gün havalimanında bitmeli") }
+        XCTAssertEqual(airport.code, "OPO")
+        XCTAssertEqual(anchors.start?.name, "A", "Aktarma bacağı varış sayılmaz")
+    }
+
     func testPlannedStartsUseFixedTimesAndWalkFromStart() {
         var value = trip()
         let day = TestCalendar.date(2026, 10, 21)

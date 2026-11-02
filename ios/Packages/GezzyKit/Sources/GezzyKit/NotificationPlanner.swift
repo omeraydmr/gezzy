@@ -55,13 +55,13 @@ public enum NotificationPlanner {
                 if !lodging.confirmation.isEmpty { body += " · rezervasyon \(lodging.confirmation)" }
                 result.append(PlannedNotification(id: "\(prefix)-checkin-\(lodging.id.uuidString)", date: morning,
                                                   title: String(localized: "Bugün otel girişi: \(lodging.name)"), body: body,
-                                                  link: TripLink(tripID: trip.id, section: "plan")))
+                                                  link: TripLink(tripID: trip.id, section: "reservations")))
             }
             if let morning = at(hour: 8, minute: 0, on: calendar.startOfDay(for: lodging.checkOut), calendar) {
                 result.append(PlannedNotification(id: "\(prefix)-checkout-\(lodging.id.uuidString)", date: morning,
                                                   title: String(localized: "Bugün çıkış: \(lodging.name)"),
                                                   body: String(localized: "Çıkış saati en geç \(checkOutClock)."),
-                                                  link: TripLink(tripID: trip.id, section: "plan")))
+                                                  link: TripLink(tripID: trip.id, section: "reservations")))
             }
         }
 
@@ -114,12 +114,14 @@ public enum NotificationPlanner {
         for (index, day) in days.enumerated() {
             let stops = trip.stops(on: day, calendar: calendar)
             guard !stops.isEmpty, let morning = at(hour: 8, minute: 30, on: day, calendar) else { continue }
-            let first = stops[0]
             var body = "\(stops.count) durak"
-            if let start = first.startMinutes {
-                body += " · ilk durak \(first.name), \(String(format: "%02d:%02d", start / 60, start % 60))"
-            } else {
-                body += " · ilk durak \(first.name)"
+            // "Otele uğra" durağı ilk durak sayılmaz.
+            if let first = stops.first(where: { $0.kind != .stay }) {
+                if let start = first.startMinutes {
+                    body += " · ilk durak \(first.name), \(String(format: "%02d:%02d", start / 60, start % 60))"
+                } else {
+                    body += " · ilk durak \(first.name)"
+                }
             }
             result.append(PlannedNotification(id: "\(prefix)-day\(index)", date: morning,
                                               title: String(localized: "\(index + 1). gün · \(trip.destination(on: day, calendar: calendar).city)"), body: body,

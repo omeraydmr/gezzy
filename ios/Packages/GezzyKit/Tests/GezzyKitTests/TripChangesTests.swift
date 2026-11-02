@@ -34,6 +34,13 @@ final class TripChangesTests: XCTestCase {
         XCTAssertNil(TripChanges.summarize(old: old, new: old, me: me.id, money: money))
     }
 
+    func testLodgingLinksToReservations() {
+        let old = base()
+        var new = old
+        new.lodgings = [Lodging(name: "Otel", checkIn: .now, checkOut: .now)]
+        XCTAssertEqual(TripChanges.summarize(old: old, new: new, me: me.id, money: money)?.link.section, "reservations")
+    }
+
     func testNewSharedTrip() {
         XCTAssertEqual(TripChanges.summarize(old: nil, new: base(), me: me.id, money: money)?.lines, ["Seyahat seninle paylaşıldı."])
     }

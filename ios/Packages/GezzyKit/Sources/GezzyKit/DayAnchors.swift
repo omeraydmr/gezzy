@@ -56,23 +56,34 @@ extension Trip {
         return c.year == local.year && c.month == local.month && c.day == local.day
     }
 
-    /// O gün bu günün ülkesine inen uçuş (yerel saatle), en son inen.
+    /// O gün bu günün ülkesine inen, konumu bilinen havalimanına uçuş (yerel saatle), en son inen.
+    /// Dönüş aktarmasının ülke içi bacağı (ayrılış uçuşuyla ya da sonra kalkan) varış sayılmaz.
     public func arrivalFlight(on day: Date, calendar: Calendar = .current) -> FlightSegment? {
         let country = destination(on: day, calendar: calendar).countryCode.uppercased()
+        let leaving = departureFlight(on: day, calendar: calendar)
         return flights.filter { flight in
-            Airports.airport(flight.toCode)?.countryCode.uppercased() == country
+            guard let airport = Airports.airport(flight.toCode), airport.coordinate != nil else { return false }
+            if let leaving, flight.departure >= leaving.departure { return false }
+            return airport.countryCode.uppercased() == country
                 && isSameDay(flight.localArrival(fallback: calendar.timeZone), day, calendar)
         }.max { $0.arrival < $1.arrival }
     }
 
-    /// O gün bu günün ülkesinden çıkıp başka ülkeye giden uçuş (yerel saatle), en son kalkan.
+    /// O gün bu günün ülkesinden ayrılış: o gün ülke dışına giden bir bacak varsa, o gün ülkedeki (konumu bilinen)
+    /// bir havalimanından kalkan en erken bacak (OPO → LIS → IST'de OPO).
     public func departureFlight(on day: Date, calendar: Calendar = .current) -> FlightSegment? {
         let country = destination(on: day, calendar: calendar).countryCode.uppercased()
-        return flights.filter { flight in
+        let today = flights.filter { isSameDay($0.localDeparture(fallback: calendar.timeZone), day, calendar) }
+        let leaves = today.contains { flight in
             guard let from = Airports.airport(flight.fromCode)?.countryCode.uppercased(),
                   let to = Airports.airport(flight.toCode)?.countryCode.uppercased() else { return false }
-            return from == country && to != country && isSameDay(flight.localDeparture(fallback: calendar.timeZone), day, calendar)
-        }.max { $0.departure < $1.departure }
+            return from == country && to != country
+        }
+        guard leaves else { return nil }
+        return today.filter { flight in
+            guard let airport = Airports.airport(flight.fromCode), airport.coordinate != nil else { return false }
+            return airport.countryCode.uppercased() == country
+        }.min { $0.departure < $1.departure }
     }
 
     /// Günün başlangıç ve bitiş noktası (bkz. spec §3). Konumu bilinmeyen havalimanı çapa olmaz.

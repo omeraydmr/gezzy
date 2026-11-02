@@ -53,7 +53,7 @@ public enum TripChanges {
 
         let oldLodgings = Set(old.lodgingList.map(\.id))
         for lodging in new.lodgingList where !oldLodgings.contains(lodging.id) {
-            sections.append("plan")
+            sections.append("reservations")
             lines.append(String(localized: "Konaklama eklendi: \(lodging.name)"))
         }
 
