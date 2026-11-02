@@ -10,7 +10,7 @@ gelen veri de rota analizi için zayıf (gün sırası, saat, süre, seyahat öz
 
 ## Hedef
 
-Seyahat bitince rota ve seyahat özeti, kullanıcı bir kez izin verdiyse (varsayılan açık) kendiliğinden Gezzy
+Seyahat bitince rota, seyahat özeti ve harcamalar, kullanıcı survey adımında izin verdiyse kendiliğinden Gezzy
 sunucusuna gitsin. Sunucuda hem topluluk önerileri beslensin hem de analiz için ayrı bir rota raporu saklansın.
 
 Kapsam dışı: sunucuda analiz/rapor ekranları, veri ambarına aktarım, toplu veri silme aracı (kullanıcı başına geri alma
@@ -18,16 +18,21 @@ var).
 
 ## Kararlar (kullanıcıyla)
 
-- **İzin:** bir kez sorulur, **varsayılan açık**. Onboarding'de görünür bir anahtar ve Profil'de aynı anahtar.
-  Kapatmak tek dokunuş.
-- **Veri:** rota + seyahat özeti + durak saatleri.
+- **İzin:** onboarding'in survey adımında açık bir soruyla istenir; önceden işaretli değildir ("Evet, paylaş" /
+  "Hayır"). Cevap verilmeden hiçbir şey gönderilmez. "Hayır" diyen kullanıcıya premium teklifi gösterilir
+  (kapatılabilir; uygulama ücretsiz kullanılmaya devam eder). Profil'de aynı tercih değiştirilebilir.
+- **Premium:** abonesi olan kullanıcının rotası hiç gönderilmez (tercih premium'da kapalı kilitlenir). Abonelik ayrı
+  spec'te: `2026-11-02-premium-subscription-design.md`.
+- **Veri:** rota + seyahat özeti (yıl dahil) + durak saatleri + harcama tutarları.
+- **Yeniden deneme:** gönderilene kadar sınırsız.
 
 ### Hukuki not
 
-KVKK/GDPR'da zorunlu olmayan işleme için açık rıza gerekir; önceden işaretli kutu geçerli rıza sayılmayabilir. App Store
-5.1.1 toplanan verinin açıklanmasını ister. Riski azaltmak için:
+KVKK/GDPR'da zorunlu olmayan işleme için açık rıza gerekir. App Store 5.1.1 toplanan verinin açıklanmasını ister;
+3.2.2 bir özelliği veri paylaşımı iznine bağlamayı yasaklar. Bu yüzden:
 
-- Anahtar onboarding'de ayrı bir adımda, ne gönderildiğini söyleyen metinle gösterilir (gizli ayar değil).
+- İzin survey'de, ne gönderildiğini söyleyen metinle ve iki eşit düğmeyle istenir; varsayılan seçili değildir.
+- Reddetmek hiçbir özelliği kapatmaz; yalnızca premium teklifi gösterilir.
 - Profil'de "Ne gönderiliyor?" açıklaması ve anahtar.
 - Her gönderim Anılar'da görünür ve geri alınabilir.
 - Gizlilik politikası ve App Store gizlilik etiketi güncellenir (bu spec'in dışında, yayından önce yapılmalı;
@@ -43,19 +48,25 @@ RouteReport {
   country: String          // "DK"
   city: String             // "Kopenhag" (çok şehirde ilk şehir)
   cities: [String]         // çok şehirde sırayla şehirler; tek şehirde [city]
-  month: Int               // 1…12, başlangıç ayı (yıl yok)
+  year: Int                // başlangıç yılı
+  month: Int               // 1…12, başlangıç ayı
   nights: Int
   travellers: Int          // ekip sayısı (en az 1)
   places: [Place]          // CommunityPlaces.Place ile aynı: ref, name, lat/lon (5 basamak), kind, category
   days: [Day]              // gün sırasıyla
-  budgetShares: [String: Double]  // kategori → harcama payı (0…1, 2 basamak); tutar ve para birimi yok
+  currency: String         // seyahat para birimi, "DKK"
+  budget: [String: Int]    // kategori → limit (kuruş)
+  expenses: [Spend]        // her harcama: başlık ve kişi gönderilmez
 }
+Spend { day: Int?, category: String, amount: Int, originalAmount: Int?, originalCurrency: String?, splitCount: Int }
+                          // day: seyahatin kaçıncı günü (dışındaysa nil); tutarlar kuruş
 Day { index: Int, stops: [Visit] }
 Visit { ref: String, startMinutes: Int?, durationMinutes: Int }   // startMinutes 15 dk'ya yuvarlanır
 ```
 
-Gönderilmeyen: seyahat adı, kesin tarihler, yıl, kişi adları, notlar (bilinen tür etiketleri hariç — mevcut
-`CommunityPlaces.category` kuralı), konaklama ve ulaşım durakları, otel ve uçuş bilgisi, tutarlar, fotoğraflar.
+Gönderilmeyen: seyahat adı, kesin gün tarihleri (yalnızca yıl ve ay), kişi adları, harcama başlıkları ve ödeyen kişi,
+notlar (bilinen tür etiketleri hariç — mevcut `CommunityPlaces.category` kuralı), konaklama ve ulaşım durakları, otel ve
+uçuş bilgisi, makbuz ve diğer fotoğraflar. Hesaplaşma ödemeleri (`isTransfer`) gönderilmez.
 
 `make` şunlarda `nil` döner: seyahat bitmemiş (`CommunityPlaces` içindeki "bitti" kuralı), konumlu ve uygun durak
 sayısı < 2, kullanıcı seyahatin sahibi değil (aşağıda).
@@ -67,21 +78,27 @@ Topluluk havuzu için aynı seyahatten mevcut `CommunityPlaces.contribution(...)
 - **Tetik:** uygulama ön plana geldiğinde (`GezzyApp` içindeki `scenePhase == .active`) `RouteReporter.run()`.
   Arka plan görevi yok.
 - **Uygun seyahat:** bitiş gününden en az 1 gün geçmiş, durumu `planned`, gönderilmemiş, kullanıcı bu seyahat için
-  Anılar kartında "Paylaşma" dememiş, ayar açık.
+  Anılar kartında "Paylaşma" dememiş, tercih "evet", kullanıcı premium değil.
 - **Tek gönderici:** ekipli seyahatte her cihaz göndermesin diye yalnızca sahibin cihazı gönderir
   (`trip.members` içinde `role == .owner` olan üyenin `id`'si `store.me.id` ise; üye listesi boşsa da gönderilir).
-- **Durum** (cihazda, `UserDefaults` `gezzy.routeReports.v1`): seyahat id → `{reportID, state: sent | failed(attempts) | withdrawn}`.
-  Başarısız gönderim sonraki ön plana gelişte tekrar denenir, en çok 5 kez.
+- **Durum** (cihazda, `UserDefaults` `gezzy.routeReports.v1`): seyahat id → `{reportID, state: pending | sent | withdrawn, lastAttempt}`.
+  Başarısız gönderim gönderilene kadar her ön plana gelişte tekrar denenir; ardışık denemeler arasında en az 15 dakika
+  (sunucuyu boğmamak için). 4xx doğrulama hatası (400/413) alan rapor `rejected` olur ve yeniden denenmez; sebep
+  günlüğe yazılır.
 - **Sıra:** önce `POST /places/contribute` (oysuz), sonra `POST /trips/report`. İkincisi başarısızsa ilki yeniden
   gönderilebilir (sunucu kişi başına upsert ediyor, çift sayım olmaz).
 
 ## 3. Arayüz
 
-- **Ayar anahtarı:** `@AppStorage("gezzy.routeSharing.enabled")`, varsayılan `true`.
-- **Onboarding:** `cloud` ile `done` arasına yeni `sharing` adımı. Başlık "Rotanı başkalarına ilham yap", kısa
-  açıklama (ne gider, ne gitmez: "Gittiğin yerler, sırası ve saatleri, kaç gece ve kaç kişi olduğu. Adın, tarihlerin,
-  notların, otelin ve harcama tutarların gitmez."), anahtar açık gelir, "Devam".
-- **Profil:** "Gizlilik" bölümünde anahtar + "Ne gönderiliyor?" (aynı metin, açılır).
+- **Tercih:** `@AppStorage("gezzy.routeSharing.choice")`: `"yes"`, `"no"` ya da boş (sorulmadı). Boşken gönderim yok.
+- **Survey adımı (`OnboardingView.survey`):** mevcut soruların sonuna "Rotanı başkalarına ilham yap" kartı:
+  açıklama ("Seyahat bitince gittiğin yerler, sırası ve saatleri, kaç gece ve kaç kişi olduğun, harcama tutarların
+  Gezzy'ye gider. Adın, otelin, uçuşun ve harcama başlıkların gitmez. Profil'den istediğin zaman değiştirebilirsin.")
+  ve iki eşit görünümlü düğme "Evet, paylaş" / "Hayır". Biri seçilmeden "Devam" pasif. "Hayır" seçilince premium
+  teklif ekranı (`PaywallSheet`, premium spec'i) açılır; kapatınca onboarding sürer.
+- **Mevcut kullanıcılar** (onboarding'i geçmiş, tercih boş): ilk açılışta aynı kart tek başına bir sheet olarak sorulur.
+- **Profil:** "Gizlilik" bölümünde tercih (anahtar) + "Ne gönderiliyor?" (aynı metin). Premium kullanıcıda anahtar
+  kapalı ve pasif, altında "Premium'da rotan paylaşılmaz.".
 - **Anılar kartı (`CommunityShareCard`):**
   - Ayar kapalıysa: bugünkü kart aynen.
   - Ayar açık ve gönderildiyse: tek satır "Rotan Gezzy'ye gönderildi" + "Geri al" ve mevcut "Beğendiklerini oyla"
@@ -99,17 +116,19 @@ CREATE TABLE IF NOT EXISTS trip_reports (
   contributor TEXT NOT NULL,      -- mevcut tuzlu özet
   country TEXT NOT NULL,
   city TEXT NOT NULL,
+  year INTEGER NOT NULL,
   month INTEGER NOT NULL,
+  currency TEXT NOT NULL,
   nights INTEGER NOT NULL,
   travellers INTEGER NOT NULL,
-  payload TEXT NOT NULL,          -- RouteReport JSON (places, days, cities, budgetShares)
+  payload TEXT NOT NULL,          -- RouteReport JSON (places, days, cities, budget, expenses)
   created_at INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS trip_reports_country_city ON trip_reports (country, city);
 ```
 
 - **`POST /trips/report`** (`X-Gezzy-Key`, `X-Gezzy-Contributor` ya da App Attest — mevcut kimlik akışı): doğrula
-  (alan tipleri, `month` 1–12, `nights` 0–90, `travellers` 1–30, en çok 200 yer / 60 gün / gün başına 30 ziyaret,
+  (alan tipleri, `year` 2000–2100, `month` 1–12, `currency` 3 harf, en çok 500 harcama, tutarlar 0…10⁹, `nights` 0–90, `travellers` 1–30, en çok 200 yer / 60 gün / gün başına 30 ziyaret,
   `payload` ≤ 64 KB, yer adlarında bağlantı/e-posta/telefon yok — mevcut `validate` kuralları). Aynı `id` gelirse üzerine
   yazar (aynı contributor ise), başkasınınsa 409. Günlük kota: kişi başına 20 rapor.
 - **`DELETE /trips/report/:id`**: yalnızca aynı contributor silebilir; satırı siler. 404/403 ayrımı yapmaz (bilgi
@@ -122,7 +141,9 @@ CREATE INDEX IF NOT EXISTS trip_reports_country_city ON trip_reports (country, c
 ## 5. Kod düzeni
 
 - GezzyKit: `RouteReport.swift` + `RouteReportTests.swift` (yapı, yuvarlama, dışlanan alanlar, sahip kuralı,
-  bitmemiş seyahat, < 2 durak, bütçe payları toplamı ≈ 1, kişisel not sızmaması).
+  bitmemiş seyahat, < 2 durak, harcamalarda başlık/kişi/transfer sızmaması, gün indeksi, kişisel not sızmaması);
+  `RouteReportRetry` (yeniden deneme zamanı) testleri.
+- Bağımlılık: premium spec'indeki `Entitlements.isPremium` ve `PaywallSheet`. Premium önce uygulanır.
 - Uygulama: `Store/RouteReporter.swift` (durum, tetik, ağ çağrıları — `CommunityService` ile aynı istek kurulumu),
   `CommunityService`'e `report(_:)`, `withdrawReport(id:)`, `withdraw(_ contribution:)`; `GezzyApp` tetik;
   `OnboardingView` yeni adım; `ProfileView` bölüm; `CommunityShareCard` durumları; `Localizable.xcstrings`.
