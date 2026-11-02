@@ -198,7 +198,7 @@ public struct TripPalette: Hashable, Sendable {
             rgb(h: h, s: sat * saturation / 0.75, b: 0.92 - sat * 0.3)
         }
         return TripPalette(id: "photo", bands: bands, pins: pins,
-                           softLight: rgb(h: h, s: 0.10, b: 0.98), softDark: rgb(h: h, s: 0.35, b: 0.16))
+                           softLight: rgb(h: h, s: 0.08, b: 0.99), softDark: rgb(h: h, s: 0.35, b: 0.16))
     }
 
     /// Beyaz metnin okunacağı en parlak ton: 0,62'den başlayıp 3:1 sağlanana kadar koyulaşır.

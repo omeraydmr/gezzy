@@ -67,7 +67,7 @@ Kapak fotoğrafı olan seyahatte palet `CoverImageStore.dominantColor` renginden
   kalırsa parlaklık 0,05 adımlarla düşürülür.
 - `pins` = accent, h+40°, h+160°, h+220° (aynı doygunluk/parlaklık, aynı kontrast düzeltmesi).
 - `bands` kullanılmaz (fotoğraf gösterilir) ama dolu döner: accent'in açık tonları.
-- `softLight` = HSB(h, 0,10, 0,98), `softDark` = HSB(h, 0,35, 0,16).
+- `softLight` = HSB(h, 0,08, 0,99), `softDark` = HSB(h, 0,35, 0,16).
 - Gri fotoğraf (doygunluk < 0,08): `forSeed(fallbackSeed)` döner.
 
 `dominantColor` bugün `Color` döndürüyor; `rgbHex` (WidgetBridge'deki mevcut yardımcı) ile hex'e çevrilir.
