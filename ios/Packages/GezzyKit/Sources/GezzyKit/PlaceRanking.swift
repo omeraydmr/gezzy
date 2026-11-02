@@ -37,6 +37,18 @@ public enum PlaceRanking {
     public static let proximityRange = 15_000.0
     public static let searchLimit = 25
 
+    /// Aynı yer: 80 m içindeyse ya da adı tutup 300 m içindeyse. Ad tek başına yetmez; şehrin öbür ucundaki
+    /// "Museu …" yerleri birbirini silmesin.
+    private static let samePlaceDistance = 80.0
+    private static let samePlaceNameDistance = 300.0
+
+    private static func isSamePlace(_ a: PlaceSuggestions.Suggestion, _ b: PlaceSuggestions.Suggestion) -> Bool {
+        let distance = Geo.distance(a.coordinate, b.coordinate)
+        if distance < samePlaceDistance { return true }
+        return distance < samePlaceNameDistance
+            && OpeningHoursLookup.bestMatch(for: a.name, in: [.init(name: b.name, openingHours: "")]) != nil
+    }
+
     public static func badge(popularity: Double, contributors: Int?) -> Badge? {
         if let contributors { return .community(contributors) }
         if popularity >= veryPopularThreshold { return .veryPopular }
@@ -62,7 +74,7 @@ public enum PlaceRanking {
         var wiki = zip(wikipedia, percentiles(wikipedia.map(\.score))).map { Ranked(suggestion: $0, popularity: $1) }
         var result: [Ranked] = []
         for (place, popularity) in zip(community, percentiles(community.map(\.score))) {
-            if let index = wiki.firstIndex(where: { place.matches($0.suggestion.stop(day: .distantPast)) }) {
+            if let index = wiki.firstIndex(where: { isSamePlace(place, $0.suggestion) }) {
                 result.append(Ranked(suggestion: place, popularity: min(1, max(popularity, wiki[index].popularity) + communityBonus)))
                 wiki.remove(at: index)
             } else {
@@ -98,8 +110,7 @@ public enum PlaceRanking {
             similarity(item.suggestion.name) >= matchFloor || PlaceMatch.normalize(item.suggestion.category).contains(folded)
         }
         for result in mapResults {
-            let stop = result.stop(day: .distantPast)
-            if let known = pool.first(where: { $0.suggestion.matches(stop) }) {
+            if let known = pool.first(where: { isSamePlace($0.suggestion, result) }) {
                 if !candidates.contains(where: { $0.id == known.id }) { candidates.append(known) }
             } else if !candidates.contains(where: { $0.id == result.id }) {
                 candidates.append(Ranked(suggestion: result, popularity: 0))

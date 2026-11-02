@@ -111,4 +111,30 @@ final class PlaceRankingTests: XCTestCase {
                                          mapResults: [], center: center)
         XCTAssertEqual(ranked.count, PlaceRanking.searchLimit)
     }
+
+    func testSameNameFarApartStaysSeparateInPool() {
+        // Aynı tür kelimeleri (museu, do) var ama üç km'den uzakta: farklı yerler.
+        let community = [place("community/1", "Museu do Fado", score: 5, slot: 0, contributors: 2)]
+        let ranked = PlaceRanking.pool(wikipedia: [place("wiki/1", "Museu Nacional do Azulejo", score: 9, slot: 3)],
+                                       community: community)
+        XCTAssertEqual(ranked.map(\.id).sorted(), ["community/1", "wiki/1"])
+    }
+
+    func testMapResultFarFromSameNamedPoolPlaceIsKept() {
+        let pool = PlaceRanking.pool(wikipedia: [place("wiki/1", "Museu do Fado", score: 9, slot: 0)], community: [])
+        let far = place("map/a", "Museu Nacional de Arte Antiga", score: 0, slot: 3)
+        let ids = PlaceRanking.search("museu", pool: pool, mapResults: [far], center: center).map(\.id)
+        XCTAssertEqual(ids.sorted(), ["map/a", "wiki/1"], "Uzaktaki Apple sonucu havuzdaki yerin yerini almaz")
+    }
+
+    func testSameNameWithinSmallDistanceStillMerges() {
+        // Aynı ad, ~220 m: 80 m'den uzak ama 300 m içinde → aynı yer.
+        var community = place("community/3", "Belém Tower", score: 0, slot: 2, contributors: 3)
+        community.coordinate = Coordinate(latitude: community.coordinate.latitude + 0.002,
+                                          longitude: community.coordinate.longitude)
+        let ranked = PlaceRanking.pool(wikipedia: sixWiki(), community: [community])
+        XCTAssertEqual(ranked.count, 6)
+        XCTAssertEqual(ranked.first { $0.id == "community/3" }!.popularity, 0.5, accuracy: 1e-9)
+        XCTAssertFalse(ranked.contains { $0.id == "wiki/3" })
+    }
 }
