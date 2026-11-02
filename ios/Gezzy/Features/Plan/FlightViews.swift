@@ -8,6 +8,7 @@ struct FlightsCard: View {
     @State private var editing: FlightSegment?
     @State private var isAdding = false
     @State private var isImporting = false
+    @Environment(\.tripTint) private var tint
 
     var body: some View {
         let flights = trip.flights.sorted { $0.departure < $1.departure }
@@ -22,26 +23,18 @@ struct FlightsCard: View {
                     Button("Biletten içe aktar", systemImage: "doc.viewfinder") { isImporting = true }
                 } label: {
                     Image(systemName: "plus")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 32, height: 32)
+                        .background(tint, in: Circle())
                 }
-                .buttonStyle(.circleIcon(size: 32))
                 .accessibilityLabel("Uçuş ekle")
             }
 
             if flights.isEmpty {
-                EmptyHint(symbol: "airplane.departure", text: String(localized: "Uçuşunu elle yaz ya da e-bilet, ekran görüntüsü veya Wallet kartından içe aktar."))
-                HStack(spacing: 10) {
-                    Button {
-                        isAdding = true
-                    } label: {
-                        Label("Elle ekle", systemImage: "square.and.pencil")
-                    }
-                    .buttonStyle(.primary)
-                    Button {
-                        isImporting = true
-                    } label: {
-                        Label("İçe aktar", systemImage: "doc.viewfinder")
-                    }
-                    .buttonStyle(.primary)
+                AddPlaceholder(title: String(localized: "Uçuş ekle"), subtitle: String(localized: "elle ya da biletten")) {
+                    Button("Elle ekle", systemImage: "square.and.pencil") { isAdding = true }
+                    Button("Biletten içe aktar", systemImage: "doc.viewfinder") { isImporting = true }
                 }
             }
 

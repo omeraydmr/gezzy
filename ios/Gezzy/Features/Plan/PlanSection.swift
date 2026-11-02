@@ -111,9 +111,7 @@ struct PlanSection: View {
                 }
             }
 
-            FlightsCard(trip: trip)
             IdeasCard(trip: trip, day: plan.day)
-            LodgingCard(trip: trip)
         }
         .fullScreenCover(isPresented: $isAddingStop) {
             PlacePickerSheet(trip: trip, target: .day(plan.day), openingDay: plan.day)

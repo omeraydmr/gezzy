@@ -1,6 +1,18 @@
 import SwiftUI
 import GezzyKit
 
+private struct OpenReservationsKey: EnvironmentKey {
+    static let defaultValue: () -> Void = {}
+}
+
+extension EnvironmentValues {
+    /// Plan'daki otel/uçuş satırından Rezervasyon sekmesine geçiş.
+    var openReservations: () -> Void {
+        get { self[OpenReservationsKey.self] }
+        set { self[OpenReservationsKey.self] = newValue }
+    }
+}
+
 struct TripDetailView: View {
     @Environment(TripStore.self) private var store
     let tripID: Trip.ID
@@ -16,11 +28,12 @@ struct TripDetailView: View {
     }
 
     enum TripSection: String, CaseIterable, Hashable {
-        case plan, money, packing, visa, crew, memories
+        case plan, reservations, money, packing, visa, crew, memories
 
         var title: String {
             switch self {
             case .plan: String(localized: "Plan")
+            case .reservations: String(localized: "Rezervasyon")
             case .money: String(localized: "Bütçe")
             case .packing: String(localized: "Valiz")
             case .visa: String(localized: "Vize")
@@ -32,6 +45,7 @@ struct TripDetailView: View {
         var symbol: String {
             switch self {
             case .plan: "map.fill"
+            case .reservations: "suitcase.rolling.fill"
             case .money: "chart.pie.fill"
             case .packing: "bag.fill"
             case .visa: "person.text.rectangle.fill"
@@ -71,6 +85,7 @@ struct TripDetailView: View {
                     Group {
                         switch section {
                         case .plan: PlanSection(trip: trip)
+                        case .reservations: ReservationsSection(trip: trip)
                         case .money: MoneySection(trip: trip)
                         case .packing: PackingSection(trip: trip)
                         case .visa: VisaSection(trip: trip)
@@ -90,6 +105,7 @@ struct TripDetailView: View {
             .ignoresSafeArea(edges: .top)
             .background(TintGlow(tint: tint, offsetY: 260))
             .environment(\.tripTint, tint)
+            .environment(\.openReservations) { section = .reservations }
             .navigationTitle(isHeroCollapsed ? trip.name : "")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(isHeroCollapsed ? .visible : .hidden, for: .navigationBar)

@@ -10,6 +10,7 @@ struct LodgingCard: View {
     @State private var editing: Lodging?
     @State private var isAdding = false
     @State private var isImporting = false
+    @Environment(\.tripTint) private var tint
 
     var body: some View {
         let lodgings = trip.lodgingList
@@ -25,27 +26,18 @@ struct LodgingCard: View {
                     Button("Rezervasyondan içe aktar", systemImage: "doc.viewfinder") { isImporting = true }
                 } label: {
                     Image(systemName: "plus")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 32, height: 32)
+                        .background(tint, in: Circle())
                 }
-                .buttonStyle(.circleIcon(size: 32))
                 .accessibilityLabel(String(localized: "Konaklama ekle"))
             }
 
             if lodgings.isEmpty {
-                EmptyHint(symbol: "building.2",
-                          text: String(localized: "Otel ya da ev ekle ya da Booking.com, Airbnb onayından içe aktar; günlerin planı oradan başlasın."))
-                HStack(spacing: 10) {
-                    Button {
-                        isAdding = true
-                    } label: {
-                        Label("Elle ekle", systemImage: "square.and.pencil")
-                    }
-                    .buttonStyle(.primary)
-                    Button {
-                        isImporting = true
-                    } label: {
-                        Label("İçe aktar", systemImage: "doc.viewfinder")
-                    }
-                    .buttonStyle(.primary)
+                AddPlaceholder(title: String(localized: "Konaklama ekle"), subtitle: String(localized: "elle ya da rezervasyondan")) {
+                    Button("Elle ekle", systemImage: "square.and.pencil") { isAdding = true }
+                    Button("Rezervasyondan içe aktar", systemImage: "doc.viewfinder") { isImporting = true }
                 }
             }
 
