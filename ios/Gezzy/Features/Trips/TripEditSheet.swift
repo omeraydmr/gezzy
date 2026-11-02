@@ -97,7 +97,7 @@ struct TripEditSheet: View {
                             let palette = TripPalette.forSeed(coverSeed)
                             ZStack {
                                 ForEach(0..<4, id: \.self) { index in
-                                    Circle()
+                                    Circle().inset(by: 5.5)
                                         .trim(from: Double(index) / 4, to: Double(index + 1) / 4)
                                         .stroke(palette.pin(index), lineWidth: 11)
                                 }

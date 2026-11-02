@@ -358,7 +358,7 @@ struct PlanSection: View {
         if case .lodging(let a)? = plan.start, case .lodging(let b)? = plan.end { sameLodging = a.id == b.id }
         return Map(position: $cameraPosition) {
             MapPolyline(coordinates: route)
-                .stroke(Color.ink, style: StrokeStyle(lineWidth: 3, lineCap: .round, dash: [0.5, 8]))
+                .stroke(tint, style: StrokeStyle(lineWidth: 3, lineCap: .round, dash: [0.5, 8]))
             if let anchor = plan.start, let startCoordinate {
                 anchorAnnotation(anchor, at: startCoordinate)
             }
