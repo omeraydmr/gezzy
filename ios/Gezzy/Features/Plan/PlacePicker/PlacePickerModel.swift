@@ -56,10 +56,14 @@ final class PlacePickerModel {
     /// Bu oturumda eklenen öneri → eklenen durağın kimliği.
     private(set) var added: [String: Stop.ID] = [:]
 
+    /// Havuz: "sonra genelde" yerleri de dahil; bölümde gösterilenler `rows` içinde süzülür.
     private var pool: [PlaceRanking.Ranked] = []
     private var nextGroups: [NextGroup] = []
     /// nil: arama yok.
     private var searchResults: [PlaceRanking.Ranked]?
+    /// Eski (iptal edilmiş) yüklemelerin ve aramaların state yazmasını engeller.
+    private var loadGeneration = 0
+    private var searchGeneration = 0
     private let openingDay: Date
 
     init(trip: Trip, target: Target, openingDay: Date) {
@@ -75,10 +79,13 @@ final class PlacePickerModel {
 
     var isFiltering: Bool { searchResults != nil }
 
+    /// Ana liste: filtre uygulanır; bölümlerde görünen yerler burada tekrar edilmez. Filtre açıkken bölüm
+    /// başlığı gizlenir ama yerler ana listede kalır.
     var rows: [PlaceRanking.Ranked] {
         let base = searchResults ?? pool
-        guard let kind = filter.kind else { return base }
-        return base.filter { $0.suggestion.kind == kind }
+        let filtered = filter.kind.map { kind in base.filter { $0.suggestion.kind == kind } } ?? base
+        let shownIDs = Set(visibleNextGroups.flatMap(\.places).map(\.id))
+        return filtered.filter { !shownIDs.contains($0.id) }
     }
 
     var visibleNextGroups: [NextGroup] {
@@ -98,11 +105,21 @@ final class PlacePickerModel {
     // MARK: Yükleme
 
     func load(trip: Trip) async {
+        // Yeni yükleme eskisinin (ve açık aramanın) sonucunu geçersiz kılar.
+        loadGeneration += 1
+        searchGeneration += 1
+        let generation = loadGeneration
         errorText = nil
         noCenter = false
         isLoading = true
-        defer { isLoading = false }
-        guard let center = await PlanCenter.find(for: trip, leg: leg(in: trip)) else {
+        searchResults = nil
+        isSearching = false
+        focusedID = nil
+        defer { if generation == loadGeneration { isLoading = false } }
+        let found = await PlanCenter.find(for: trip, leg: leg(in: trip))
+        // Iptal edilmiş ya da yerine yenisi başlamış yükleme state yazmaz.
+        guard generation == loadGeneration, !Task.isCancelled else { return }
+        guard let center = found else {
             self.center = nil
             noCenter = true
             pool = []
@@ -117,14 +134,17 @@ final class PlacePickerModel {
             let wikipedia = try await PlaceSuggestionService.shared.suggestions(around: center, excluding: existing)
             let fresh = await community.filter { suggestion in !existing.contains(where: suggestion.matches) }
             let groups = await next
-            // "Sonra genelde" bölümünde çıkanlar ana listede tekrar edilmez.
-            let shown = Set(groups.flatMap(\.places).map(\.id))
+            guard generation == loadGeneration, !Task.isCancelled else { return }
+            // "Sonra genelde" yerleri havuza da girer; aynı kimlik iki kez yazılmaz.
+            var merged = PlaceRanking.pool(wikipedia: wikipedia, community: fresh)
+            let ids = Set(merged.map(\.id))
+            merged += groups.flatMap(\.places).filter { !ids.contains($0.id) }
             withAnimation {
-                pool = PlaceRanking.browse(PlaceRanking.pool(wikipedia: wikipedia, community: fresh), center: center)
-                    .filter { !shown.contains($0.id) }
+                pool = PlaceRanking.browse(merged, center: center)
                 nextGroups = groups
             }
         } catch {
+            guard generation == loadGeneration, !Task.isCancelled else { return }
             pool = []
             nextGroups = []
             errorText = String(localized: "Öneriler alınamadı; internet bağlantını kontrol et.")
@@ -151,6 +171,8 @@ final class PlacePickerModel {
 
     /// `query` değişince çağrılır (350 ms gecikmeyle). İki harften kısaysa arama kapanır.
     func search(trip: Trip) async {
+        searchGeneration += 1
+        let generation = searchGeneration
         let typed = query.trimmingCharacters(in: .whitespaces)
         guard typed.count >= 2 else {
             searchResults = nil
@@ -158,13 +180,13 @@ final class PlacePickerModel {
             return
         }
         try? await Task.sleep(for: .milliseconds(350))
-        guard !Task.isCancelled else { return }
+        guard generation == searchGeneration, !Task.isCancelled else { return }
         isSearching = true
-        defer { isSearching = false }
+        defer { if generation == searchGeneration { isSearching = false } }
         let leg = leg(in: trip)
         let found = await PlaceSearch.places(typed, city: leg.destination.city, countryCode: leg.destination.countryCode,
                                              center: center, limit: 8)
-        guard !Task.isCancelled else { return }
+        guard generation == searchGeneration, !Task.isCancelled else { return }
         let existing = trip.stops + trip.ideaList
         let mapped = found.map { result -> PlaceSuggestions.Suggestion in
             let kind = PlaceSearch.kind(for: result.item.pointOfInterestCategory)
@@ -172,8 +194,7 @@ final class PlacePickerModel {
                                                coordinate: result.coordinate, openingHours: nil, duration: 60, score: 0)
         }.filter { suggestion in added[suggestion.id] != nil || !existing.contains(where: suggestion.matches) }
         withAnimation {
-            searchResults = PlaceRanking.search(typed, pool: pool + nextGroups.flatMap(\.places), mapResults: mapped,
-                                                center: center)
+            searchResults = PlaceRanking.search(typed, pool: pool, mapResults: mapped, center: center)
         }
     }
 
