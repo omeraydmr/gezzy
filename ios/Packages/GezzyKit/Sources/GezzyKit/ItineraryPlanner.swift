@@ -64,6 +64,7 @@ public enum ItineraryPlanner {
             var start: Int
             var end: Int
             var anchor: Coordinate?
+            var endAnchor: Coordinate?
             var existing: [Stop]
             var added: [Stop] = []
             var used: Int {
@@ -80,10 +81,11 @@ public enum ItineraryPlanner {
 
         var buckets: [Bucket] = days.map { day in
             let window = window(for: day, trip: trip, settings: settings, calendar: calendar)
+            let anchors = trip.anchors(on: day, calendar: calendar)
             return Bucket(day: day,
                           weekday: OpeningHours.dayIndex(calendarWeekday: calendar.component(.weekday, from: day)),
                           start: window.start, end: window.end,
-                          anchor: trip.lodging(forMorningOf: day, calendar: calendar)?.coordinate,
+                          anchor: anchors.start?.coordinate, endAnchor: anchors.end?.coordinate,
                           existing: trip.stops(on: day, calendar: calendar))
         }
 
@@ -159,13 +161,11 @@ public enum ItineraryPlanner {
         // Günleri sırala; pencereye sığmayan yenileri çıkar.
         var plans: [DayPlan] = []
         for var bucket in buckets {
-            var result = order(bucket.existing, bucket.added, bucket: (bucket.day, bucket.weekday, bucket.start,
-                                                                       trip.lodging(forMorningOf: bucket.day, calendar: calendar)?.coordinate))
+            var result = order(bucket.existing, bucket.added, bucket: (bucket.day, bucket.weekday, bucket.start, bucket.anchor, bucket.endAnchor))
             while result.end > bucket.end + 30, let drop = result.lastAdded {
                 bucket.added.removeAll { $0.id == drop }
                 unscheduled.append(drop)
-                result = order(bucket.existing, bucket.added, bucket: (bucket.day, bucket.weekday, bucket.start,
-                                                                       trip.lodging(forMorningOf: bucket.day, calendar: calendar)?.coordinate))
+                result = order(bucket.existing, bucket.added, bucket: (bucket.day, bucket.weekday, bucket.start, bucket.anchor, bucket.endAnchor))
             }
             plans.append(DayPlan(day: bucket.day, order: result.order, starts: result.starts,
                                  added: bucket.added.map(\.id), walkingMeters: result.meters, endMinutes: result.end))
@@ -187,7 +187,8 @@ public enum ItineraryPlanner {
         var lastAdded: UUID?
     }
 
-    private static func order(_ existing: [Stop], _ added: [Stop], bucket: (day: Date, weekday: Int, start: Int, hotel: Coordinate?)) -> Ordered {
+    private static func order(_ existing: [Stop], _ added: [Stop],
+                              bucket: (day: Date, weekday: Int, start: Int, hotel: Coordinate?, end: Coordinate?)) -> Ordered {
         let all = existing + added
         let located = all.filter { $0.coordinate != nil }
         let unlocated = all.filter { $0.coordinate == nil }
@@ -198,7 +199,7 @@ public enum ItineraryPlanner {
                                  fixedStart: addedIDs.contains(stop.id) ? nil : stop.startMinutes)
         }
         let dayStart = min(bucket.start, located.compactMap { addedIDs.contains($0.id) ? nil : $0.startMinutes }.min() ?? bucket.start)
-        let route = RouteOptimizer.order(visits, from: bucket.hotel, dayStart: dayStart)
+        let route = RouteOptimizer.order(visits, from: bucket.hotel, to: bucket.end, dayStart: dayStart)
         let schedule = RouteOptimizer.schedule(route, visits: visits, from: bucket.hotel, dayStart: dayStart)
         var starts: [UUID: Int] = [:]
         var end = bucket.start
@@ -209,6 +210,7 @@ public enum ItineraryPlanner {
             end = max(end, begin + stop.durationMinutes)
         }
         let path = (bucket.hotel.map { [$0] } ?? []) + route.map { located[$0].coordinate! }
+            + (bucket.hotel != nil && !route.isEmpty ? (bucket.end.map { [$0] } ?? []) : [])
         let lastAdded = route.reversed().map { located[$0].id }.first { addedIDs.contains($0) }
         return Ordered(order: route.map { located[$0].id } + unlocated.map(\.id), starts: starts, end: end,
                        meters: Geo.routeDistance(path), lastAdded: lastAdded)
