@@ -72,6 +72,35 @@ public struct TripPalette: Hashable, Sendable {
                            softLight: rgb(h: h, s: 0.08, b: 0.99), softDark: rgb(h: h, s: 0.35, b: 0.16))
     }
 
+    /// Koyu temada vurgu metin/ikon olarak: koyu zeminde en az 4,5:1.
+    public var accentTextDark: UInt32 { Self.textOnDark(accent) }
+
+    /// Koyu zeminde (0x24262A tepsi dahil) okunur ton: parlaklık artar, gerekirse doygunluk düşer.
+    public static func textOnDark(_ hex: UInt32) -> UInt32 {
+        let darkest: UInt32 = 0x24262A
+        let (h, s0, b0) = hsb(hex)
+        var saturation = s0
+        var brightness = max(b0, 0.6)
+        var color = rgb(h: h, s: saturation, b: brightness)
+        while contrast(color, darkest) < 4.6 {
+            if brightness < 1 {
+                brightness = min(1, brightness + 0.04)
+            } else if saturation > 0 {
+                saturation = max(0, saturation - 0.05)
+            } else {
+                break
+            }
+            color = rgb(h: h, s: saturation, b: brightness)
+        }
+        return color
+    }
+
+    /// İki renk arasındaki WCAG kontrast oranı.
+    public static func contrast(_ a: UInt32, _ b: UInt32) -> Double {
+        let la = luminance(a), lb = luminance(b)
+        return (max(la, lb) + 0.05) / (min(la, lb) + 0.05)
+    }
+
     /// Beyaz metnin okunacağı en parlak ton: 0,62'den başlayıp 3:1 sağlanana kadar koyulaşır.
     private static func readable(hue: Double, saturation: Double) -> UInt32 {
         var brightness = 0.62

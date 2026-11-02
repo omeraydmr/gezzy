@@ -74,7 +74,7 @@ struct TripWidgetView: View {
         }
     }
 
-    private var tint: Color { item.map { Color(hex: $0.tint) } ?? .secondary }
+    private var tint: Color { item.map { Color(tripText: $0.tint) } ?? .secondary }
 
     private var url: URL? {
         guard let item else { return nil }

@@ -256,7 +256,7 @@ struct VisaPreview: View {
 }
 
 struct SourceFootnote: View {
-    @Environment(\.tripTint) private var tint
+    @Environment(\.tripText) private var tintText
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -265,7 +265,7 @@ struct SourceFootnote: View {
                 .foregroundStyle(Color.ink3)
             Link("konsolosluk.gov.tr", destination: VisaRules.officialSourceURL)
                 .font(.system(.footnote, weight: .semibold))
-                .foregroundStyle(tint)
+                .foregroundStyle(tintText)
         }
     }
 }
@@ -514,15 +514,6 @@ enum VisaText {
         case .submitted: String(localized: "Başvuruldu")
         case .approved: String(localized: "Onaylandı")
         case .rejected: String(localized: "Reddedildi")
-        }
-    }
-
-    static func statusAccent(_ status: VisaApplication.Status) -> Accent {
-        switch status {
-        case .preparing: .gray
-        case .appointmentBooked, .submitted: .blue
-        case .approved: .green
-        case .rejected: .orange
         }
     }
 

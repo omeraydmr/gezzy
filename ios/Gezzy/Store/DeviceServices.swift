@@ -157,6 +157,8 @@ final class OfflineMapStore {
 
     /// Tüm günlerin haritalarını oluşturur (durak konumu olan günler).
     func save(_ trip: Trip) async {
+        // Aynı seyahat için süren kayıt varsa ikinciyi başlatma; klasörü altından silerdi.
+        if case .saving = states[trip.id] { return }
         let days = trip.days().filter { day in trip.stops(on: day).contains { $0.coordinate != nil } }
         guard !days.isEmpty else {
             states[trip.id] = .failed(String(localized: "Konumu olan durak yok."))
@@ -232,7 +234,7 @@ final class OfflineMapStore {
                 path.lineWidth = 4 * unit
                 path.lineCapStyle = .round
                 path.setLineDash([1 * unit, 10 * unit], count: 2, phase: 0)
-                UIColor(Color.ink).setStroke()
+                UIColor(Color(hex: palette.accent)).setStroke()
                 path.stroke()
             }
 

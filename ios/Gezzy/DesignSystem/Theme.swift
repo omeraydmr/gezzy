@@ -192,9 +192,24 @@ extension Color {
     }
 }
 
+extension Color {
+    /// Renk metin/ikon olarak: açık temada kendisi, koyu temada okunur açık tonu.
+    static func tripText(_ hex: UInt32) -> Color {
+        Color(light: hex, dark: TripPalette.textOnDark(hex))
+    }
+}
+
 extension TripPalette {
+    /// Vurgu metin/ikon olarak.
+    var accentText: Color { Color(light: accent, dark: accentTextDark) }
+
     /// Sıradaki durak pini rengi.
     func pin(_ index: Int) -> Color {
         Color(hex: pins[((index % pins.count) + pins.count) % pins.count])
+    }
+
+    /// Durak pini rengi metin olarak.
+    func pinText(_ index: Int) -> Color {
+        .tripText(pins[((index % pins.count) + pins.count) % pins.count])
     }
 }

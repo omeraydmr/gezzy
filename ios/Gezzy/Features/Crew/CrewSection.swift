@@ -3,7 +3,7 @@ import GezzyKit
 
 struct CrewSection: View {
     @Environment(TripStore.self) private var store
-    @Environment(\.tripTint) private var tint
+    @Environment(\.tripText) private var tintText
     @Environment(\.tripPalette) private var palette
     let trip: Trip
 
@@ -65,7 +65,7 @@ struct CrewSection: View {
                             me.cloudUserID = CloudSync.shared.currentUserID
                             store.update(trip.id) { $0.members.append(me) }
                         }
-                        .buttonStyle(PillButtonStyle(tint: tint, soft: .soft(palette)))
+                        .buttonStyle(PillButtonStyle(tint: tintText, soft: .soft(palette)))
                     }
                 }
                 .tray(padding: 14)
@@ -282,6 +282,7 @@ struct MemberEditor: View {
 /// iCloud paylaşım davetini (Mesajlar, Mail, AirDrop…) gönderen kart.
 struct InviteCard: View {
     @Environment(\.tripTint) private var tint
+    @Environment(\.tripText) private var tintText
     @Environment(\.tripPalette) private var palette
     let trip: Trip
     @Environment(TripStore.self) private var store
@@ -293,7 +294,7 @@ struct InviteCard: View {
             HStack(spacing: 10) {
                 Image(systemName: "person.crop.circle.badge.plus")
                     .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(tint)
+                    .foregroundStyle(tintText)
                     .frame(width: 36, height: 36)
                     .background(Color.soft(palette), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                 VStack(alignment: .leading, spacing: 2) {
@@ -318,14 +319,14 @@ struct InviteCard: View {
                               systemImage: "qrcode")
                             .frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(PillButtonStyle(tint: tint, soft: .soft(palette)))
+                    .buttonStyle(PillButtonStyle(tint: tintText, soft: .soft(palette)))
                 }
             }
 
             // QR bağlantısıyla katılıp ekipte olmayanlar: salt okur; ekibe eklenince düzenleyebilir.
             if let joiners = sync.linkJoiners[trip.id], !joiners.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("QR ile katılanlar").font(.tCaption).foregroundStyle(Color.ink3)
+                    Text("QR ile katılanlar · şimdilik sadece görür").font(.tCaption).foregroundStyle(Color.ink3)
                     ForEach(joiners) { joiner in
                         HStack {
                             Label(joiner.name, systemImage: "person.crop.circle")
@@ -333,7 +334,7 @@ struct InviteCard: View {
                                 .foregroundStyle(Color.ink)
                             Spacer()
                             Button("Ekibe ekle") { add(joiner) }
-                                .buttonStyle(PillButtonStyle(tint: tint, soft: .soft(palette)))
+                                .buttonStyle(PillButtonStyle(tint: tintText, soft: .soft(palette)))
                         }
                     }
                 }
@@ -372,7 +373,7 @@ struct InviteCard: View {
 /// Ekipten gelen son değişiklikler ("Elif bir harcama ekledi").
 struct ActivityFeed: View {
     let entries: [ActivityEntry]
-    @Environment(\.tripTint) private var tint
+    @Environment(\.tripText) private var tintText
     @State private var isExpanded = false
 
     var body: some View {
@@ -403,7 +404,7 @@ struct ActivityFeed: View {
                     withAnimation { isExpanded.toggle() }
                 }
                 .font(.system(.footnote, weight: .semibold))
-                .foregroundStyle(tint)
+                .foregroundStyle(tintText)
             }
         }
         .tray()

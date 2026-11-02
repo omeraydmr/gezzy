@@ -8,7 +8,7 @@ import UniformTypeIdentifiers
 /// şifreli (Data Protection) saklanır; "yalnızca bu cihazda" işaretlenmeyenler ekiple eşitlenir.
 struct DocumentsCard: View {
     @Environment(TripStore.self) private var store
-    @Environment(\.tripTint) private var tint
+    @Environment(\.tripText) private var tintText
     @Environment(\.tripPalette) private var palette
     let trip: Trip
 
@@ -104,7 +104,7 @@ struct DocumentsCard: View {
             HStack(spacing: 12) {
                 Image(systemName: DocumentText.symbol(document.kind))
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(tint)
+                    .foregroundStyle(tintText)
                     .frame(width: 40, height: 40)
                     .background(Color.soft(palette), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 VStack(alignment: .leading, spacing: 2) {

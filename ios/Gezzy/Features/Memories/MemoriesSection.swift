@@ -187,7 +187,7 @@ struct MemoriesSection: View {
                 Task { await renderPostcard(cover: cover) }
             } label: {
                 if isRenderingPostcard {
-                    ProgressView().tint(Color.onInk)
+                    ProgressView().tint(.white)
                 } else {
                     Label("Kartpostal oluştur", systemImage: "rectangle.portrait.on.rectangle.portrait.angled")
                 }

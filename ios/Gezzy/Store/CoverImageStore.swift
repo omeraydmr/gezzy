@@ -28,7 +28,6 @@ final class CoverImageStore {
     private let images = NSCache<NSString, UIImage>()
     /// Kartlar için küçültülmüş ve önceden çözülmüş görüntüler ("ad@piksel").
     private let thumbnails = NSCache<NSString, UIImage>()
-    private var colors: [String: Color] = [:]
     private var averages: [String: UInt32] = [:]
     private let context = CIContext(options: [.workingColorSpace: NSNull()])
 
@@ -142,7 +141,6 @@ final class CoverImageStore {
         try? FileManager.default.copyItem(at: source, to: target)
         images.removeObject(forKey: name as NSString)
         removeThumbnails(named: name)
-        colors[name] = nil
         averages[name] = nil
     }
 
@@ -160,7 +158,6 @@ final class CoverImageStore {
     func delete(named name: String) {
         images.removeObject(forKey: name as NSString)
         removeThumbnails(named: name)
-        colors[name] = nil
         averages[name] = nil
         try? FileManager.default.removeItem(at: directory.appendingPathComponent(name))
     }

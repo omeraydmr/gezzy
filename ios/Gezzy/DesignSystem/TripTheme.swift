@@ -26,6 +26,18 @@ extension EnvironmentValues {
     }
 }
 
+/// Seyahat rengi metin/ikon olarak; koyu temada okunur, açık ton. Dolgular `tripTint` kullanır.
+private struct TripTextKey: EnvironmentKey {
+    static let defaultValue: Color = .ink
+}
+
+extension EnvironmentValues {
+    var tripText: Color {
+        get { self[TripTextKey.self] }
+        set { self[TripTextKey.self] = newValue }
+    }
+}
+
 /// Zemin + seyahat renginden yumuşak bir ışık.
 /// Büyük yarıçaplı bulanıklık yerine radyal gradyan: aynı görünüm, renk geçişinde her kare ucuz.
 struct TintGlow: View {
@@ -187,7 +199,7 @@ struct DayChips: View {
             VStack(spacing: 4) {
                 Text(day.formatted(.dateTime.weekday(.abbreviated).locale(AppFormat.locale)))
                     .font(.system(.caption, weight: .medium))
-                    .foregroundStyle(isSelected ? Color.white.opacity(0.75) : Color.ink3)
+                    .foregroundStyle(isSelected ? Color.white.opacity(0.9) : Color.ink3)
                 Text(day.formatted(.dateTime.day().locale(AppFormat.locale)))
                     .font(.system(.title3, weight: .semibold))
                     .foregroundStyle(isSelected ? Color.white : Color.ink)

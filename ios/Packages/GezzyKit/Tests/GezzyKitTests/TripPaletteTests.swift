@@ -69,6 +69,37 @@ final class TripPaletteTests: XCTestCase {
         XCTAssertEqual(TripPalette.derived(from: 0x7A7D80, fallbackSeed: 2), TripPalette.forSeed(2))
     }
 
+    func testDarkTextContrastOnDarkSurfaces() {
+        var palettes = TripPalette.all
+        for hue in stride(from: 0, to: 360, by: 15) {
+            let seed = TripPalette.rgb(h: Double(hue) / 360, s: 0.6, b: 0.7)
+            palettes.append(TripPalette.derived(from: seed, fallbackSeed: 0))
+        }
+        for palette in palettes {
+            for hex in palette.pins {
+                let text = TripPalette.textOnDark(hex)
+                XCTAssertGreaterThanOrEqual(contrast(text, 0x24262A), 4.5, "\(palette.id) \(String(hex, radix: 16))")
+                XCTAssertGreaterThanOrEqual(contrast(text, 0x1A1B1E), 4.5, "\(palette.id) \(String(hex, radix: 16))")
+                XCTAssertGreaterThanOrEqual(contrast(text, palette.softDark), 4.5, "\(palette.id) soft")
+            }
+            XCTAssertEqual(palette.accentTextDark, TripPalette.textOnDark(palette.accent))
+        }
+    }
+
+    func testDarkTextKeepsHue() {
+        for palette in TripPalette.all {
+            let a = TripPalette.hsb(palette.accent).h, t = TripPalette.hsb(palette.accentTextDark).h
+            var gap = abs(a - t) * 360
+            gap = min(gap, 360 - gap)
+            XCTAssertLessThanOrEqual(gap, 4, palette.id)
+        }
+    }
+
+    private func contrast(_ a: UInt32, _ b: UInt32) -> Double {
+        let la = TripPalette.luminance(a), lb = TripPalette.luminance(b)
+        return (max(la, lb) + 0.05) / (min(la, lb) + 0.05)
+    }
+
     private func assertDistinct(_ colors: [UInt32], _ label: String) {
         for i in colors.indices {
             for j in colors.indices where j > i {

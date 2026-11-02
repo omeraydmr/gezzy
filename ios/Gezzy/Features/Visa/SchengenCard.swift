@@ -8,6 +8,7 @@ struct SchengenCard: View {
     let trip: Trip
     @Environment(TripStore.self) private var store
     @Environment(\.tripTint) private var tint
+    @Environment(\.tripText) private var tintText
     @State private var isAdding = false
 
     /// Çok ülkeli seyahatte yalnızca Schengen'de geçen günler.
@@ -79,7 +80,7 @@ struct SchengenCard: View {
                     .foregroundStyle(Color.ink3)
                 Link("AB kısa süreli kalış hesaplayıcısı", destination: Self.officialCalculator)
                     .font(.system(.caption, weight: .semibold))
-                    .foregroundStyle(tint)
+                    .foregroundStyle(tintText)
             }
         }
         .tray()

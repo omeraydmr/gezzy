@@ -5,6 +5,7 @@ import GezzyKit
 struct SharedAlbumCard: View {
     @Environment(TripStore.self) private var store
     @Environment(\.tripTint) private var tint
+    @Environment(\.tripText) private var tintText
     @Environment(\.tripPalette) private var palette
     let trip: Trip
     @State private var owner: UUID?
@@ -49,7 +50,7 @@ struct SharedAlbumCard: View {
                 } label: {
                     Label("Fotoğraflarımı paylaş", systemImage: "person.2.badge.plus")
                 }
-                .buttonStyle(PillButtonStyle(tint: tint, soft: .soft(palette)))
+                .buttonStyle(PillButtonStyle(tint: tintText, soft: .soft(palette)))
                 .disabled(!store.canEdit(trip))
                 Text("Ekran görüntüleri hariç; 2048 px'e küçültülmüş kopya iCloud'a yüklenir. İstediğin fotoğrafı sonra çıkarabilirsin.")
                     .font(.caption).foregroundStyle(Color.ink3)

@@ -10,7 +10,6 @@ struct LodgingCard: View {
     @State private var editing: Lodging?
     @State private var isAdding = false
     @State private var isImporting = false
-    @Environment(\.tripTint) private var tint
 
     var body: some View {
         let lodgings = trip.lodgingList
@@ -25,11 +24,7 @@ struct LodgingCard: View {
                     Button("Elle ekle", systemImage: "square.and.pencil") { isAdding = true }
                     Button("Rezervasyondan içe aktar", systemImage: "doc.viewfinder") { isImporting = true }
                 } label: {
-                    Image(systemName: "plus")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundStyle(.white)
-                        .frame(width: 32, height: 32)
-                        .background(tint, in: Circle())
+                    HeaderPlusLabel()
                 }
                 .accessibilityLabel(String(localized: "Konaklama ekle"))
             }
@@ -82,14 +77,14 @@ struct LodgingCard: View {
 
 struct LodgingRow: View {
     let lodging: Lodging
-    @Environment(\.tripTint) private var tint
+    @Environment(\.tripText) private var tintText
     @Environment(\.tripPalette) private var palette
 
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: "bed.double.fill")
                 .font(.system(size: 16))
-                .foregroundStyle(tint)
+                .foregroundStyle(tintText)
                 .frame(width: 44, height: 44)
                 .background(Color.soft(palette), in: RoundedRectangle(cornerRadius: Radius.thumb, style: .continuous))
             VStack(alignment: .leading, spacing: 2) {
@@ -105,7 +100,7 @@ struct LodgingRow: View {
                 }
             }
             Spacer(minLength: 8)
-            Tag(text: String(localized: "\(lodging.nights()) gece"), color: tint, soft: .soft(palette))
+            Tag(text: String(localized: "\(lodging.nights()) gece"), color: tintText, soft: .soft(palette))
         }
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)

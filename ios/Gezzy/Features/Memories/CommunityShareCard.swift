@@ -5,7 +5,7 @@ import GezzyKit
 /// Yalnızca yer adı, konumu, türü, oy ve aynı gün art arda gidilen yer çiftleri gider.
 struct CommunityShareCard: View {
     @Environment(\.tripPalette) private var palette
-    @Environment(\.tripTint) private var tint
+    @Environment(\.tripText) private var tintText
     let trip: Trip
     /// Fotoğraflarla doğrulanan duraklar.
     let verified: Set<UUID>
@@ -70,9 +70,9 @@ struct CommunityShareCard: View {
                 Button {
                     Task { await share() }
                 } label: {
-                    if isSending { ProgressView().tint(tint) } else { Text("Paylaş") }
+                    if isSending { ProgressView().tint(tintText) } else { Text("Paylaş") }
                 }
-                .buttonStyle(PillButtonStyle(tint: tint, soft: .soft(palette)))
+                .buttonStyle(PillButtonStyle(tint: tintText, soft: .soft(palette)))
                 .disabled(isSending || stops.count == excluded.count)
                 Button("Paylaşma") {
                     service.setChoice(.declined, for: trip)

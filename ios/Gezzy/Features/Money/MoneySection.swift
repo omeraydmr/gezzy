@@ -3,7 +3,7 @@ import GezzyKit
 
 struct MoneySection: View {
     @Environment(TripStore.self) private var store
-    @Environment(\.tripTint) private var tint
+    @Environment(\.tripText) private var tintText
     let trip: Trip
 
     @State private var isAddingExpense = false
@@ -142,7 +142,7 @@ struct MoneySection: View {
                 ShareLink(item: settlementSummary(transfers)) {
                     Label("Özeti paylaş", systemImage: "square.and.arrow.up")
                         .font(.system(.subheadline, weight: .semibold))
-                        .foregroundStyle(tint)
+                        .foregroundStyle(tintText)
                 }
             }
 
@@ -212,7 +212,7 @@ struct MoneySection: View {
         }) {
             if groups.isEmpty {
                 AddPlaceholder(title: String(localized: "Masraf ekle"), subtitle: String(localized: "Henüz harcama yok.")) {
-                    Button("Masraf ekle", systemImage: "plus") { isAddingExpense = true }
+                    isAddingExpense = true
                 }
             } else {
                 VStack(alignment: .leading, spacing: 14) {

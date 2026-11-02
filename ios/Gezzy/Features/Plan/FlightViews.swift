@@ -8,7 +8,6 @@ struct FlightsCard: View {
     @State private var editing: FlightSegment?
     @State private var isAdding = false
     @State private var isImporting = false
-    @Environment(\.tripTint) private var tint
 
     var body: some View {
         let flights = trip.flights.sorted { $0.departure < $1.departure }
@@ -22,11 +21,7 @@ struct FlightsCard: View {
                     Button("Elle ekle", systemImage: "square.and.pencil") { isAdding = true }
                     Button("Biletten içe aktar", systemImage: "doc.viewfinder") { isImporting = true }
                 } label: {
-                    Image(systemName: "plus")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundStyle(.white)
-                        .frame(width: 32, height: 32)
-                        .background(tint, in: Circle())
+                    HeaderPlusLabel()
                 }
                 .accessibilityLabel("Uçuş ekle")
             }
@@ -62,14 +57,14 @@ struct FlightsCard: View {
 
 struct FlightRow: View {
     let flight: FlightSegment
-    @Environment(\.tripTint) private var tint
+    @Environment(\.tripText) private var tintText
     @Environment(\.tripPalette) private var palette
 
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: "airplane")
                 .font(.system(size: 16))
-                .foregroundStyle(tint)
+                .foregroundStyle(tintText)
                 .frame(width: 44, height: 44)
                 .background(Color.soft(palette), in: RoundedRectangle(cornerRadius: Radius.thumb, style: .continuous))
             VStack(alignment: .leading, spacing: 2) {
@@ -85,7 +80,7 @@ struct FlightRow: View {
                     .foregroundStyle(Color.ink3)
             }
             Spacer(minLength: 8)
-            Tag(text: AppFormat.duration(minutes: flight.durationMinutes), color: tint, soft: .soft(palette))
+            Tag(text: AppFormat.duration(minutes: flight.durationMinutes), color: tintText, soft: .soft(palette))
         }
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)

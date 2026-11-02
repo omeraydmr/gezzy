@@ -9,7 +9,7 @@ struct DepartureChecklistCard: View {
     @State private var newTitle = ""
     @State private var editing: ChecklistItem?
     @FocusState private var isAdding: Bool
-    @Environment(\.tripTint) private var tint
+    @Environment(\.tripText) private var tintText
 
     var body: some View {
         let items = DepartureChecklist.sorted(trip.checklistItems, in: trip)
@@ -56,7 +56,7 @@ struct DepartureChecklistCard: View {
                         Spacer()
                         Button("Hepsini ekle") { add(suggestions) }
                             .font(.system(.footnote, weight: .semibold))
-                            .foregroundStyle(tint)
+                            .foregroundStyle(tintText)
                     }
                     FlowLayout(spacing: 8) {
                         ForEach(suggestions, id: \.key) { suggestion in

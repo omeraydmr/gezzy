@@ -59,8 +59,8 @@ struct TripDetailView: View {
 
     var body: some View {
         if let trip = store.trip(tripID) {
-            let tint = trip.tint
             let palette = trip.palette
+            let tint = Color(hex: palette.accent)
             let canEdit = store.canEdit(trip)
             ScrollView {
                 VStack(spacing: 0) {
@@ -107,6 +107,7 @@ struct TripDetailView: View {
             .background(TintGlow(tint: tint, offsetY: 260))
             .environment(\.tripTint, tint)
             .environment(\.tripPalette, palette)
+            .environment(\.tripText, palette.accentText)
             .environment(\.openReservations) { section = .reservations }
             .navigationTitle(isHeroCollapsed ? trip.name : "")
             .navigationBarTitleDisplayMode(.inline)
@@ -167,7 +168,7 @@ struct TripDetailView: View {
 
 /// Aşağı çekince esneyen, yukarı kayınca gezinme çubuğuna devreden kapak.
 struct TripHero: View {
-    @Environment(\.tripTint) private var tint
+    @Environment(\.tripText) private var tintText
     let trip: Trip
     let height: CGFloat
     @Binding var isCollapsed: Bool
@@ -187,7 +188,7 @@ struct TripHero: View {
                     Text(tag.text)
                         .font(.system(.footnote, weight: .semibold))
                         // Geri sayım seyahat renginde; taslak (turuncu) ve geçmiş (gri) durum rengi kalır.
-                        .foregroundStyle(tag.accent == .gray ? Color.ink2 : tag.accent == .orange ? tag.accent.base : tint)
+                        .foregroundStyle(tag.accent == .gray ? Color.ink2 : tag.accent == .orange ? tag.accent.base : tintText)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 5)
                         .background(.regularMaterial, in: Capsule())
@@ -296,7 +297,7 @@ struct TripStub: View {
 /// İkonlu sekme hapları; seçili sekmenin ikonu seyahat rengini alır.
 struct SectionTabs: View {
     @Binding var selection: TripDetailView.TripSection
-    @Environment(\.tripTint) private var tint
+    @Environment(\.tripText) private var tintText
     @Namespace private var namespace
 
     var body: some View {
@@ -314,7 +315,7 @@ struct SectionTabs: View {
                             Label(section.title, systemImage: section.symbol)
                                 .font(.system(.subheadline, weight: .semibold))
                                 .foregroundStyle(isSelected ? Color.ink : Color.ink2)
-                                .labelStyle(TintedIconLabelStyle(iconColor: isSelected ? tint : Color.ink3))
+                                .labelStyle(TintedIconLabelStyle(iconColor: isSelected ? tintText : Color.ink3))
                                 .padding(.horizontal, 14)
                                 .padding(.vertical, 10)
                                 .background {

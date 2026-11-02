@@ -17,11 +17,12 @@ struct PlanSection: View {
     /// Sürükleme ipucunun gösterildiği açılış sayısı; 3'e ulaşınca ya da kullanıcı bir durak sürükleyince gizlenir.
     @AppStorage("gezzy.hint.dragStops") private var dragHintViews = 0
     /// Bu açılışta ipucunun gösterilip gösterilmeyeceği; açılış başına bir kez karar verilir ve sayaç yalnızca o zaman artar.
-    nonisolated(unsafe) private static var showsDragHintThisLaunch: Bool?
+    @MainActor private static var showsDragHintThisLaunch: Bool?
     private var showsDragHint: Bool { Self.showsDragHintThisLaunch ?? (dragHintViews < 3) }
     private var network: NetworkMonitor { .shared }
     private var offlineMaps: OfflineMapStore { .shared }
     @Environment(\.tripTint) private var tint
+    @Environment(\.tripText) private var tintText
     @Environment(\.tripPalette) private var palette
 
     private var days: [Date] { trip.days() }
@@ -127,7 +128,7 @@ struct PlanSection: View {
                          let legs = trip.cityLegs
                          let leg = trip.leg(on: day)
                          let index = legs.firstIndex { $0.id == leg.id } ?? 0
-                         return (leg.destination.city, palette.pin(index + 1),
+                         return (leg.destination.city, palette.pinText(index + 1),
                                  Calendar.current.isDate(trip.dateRange(of: leg).start, inSameDayAs: day), trip.isTransition(day))
                      } : nil)
 
@@ -176,6 +177,7 @@ struct PlanSection: View {
             PlacePickerSheet(trip: trip, target: .day(plan.day), openingDay: plan.day)
                 .environment(\.tripPalette, palette)
                 .environment(\.tripTint, tint)
+                .environment(\.tripText, tintText)
         }
         .sheet(item: $editingHours) { stop in
             OpeningHoursEditor(stop: stop) { hours in
@@ -611,10 +613,10 @@ struct StopRow: View {
                     } label: {
                         Label(fixTitle(fix), systemImage: fixSymbol(fix))
                             .font(.system(.caption, weight: .bold))
-                            .foregroundStyle(Color.onInk)
+                            .foregroundStyle(palette.accentText)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 5)
-                            .background(Color.ink, in: Capsule())
+                            .background(Color.soft(palette), in: Capsule())
                     }
                     .buttonStyle(.plain)
                     .padding(.top, 2)
@@ -622,7 +624,7 @@ struct StopRow: View {
             }
             Spacer(minLength: 8)
             if let start = stop.startMinutes {
-                Tag(text: AppFormat.time(minutes: start), color: pinColor, soft: .soft(palette))
+                Tag(text: AppFormat.time(minutes: start), color: palette.pinText(number - 1), soft: .soft(palette))
             }
         }
         .padding(.vertical, 4)

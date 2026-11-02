@@ -31,7 +31,7 @@ struct TaxFreeCard: View {
                 AddPlaceholder(title: String(localized: "Tax-free alışverişi ekle"), subtitle: available
                                ? String(localized: "Mağazadan tax-free formu aldığın alışverişleri ekle; dönüşte gümrükte onaylatmayı hatırlatalım.")
                                : String(localized: "Bu ülkede turistlere KDV iadesi yapılmıyor ya da oranı listemizde yok; yine de elle ekleyebilirsin.")) {
-                    Button("Elle ekle", systemImage: "square.and.pencil") { isAdding = true }
+                    isAdding = true
                 }
             } else {
                 HStack(spacing: 10) {

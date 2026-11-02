@@ -5,7 +5,7 @@ import GezzyKit
 struct TripSummaryCard: View {
     let trip: Trip
     @Environment(\.displayScale) private var displayScale
-    @Environment(\.tripTint) private var tint
+    @Environment(\.tripText) private var tintText
     @Environment(\.tripPalette) private var palette
     /// Paylaşılacak görsel; her çizimde değil, özet değişince bir kez üretilir.
     @State private var image: UIImage?
@@ -21,7 +21,7 @@ struct TripSummaryCard: View {
                     Label("Özeti paylaş", systemImage: "square.and.arrow.up")
                 }
                 // Sekmenin dolu düğmesi kartpostal; bu ikincil.
-                .buttonStyle(PillButtonStyle(tint: tint, soft: .soft(palette)))
+                .buttonStyle(PillButtonStyle(tint: tintText, soft: .soft(palette)))
             }
         }
         .task(id: summary) { image = render(summary) }

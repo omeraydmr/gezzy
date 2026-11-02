@@ -1,11 +1,12 @@
 import SwiftUI
 import GezzyKit
 
-/// Gitmek istenen ama henüz bir güne konmamış yerler. Elle ya da önerilerden eklenir; "Güne ekle" ile
-/// seçili güne taşınır ya da "Otomatik rota" hepsini günlere dağıtır.
+/// Gitmek istenen ama henüz bir güne konmamış yerler. Elle ya da önerilerden eklenir; satırdaki "+" ile
+/// seçili güne (basılı tutunca başka bir güne) taşınır ya da "Otomatik rota" hepsini günlere dağıtır.
 struct IdeasCard: View {
     @Environment(\.tripPalette) private var palette
     @Environment(\.tripTint) private var tint
+    @Environment(\.tripText) private var tintText
     @Environment(TripStore.self) private var store
     let trip: Trip
     let day: Date
@@ -28,11 +29,7 @@ struct IdeasCard: View {
                 Button {
                     isPicking = true
                 } label: {
-                    Image(systemName: "plus")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundStyle(.white)
-                        .frame(width: 32, height: 32)
-                        .background(tint, in: Circle())
+                    HeaderPlusLabel()
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Yer ekle")
@@ -41,7 +38,7 @@ struct IdeasCard: View {
             if ideas.isEmpty {
                 AddPlaceholder(title: String(localized: "Yer ekle"),
                                subtitle: String(localized: "Gitmek istediğin yerleri ekle; sonra otomatik rota günlere dağıtsın.")) {
-                    Button("Haritada ara", systemImage: "map") { isPicking = true }
+                    isPicking = true
                 }
             }
 
@@ -52,7 +49,7 @@ struct IdeasCard: View {
                     } label: {
                         Label("Otomatik rota", systemImage: "wand.and.stars")
                     }
-                    .buttonStyle(PillButtonStyle(tint: tint, soft: .soft(palette)))
+                    .buttonStyle(PillButtonStyle(tint: tintText, soft: .soft(palette)))
                 }
                 if let undo {
                     Button {
@@ -99,9 +96,11 @@ struct IdeasCard: View {
                     } label: {
                         Image(systemName: "plus")
                             .font(.system(size: 13, weight: .bold))
-                            .foregroundStyle(tint)
+                            .foregroundStyle(tintText)
                             .frame(width: 32, height: 32)
                             .background(Color.soft(palette), in: Circle())
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
                     } primaryAction: {
                         withAnimation(.spring(duration: 0.3)) { schedule(idea, on: day) }
                     }
@@ -119,6 +118,7 @@ struct IdeasCard: View {
             PlacePickerSheet(trip: trip, target: .ideas, openingDay: day)
                 .environment(\.tripPalette, palette)
                 .environment(\.tripTint, tint)
+                .environment(\.tripText, tintText)
         }
         .sheet(isPresented: $isPlanning) {
             AutoPlanSheet(trip: trip) { before in
