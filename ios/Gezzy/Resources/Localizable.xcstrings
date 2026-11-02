@@ -1204,6 +1204,26 @@
         }
       }
     },
+    "%lld dk yürüyüş" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld min walk"
+          }
+        }
+      }
+    },
+    "Haritaları internetsiz kaydet" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save maps for offline use"
+          }
+        }
+      }
+    },
     "%lld dk" : {
       "localizations" : {
         "en" : {

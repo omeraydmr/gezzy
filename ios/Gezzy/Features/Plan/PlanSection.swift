@@ -14,6 +14,9 @@ struct PlanSection: View {
     @State private var editingHours: Stop?
     @State private var editingStop: Stop?
     @State private var dismissedHotelSuggestion: Set<Date> = []
+    /// Sürükleme ipucunun gösterildiği açılış sayısı; 3'e ulaşınca ya da kullanıcı bir durak sürükleyince gizlenir.
+    @AppStorage("gezzy.hint.dragStops") private var dragHintViews = 0
+    @State private var countedDragHint = false
     private var network: NetworkMonitor { .shared }
     private var offlineMaps: OfflineMapStore { .shared }
     @Environment(\.tripTint) private var tint
@@ -22,6 +25,17 @@ struct PlanSection: View {
     private var days: [Date] { trip.days() }
     private var day: Date { Self.day(selected: selectedDay, in: days) }
     private var stops: [Stop] { trip.stops(on: day) }
+
+    /// Band: kayıt sürerken, kayıtlıyken ya da hata varken hep; boşta yalnızca yolculuğa 7 gün kala ve bitmeden.
+    static func showsOfflineRow(state: OfflineMapStore.State, start: Date, end: Date, now: Date = .now) -> Bool {
+        if case .idle = state {
+            let calendar = Calendar.current
+            let daysLeft = calendar.dateComponents([.day], from: calendar.startOfDay(for: now),
+                                                   to: calendar.startOfDay(for: start)).day ?? 0
+            return daysLeft <= 7 && calendar.startOfDay(for: now) <= calendar.startOfDay(for: end)
+        }
+        return true
+    }
 
     private static func day(selected: Date?, in days: [Date]) -> Date {
         if let selected { return selected }
@@ -121,7 +135,9 @@ struct PlanSection: View {
                 } else {
                     map(plan)
                 }
-                OfflineMapRow(trip: trip, day: plan.day)
+                if Self.showsOfflineRow(state: offlineMaps.state(for: trip.id), start: trip.startDate, end: trip.endDate) {
+                    OfflineMapRow(trip: trip, day: plan.day)
+                }
             }
 
             stopList(plan)
@@ -200,20 +216,15 @@ struct PlanSection: View {
                 Text(dayTitle(plan))
                     .font(.tBodyStrong)
                     .foregroundStyle(Color.ink)
-                ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 6) {
-                    StatChip(symbol: "mappin", text: String(localized: "\(stops.count) durak"))
-                    if totalMeters > 0 {
-                        StatChip(symbol: "point.topleft.down.to.point.bottomright.curvepath",
-                                 text: AppFormat.distance(meters: totalMeters))
-                        StatChip(symbol: "figure.walk", text: String(localized: "\(Geo.walkingMinutes(meters: totalMeters)) dk"))
-                    }
-                    let warnings = plan.warningCount
-                    if warnings > 0 {
-                        StatChip(symbol: "clock.badge.exclamationmark", text: String(localized: "\(warnings) saat uyarısı"), accent: .orange)
-                    }
+                if !stops.isEmpty {
+                    Text(summary(stops: stops.count, meters: totalMeters))
+                        .font(.system(.footnote, weight: .medium))
+                        .foregroundStyle(Color.ink2)
                 }
-                .fixedSize()
+                if plan.warningCount > 0 {
+                    Label(String(localized: "\(plan.warningCount) saat uyarısı"), systemImage: "clock.badge.exclamationmark")
+                        .font(.system(.footnote, weight: .semibold))
+                        .foregroundStyle(HoursLabel.conflictColor)
                 }
             }
             .padding(.bottom, 14)
@@ -281,11 +292,16 @@ struct PlanSection: View {
                 .padding(.top, 10)
             }
 
-            if stops.count > 1 {
+            if stops.count > 1 && dragHintViews < 3 {
                 Text("Sıralamak için durağı basılı tutup sürükle; başka güne taşımak için üstteki güne bırak.")
                     .font(.caption)
                     .foregroundStyle(Color.ink3)
                     .padding(.top, 10)
+                    .onAppear {
+                        guard !countedDragHint else { return }
+                        countedDragHint = true
+                        dragHintViews += 1
+                    }
             }
         }
         .tray()
@@ -295,6 +311,15 @@ struct PlanSection: View {
             return true
         }
         .animation(.spring(duration: 0.3), value: stops.map(\.id))
+    }
+
+    private func summary(stops: Int, meters: Double) -> String {
+        var parts = [String(localized: "\(stops) durak")]
+        if meters > 0 {
+            parts.append(AppFormat.distance(meters: meters))
+            parts.append(String(localized: "\(Geo.walkingMinutes(meters: meters)) dk yürüyüş"))
+        }
+        return parts.joined(separator: " · ")
     }
 
     private func dayTitle(_ plan: DayPlan) -> String {
@@ -474,6 +499,7 @@ struct PlanSection: View {
     }
 
     private func moveStop(_ id: Stop.ID, before target: Stop.ID?, on targetDay: Date) {
+        dragHintViews = 3
         dropTarget = nil
         lastOrderBeforeOptimize = nil
         withAnimation(.spring(duration: 0.3)) {
@@ -560,7 +586,14 @@ struct StopRow: View {
                 .frame(width: 36)
             VStack(alignment: .leading, spacing: 3) {
                 Text(stop.name).font(.tBodyStrong).foregroundStyle(Color.ink)
-                Text(detail).font(.tBody).foregroundStyle(Color.ink2)
+                Label {
+                    Text(detail)
+                } icon: {
+                    Image(systemName: stop.kind.symbol).font(.system(size: 12, weight: .semibold))
+                }
+                .font(.tBody)
+                .foregroundStyle(Color.ink2)
+                .labelStyle(.titleAndIcon)
                 if let hours {
                     HoursLabel(status: hours)
                 }
@@ -587,11 +620,6 @@ struct StopRow: View {
             if let start = stop.startMinutes {
                 Tag(text: AppFormat.time(minutes: start), color: pinColor, soft: .soft(palette))
             }
-            Image(systemName: stop.kind.symbol)
-                .font(.system(size: 18))
-                .foregroundStyle(pinColor)
-                .frame(width: 48, height: 48)
-                .background(Color.soft(palette), in: RoundedRectangle(cornerRadius: Radius.thumb, style: .continuous))
         }
         .padding(.vertical, 4)
         .accessibilityElement(children: .combine)

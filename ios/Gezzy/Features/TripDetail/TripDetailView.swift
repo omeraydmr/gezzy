@@ -146,6 +146,9 @@ struct TripDetailView: View {
                     }
                 }
             }
+            Button("Haritaları internetsiz kaydet", systemImage: "arrow.down.circle") {
+                Task { await OfflineMapStore.shared.save(trip) }
+            }
             Button("Kapak fotoğrafı seç", systemImage: "photo") { coverTarget = trip.id }
             if trip.coverPhoto != nil {
                 Button("Fotoğrafı kaldır", systemImage: "photo.badge.minus", role: .destructive) {
