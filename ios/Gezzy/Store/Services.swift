@@ -229,7 +229,7 @@ final class PlaceSuggestionService {
             all = cached
         } else {
             let language = Bundle.main.preferredLocalizations.first == "tr" ? "tr" : "en"
-            let responses = await wikipedia(PlaceSuggestions.searchURLs(center: center))
+            let responses = await wikipedia(PlaceSuggestions.searchURLs(center: center, spread: 6000))
             let decoded = PlaceSuggestions.decode(responses, language: language, limit: 80)
             all = decoded.isEmpty ? try await mapKitSuggestions(around: center) : decoded
             cache[key] = all

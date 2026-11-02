@@ -31,8 +31,9 @@ struct PlacePickerSheet: View {
 
     private func content(_ trip: Trip) -> some View {
         PlacePickerMap(trip: trip, model: model, position: $position) { id in
-            focus(id, trip: trip)
-            if detent == Self.peek { detent = .medium }
+            let target = detent == Self.peek ? PresentationDetent.medium : detent
+            focus(id, trip: trip, detent: target)
+            detent = target
         }
         .ignoresSafeArea()
         .overlay(alignment: .top) { cityChips(trip) }
@@ -54,6 +55,10 @@ struct PlacePickerSheet: View {
         .task(id: model.query) { await model.search(trip: trip) }
         // Liste (arama, filtre, şehir) değişince harita yeniden çerçevelenir; eklemek listeyi değiştirmez.
         .onChange(of: model.numbered.map(\.id), initial: true) { _, _ in frame(trip) }
+        // Çekmece peek ile medium arasında değişince, kullanıcı bir yer seçmediyse yeniden çerçevele.
+        .onChange(of: detent) { _, _ in
+            if model.focusedID == nil { frame(trip) }
+        }
     }
 
     @ViewBuilder
@@ -78,6 +83,13 @@ struct PlacePickerSheet: View {
         }
     }
 
+    /// Çekmecenin kapatmadığı üst bölümün oranı; büyük çekmecede harita zaten görünmez, nil.
+    private func visibleFraction(_ detent: PresentationDetent) -> Double? {
+        if detent == Self.peek { return 0.7 }
+        if detent == .medium { return 0.5 }
+        return nil
+    }
+
     /// İlk 10 öneri ve plandaki duraklar birlikte sığar.
     private func frame(_ trip: Trip) {
         var points = model.numbered.prefix(10).map(\.suggestion.coordinate)
@@ -87,18 +99,26 @@ struct PlacePickerSheet: View {
         }
         if points.isEmpty, let center = model.center { points = [center] }
         guard !points.isEmpty else { return }
+        let coordinates = points.map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) }
         withAnimation(.easeInOut(duration: 0.4)) {
-            position = MapFraming.position(points.map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) })
+            if let fraction = visibleFraction(detent) {
+                position = MapFraming.position(coordinates, visibleFraction: fraction)
+            } else if case .large = detent {
+                // Büyük çekmecede haritayı oynatma.
+            } else {
+                position = MapFraming.position(coordinates)
+            }
         }
     }
 
-    private func focus(_ id: String, trip: Trip) {
+    private func focus(_ id: String, trip: Trip, detent target: PresentationDetent? = nil) {
         model.focusedID = id
-        guard let item = model.numbered.first(where: { $0.id == id }) else { return }
+        guard let item = model.numbered.first(where: { $0.id == id }),
+              let fraction = visibleFraction(target ?? detent) else { return }
         let c = item.suggestion.coordinate
         withAnimation(.easeInOut(duration: 0.4)) {
-            position = .camera(MapCamera(centerCoordinate: CLLocationCoordinate2D(latitude: c.latitude, longitude: c.longitude),
-                                         distance: 2500))
+            position = MapFraming.focus(CLLocationCoordinate2D(latitude: c.latitude, longitude: c.longitude),
+                                        distance: 6000, visibleFraction: fraction)
         }
     }
 

@@ -218,12 +218,23 @@ struct PlacePickerList: View {
     private func badgeView(_ badge: PlaceRanking.Badge) -> some View {
         switch badge {
         case .community(let count):
-            Label(String(localized: "Gezginler seçti · \(count) kişi"), systemImage: "person.3.sequence.fill")
-                .font(.caption.weight(.semibold)).foregroundStyle(Color.success)
+            HStack(spacing: 4) {
+                Image(systemName: "person.3.sequence.fill")
+                Text(String(localized: "Gezginler seçti · \(count) kişi"))
+            }
+            .font(.caption.weight(.semibold)).foregroundStyle(Color.success)
         case .veryPopular:
-            Label("Çok popüler", systemImage: "flame.fill").font(.caption.weight(.semibold)).foregroundStyle(Color.food)
+            HStack(spacing: 4) {
+                Image(systemName: "flame.fill")
+                Text("Çok popüler")
+            }
+            .font(.caption.weight(.semibold)).foregroundStyle(Color.food)
         case .popular:
-            Label("Popüler", systemImage: "chart.line.uptrend.xyaxis").font(.caption.weight(.semibold)).foregroundStyle(Color.ink2)
+            HStack(spacing: 4) {
+                Image(systemName: "chart.line.uptrend.xyaxis")
+                Text("Popüler")
+            }
+            .font(.caption.weight(.semibold)).foregroundStyle(Color.ink2)
         }
     }
 

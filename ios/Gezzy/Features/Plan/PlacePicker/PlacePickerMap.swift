@@ -24,6 +24,13 @@ struct PlacePickerMap: View {
         return nil
     }
 
+    /// İlk 15 öneri + seçili + eklenenler; numara listedeki sırasıdır.
+    private var pinned: [(number: Int, item: PlaceRanking.Ranked)] {
+        model.numbered.enumerated().compactMap { index, item in
+            index < 15 || item.id == model.focusedID || model.added[item.id] != nil ? (index + 1, item) : nil
+        }
+    }
+
     var body: some View {
         Map(position: $position) {
             ForEach(contextStops) { stop in
@@ -49,12 +56,12 @@ struct PlacePickerMap: View {
                 }
                 .annotationTitles(.hidden)
             }
-            ForEach(Array(model.numbered.enumerated()), id: \.element.id) { index, item in
+            ForEach(pinned, id: \.item.id) { number, item in
                 let c = item.suggestion.coordinate
                 let isFocused = model.focusedID == item.id
                 Annotation(item.suggestion.name, coordinate: CLLocationCoordinate2D(latitude: c.latitude, longitude: c.longitude),
                            anchor: .bottom) {
-                    pin(number: index + 1, isAdded: model.added[item.id] != nil)
+                    pin(number: number, isAdded: model.added[item.id] != nil)
                         .scaleEffect(isFocused ? 1.25 : 1)
                         .animation(.spring(duration: 0.25), value: isFocused)
                         .onTapGesture { onTapPin(item.id) }

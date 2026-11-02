@@ -191,13 +191,22 @@ final class PlacePickerModel {
                                              center: center, limit: 8)
         guard generation == searchGeneration, !Task.isCancelled else { return }
         let existing = trip.stops + trip.ideaList
+        // Kategorisiz sonuçlar sokak/adres; "Adres" etiketi alır.
+        let addressIDs = Set(found.filter { $0.item.pointOfInterestCategory == nil }.map { "map/\($0.id)" })
         let mapped = found.map { result -> PlaceSuggestions.Suggestion in
             let kind = PlaceSearch.kind(for: result.item.pointOfInterestCategory)
-            return PlaceSuggestions.Suggestion(id: "map/\(result.id)", name: result.name, kind: kind, category: kind.title,
+            let isAddress = result.item.pointOfInterestCategory == nil
+            return PlaceSuggestions.Suggestion(id: "map/\(result.id)", name: result.name, kind: kind,
+                                               category: isAddress ? String(localized: "Adres") : kind.title,
                                                coordinate: result.coordinate, openingHours: nil, duration: 60, score: 0)
         }.filter { suggestion in added[suggestion.id] != nil || !existing.contains(where: suggestion.matches) }
+        let ranked = PlaceRanking.search(typed, pool: pool, mapResults: mapped, center: center)
+        // Adresler (tam eşleşme hariç) gerçek yerlerin arkasına; kendi aralarında sıra korunur.
+        func isDemoted(_ item: PlaceRanking.Ranked) -> Bool {
+            addressIDs.contains(item.id) && PlaceMatch.similarity(typed, item.suggestion.name) < 1
+        }
         withAnimation {
-            searchResults = PlaceRanking.search(typed, pool: pool, mapResults: mapped, center: center)
+            searchResults = ranked.filter { !isDemoted($0) } + ranked.filter(isDemoted)
         }
     }
 
@@ -212,7 +221,9 @@ final class PlacePickerModel {
             }
             added[item.id] = nil
         } else {
-            let stop = item.suggestion.stop(day: trip.startDate)
+            var stop = item.suggestion.stop(day: trip.startDate)
+            // Apple Haritalar önerisinde not kategoriyi tekrarlar; boş bırak.
+            if item.id.hasPrefix("map/") { stop.note = "" }
             insert(stop, store: store, tripID: trip.id)
             added[item.id] = stop.id
         }
