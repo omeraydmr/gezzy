@@ -184,3 +184,17 @@ extension Font {
     static let tBody = Font.system(.subheadline)
     static let tCaption = Font.system(.footnote, weight: .medium)
 }
+
+extension Color {
+    /// Paletin yumuşak zemini; açık/koyu temaya göre.
+    static func soft(_ palette: TripPalette) -> Color {
+        Color(light: palette.softLight, dark: palette.softDark)
+    }
+}
+
+extension TripPalette {
+    /// Sıradaki durak pini rengi.
+    func pin(_ index: Int) -> Color {
+        Color(hex: pins[((index % pins.count) + pins.count) % pins.count])
+    }
+}

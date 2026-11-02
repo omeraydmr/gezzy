@@ -68,7 +68,7 @@ struct MemoriesSection: View {
                 } label: {
                     Label("Fotoğraflara erişim ver", systemImage: "photo.on.rectangle")
                 }
-                .buttonStyle(.primary)
+                .buttonStyle(.primary(tint))
             }
         }
         .tray()
@@ -181,7 +181,7 @@ struct MemoriesSection: View {
                       preview: SharePreview("\(trip.name) kartpostalı", image: Image(uiImage: postcard))) {
                 Label("Kartpostalı paylaş", systemImage: "square.and.arrow.up")
             }
-            .buttonStyle(.primary)
+            .buttonStyle(.primary(tint))
         } else {
             Button {
                 Task { await renderPostcard(cover: cover) }
@@ -192,7 +192,7 @@ struct MemoriesSection: View {
                     Label("Kartpostal oluştur", systemImage: "rectangle.portrait.on.rectangle.portrait.angled")
                 }
             }
-            .buttonStyle(.primary)
+            .buttonStyle(.primary(tint))
             .disabled(isRenderingPostcard)
         }
     }
@@ -280,7 +280,7 @@ struct PostcardView: View {
                     if let photo {
                         Image(uiImage: photo).resizable().scaledToFill()
                     } else {
-                        CoverArt(seed: trip.coverSeed)
+                        CoverArt(palette: trip.palette)
                     }
                 }
                 .frame(width: 360, height: 270)

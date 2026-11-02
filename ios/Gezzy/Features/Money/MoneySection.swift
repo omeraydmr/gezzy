@@ -3,6 +3,7 @@ import GezzyKit
 
 struct MoneySection: View {
     @Environment(TripStore.self) private var store
+    @Environment(\.tripTint) private var tint
     let trip: Trip
 
     @State private var isAddingExpense = false
@@ -162,7 +163,7 @@ struct MoneySection: View {
             } label: {
                 Label("Masraf ekle", systemImage: "plus")
             }
-            .buttonStyle(.primary)
+            .buttonStyle(.primary(tint))
         }
     }
 

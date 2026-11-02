@@ -60,6 +60,7 @@ struct TripDetailView: View {
     var body: some View {
         if let trip = store.trip(tripID) {
             let tint = trip.tint
+            let palette = trip.palette
             let canEdit = store.canEdit(trip)
             ScrollView {
                 VStack(spacing: 0) {
@@ -105,6 +106,7 @@ struct TripDetailView: View {
             .ignoresSafeArea(edges: .top)
             .background(TintGlow(tint: tint, offsetY: 260))
             .environment(\.tripTint, tint)
+            .environment(\.tripPalette, palette)
             .environment(\.openReservations) { section = .reservations }
             .navigationTitle(isHeroCollapsed ? trip.name : "")
             .navigationBarTitleDisplayMode(.inline)
@@ -254,8 +256,8 @@ struct TripStub: View {
                         .font(.system(.subheadline, weight: .semibold))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
-                        .foregroundStyle(running ? Color.ink : Color.onInk)
-                        .background(running ? Color.track : Color.ink, in: Capsule())
+                        .foregroundStyle(running ? Color.ink : Color.white)
+                        .background(running ? Color.track : tint, in: Capsule())
                 }
                 .buttonStyle(.plain)
             }

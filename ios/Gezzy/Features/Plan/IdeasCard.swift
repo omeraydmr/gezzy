@@ -4,6 +4,8 @@ import GezzyKit
 /// Gitmek istenen ama henüz bir güne konmamış yerler. Elle ya da önerilerden eklenir; "Güne ekle" ile
 /// seçili güne taşınır ya da "Otomatik rota" hepsini günlere dağıtır.
 struct IdeasCard: View {
+    @Environment(\.tripPalette) private var palette
+    @Environment(\.tripTint) private var tint
     @Environment(TripStore.self) private var store
     let trip: Trip
     let day: Date
@@ -102,6 +104,8 @@ struct IdeasCard: View {
         .tray()
         .fullScreenCover(isPresented: $isPicking) {
             PlacePickerSheet(trip: trip, target: .ideas, openingDay: day)
+                .environment(\.tripPalette, palette)
+                .environment(\.tripTint, tint)
         }
         .sheet(isPresented: $isPlanning) {
             AutoPlanSheet(trip: trip) { before in

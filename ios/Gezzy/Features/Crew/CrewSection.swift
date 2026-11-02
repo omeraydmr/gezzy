@@ -290,6 +290,7 @@ struct MemberEditor: View {
 
 /// iCloud paylaşım davetini (Mesajlar, Mail, AirDrop…) gönderen kart.
 struct InviteCard: View {
+    @Environment(\.tripTint) private var tint
     let trip: Trip
     @Environment(TripStore.self) private var store
     @State private var isShowingQR = false
@@ -315,7 +316,7 @@ struct InviteCard: View {
                     Label(sync.sharedByMe.contains(trip.id) ? String(localized: "Paylaşımı yönet / yeni kişi davet et") : String(localized: "Davet bağlantısı gönder"),
                           systemImage: "square.and.arrow.up")
                 }
-                .buttonStyle(.primary)
+                .buttonStyle(.primary(tint))
 
                 if !sync.sharedWithMe.contains(trip.id) {
                     Button {

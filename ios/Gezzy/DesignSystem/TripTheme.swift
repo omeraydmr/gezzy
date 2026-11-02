@@ -15,6 +15,17 @@ extension EnvironmentValues {
     }
 }
 
+private struct TripPaletteKey: EnvironmentKey {
+    static let defaultValue: TripPalette = TripPalette.all[0]
+}
+
+extension EnvironmentValues {
+    var tripPalette: TripPalette {
+        get { self[TripPaletteKey.self] }
+        set { self[TripPaletteKey.self] = newValue }
+    }
+}
+
 /// Zemin + seyahat renginden yumuşak bir ışık.
 /// Büyük yarıçaplı bulanıklık yerine radyal gradyan: aynı görünüm, renk geçişinde her kare ucuz.
 struct TintGlow: View {
@@ -176,19 +187,19 @@ struct DayChips: View {
             VStack(spacing: 4) {
                 Text(day.formatted(.dateTime.weekday(.abbreviated).locale(AppFormat.locale)))
                     .font(.system(.caption, weight: .medium))
-                    .foregroundStyle(isSelected ? Color.onInk.opacity(0.7) : Color.ink3)
+                    .foregroundStyle(isSelected ? Color.white.opacity(0.75) : Color.ink3)
                 Text(day.formatted(.dateTime.day().locale(AppFormat.locale)))
                     .font(.system(.title3, weight: .semibold))
-                    .foregroundStyle(isSelected ? Color.onInk : Color.ink)
+                    .foregroundStyle(isSelected ? Color.white : Color.ink)
                 HStack(spacing: 3) {
                     ForEach(0..<min(count, 4), id: \.self) { _ in
-                        Circle().fill(isSelected ? tint : Color.ink3).frame(width: 4, height: 4)
+                        Circle().fill(isSelected ? Color.white : Color.ink3).frame(width: 4, height: 4)
                     }
                 }
                 .frame(height: 4)
             }
             .frame(width: 52, height: 72)
-            .background(isSelected ? Color.ink : Color.tray, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .background(isSelected ? tint : Color.tray, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
                     .strokeBorder(tint, lineWidth: dropTarget == day ? 3 : 0)

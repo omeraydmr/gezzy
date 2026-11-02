@@ -103,7 +103,7 @@ struct NewTripSheet: View {
                 }
             }
             .scrollContentBackground(.hidden)
-            .background(TintGlow(tint: Accent.cycle(coverSeed).base, offsetY: -200))
+            .background(TintGlow(tint: Color(hex: TripPalette.forSeed(coverSeed).accent), offsetY: -200))
         }
         .overlay {
             if let ceremonyTrip {

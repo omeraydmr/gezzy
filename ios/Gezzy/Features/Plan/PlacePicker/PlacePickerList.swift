@@ -3,6 +3,7 @@ import GezzyKit
 
 /// Alttaki çekmece: hedef, arama, filtre ve popülerliğe göre sıralı liste.
 struct PlacePickerList: View {
+    @Environment(\.tripPalette) private var palette
     @Environment(TripStore.self) private var store
     let trip: Trip
     @Bindable var model: PlacePickerModel
@@ -192,7 +193,7 @@ struct PlacePickerList: View {
                 .font(.system(.caption, weight: .bold))
                 .foregroundStyle(.white)
                 .frame(width: 24, height: 24)
-                .background(isAdded ? Color.success : Accent.cycle(number - 1).base, in: Circle())
+                .background(isAdded ? Color.success : palette.pin(number - 1), in: Circle())
             VStack(alignment: .leading, spacing: 3) {
                 Text(item.suggestion.name).foregroundStyle(Color.ink).lineLimit(2)
                 if let badge = item.badge { badgeView(badge) }

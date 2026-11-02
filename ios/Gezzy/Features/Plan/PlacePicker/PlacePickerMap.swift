@@ -5,6 +5,7 @@ import GezzyKit
 /// Önerilen yerler listedeki numarasıyla; plandaki duraklar ve otel soluk, yalnızca bağlam için.
 /// Bu oturumda eklenenler yeşil onay pini.
 struct PlacePickerMap: View {
+    @Environment(\.tripPalette) private var palette
     let trip: Trip
     @Bindable var model: PlacePickerModel
     @Binding var position: MapCameraPosition
@@ -83,7 +84,7 @@ struct PlacePickerMap: View {
                 .overlay(Circle().strokeBorder(.white, lineWidth: 2.5))
                 .accessibilityLabel(Text("Eklendi"))
         } else {
-            NumberedPin(number: number, accent: Accent.cycle(number - 1), size: 30)
+            NumberedPin(number: number, color: palette.pin(number - 1), size: 30)
         }
     }
 }

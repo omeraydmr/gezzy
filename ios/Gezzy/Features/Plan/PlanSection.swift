@@ -17,6 +17,7 @@ struct PlanSection: View {
     private var network: NetworkMonitor { .shared }
     private var offlineMaps: OfflineMapStore { .shared }
     @Environment(\.tripTint) private var tint
+    @Environment(\.tripPalette) private var palette
 
     private var days: [Date] { trip.days() }
     private var day: Date { Self.day(selected: selectedDay, in: days) }
@@ -110,7 +111,7 @@ struct PlanSection: View {
                          let legs = trip.cityLegs
                          let leg = trip.leg(on: day)
                          let index = legs.firstIndex { $0.id == leg.id } ?? 0
-                         return (leg.destination.city, Accent.cycle(index + 1).base,
+                         return (leg.destination.city, palette.pin(index + 1),
                                  Calendar.current.isDate(trip.dateRange(of: leg).start, inSameDayAs: day), trip.isTransition(day))
                      } : nil)
 
@@ -131,7 +132,7 @@ struct PlanSection: View {
                 } label: {
                     Label("Durak ekle", systemImage: "plus")
                 }
-                .buttonStyle(.primary)
+                .buttonStyle(.primary(tint))
 
                 if let lastOrderBeforeOptimize {
                     Button {
@@ -155,6 +156,8 @@ struct PlanSection: View {
         }
         .fullScreenCover(isPresented: $isAddingStop) {
             PlacePickerSheet(trip: trip, target: .day(plan.day), openingDay: plan.day)
+                .environment(\.tripPalette, palette)
+                .environment(\.tripTint, tint)
         }
         .sheet(item: $editingHours) { stop in
             OpeningHoursEditor(stop: stop) { hours in
@@ -364,7 +367,7 @@ struct PlanSection: View {
             }
             ForEach(pinned) { item in
                 Annotation(item.stop.name, coordinate: item.coordinate, anchor: .bottom) {
-                    NumberedPin(number: item.number, accent: Accent.cycle(item.number - 1), size: 28)
+                    NumberedPin(number: item.number, color: palette.pin(item.number - 1), size: 28)
                 }
             }
         }
@@ -542,6 +545,7 @@ struct PlanSection: View {
 // MARK: - Rows
 
 struct StopRow: View {
+    @Environment(\.tripPalette) private var palette
     let stop: Stop
     let number: Int
     var hours: OpeningHours.Status?
@@ -550,9 +554,9 @@ struct StopRow: View {
     var onFix: (Trip.HoursFix) -> Void = { _ in }
 
     var body: some View {
-        let accent = Accent.cycle(number - 1)
+        let pinColor = palette.pin(number - 1)
         HStack(spacing: 12) {
-            NumberedPin(number: number, accent: accent)
+            NumberedPin(number: number, color: pinColor)
                 .frame(width: 36)
             VStack(alignment: .leading, spacing: 3) {
                 Text(stop.name).font(.tBodyStrong).foregroundStyle(Color.ink)
@@ -581,13 +585,13 @@ struct StopRow: View {
             }
             Spacer(minLength: 8)
             if let start = stop.startMinutes {
-                Tag(text: AppFormat.time(minutes: start), accent: accent)
+                Tag(text: AppFormat.time(minutes: start), color: pinColor, soft: .soft(palette))
             }
             Image(systemName: stop.kind.symbol)
                 .font(.system(size: 18))
-                .foregroundStyle(accent.base)
+                .foregroundStyle(pinColor)
                 .frame(width: 48, height: 48)
-                .background(accent.tint, in: RoundedRectangle(cornerRadius: Radius.thumb, style: .continuous))
+                .background(Color.soft(palette), in: RoundedRectangle(cornerRadius: Radius.thumb, style: .continuous))
         }
         .padding(.vertical, 4)
         .accessibilityElement(children: .combine)

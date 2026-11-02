@@ -25,7 +25,7 @@ struct TripCover: View {
                 .clipped()
                 .accessibilityHidden(true)
         } else {
-            CoverArt(seed: trip.coverSeed)
+            CoverArt(palette: trip.palette)
         }
     }
 }
@@ -43,14 +43,18 @@ extension EnvironmentValues {
 }
 
 extension Trip {
-    /// Kartların dinamik vurgu rengi: fotoğrafın baskın tonu, yoksa paletten bir kategori rengi.
+    /// Seyahatin paleti: kapak fotoğrafı varsa ondan türetilir, yoksa seed'e göre el seçimi palet.
     @MainActor
-    var tint: Color {
-        if let name = coverPhoto, let color = CoverImageStore.shared.dominantColor(named: name) {
-            return color
+    var palette: TripPalette {
+        if let name = coverPhoto, let hex = CoverImageStore.shared.averageHex(named: name) {
+            return TripPalette.derived(from: hex, fallbackSeed: coverSeed)
         }
-        return Accent.cycle(coverSeed).base
+        return TripPalette.forSeed(coverSeed)
     }
+
+    /// Kartların dinamik vurgu rengi.
+    @MainActor
+    var tint: Color { Color(hex: palette.accent) }
 
     var countdownTag: (text: String, accent: Accent) {
         if status == .draft { return ("Taslak", .orange) }

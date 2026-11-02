@@ -85,7 +85,7 @@ struct PackingSection: View {
             Button(action: suggest) {
                 Label("Madde öner", systemImage: "sparkles")
             }
-            .buttonStyle(.primary)
+            .buttonStyle(.primary(tint))
 
             DepartureChecklistCard(trip: trip)
         }
