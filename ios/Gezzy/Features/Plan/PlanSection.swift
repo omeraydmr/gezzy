@@ -16,7 +16,9 @@ struct PlanSection: View {
     @State private var dismissedHotelSuggestion: Set<Date> = []
     /// Sürükleme ipucunun gösterildiği açılış sayısı; 3'e ulaşınca ya da kullanıcı bir durak sürükleyince gizlenir.
     @AppStorage("gezzy.hint.dragStops") private var dragHintViews = 0
-    @State private var countedDragHint = false
+    /// Bu açılışta ipucunun gösterilip gösterilmeyeceği; açılış başına bir kez karar verilir ve sayaç yalnızca o zaman artar.
+    nonisolated(unsafe) private static var showsDragHintThisLaunch: Bool?
+    private var showsDragHint: Bool { Self.showsDragHintThisLaunch ?? (dragHintViews < 3) }
     private var network: NetworkMonitor { .shared }
     private var offlineMaps: OfflineMapStore { .shared }
     @Environment(\.tripTint) private var tint
@@ -292,15 +294,16 @@ struct PlanSection: View {
                 .padding(.top, 10)
             }
 
-            if stops.count > 1 && dragHintViews < 3 {
+            if stops.count > 1 && showsDragHint {
                 Text("Sıralamak için durağı basılı tutup sürükle; başka güne taşımak için üstteki güne bırak.")
                     .font(.caption)
                     .foregroundStyle(Color.ink3)
                     .padding(.top, 10)
                     .onAppear {
-                        guard !countedDragHint else { return }
-                        countedDragHint = true
-                        dragHintViews += 1
+                        guard Self.showsDragHintThisLaunch == nil else { return }
+                        let show = dragHintViews < 3
+                        Self.showsDragHintThisLaunch = show
+                        if show { dragHintViews += 1 }
                     }
             }
         }
@@ -500,6 +503,7 @@ struct PlanSection: View {
 
     private func moveStop(_ id: Stop.ID, before target: Stop.ID?, on targetDay: Date) {
         dragHintViews = 3
+        Self.showsDragHintThisLaunch = false
         dropTarget = nil
         lastOrderBeforeOptimize = nil
         withAnimation(.spring(duration: 0.3)) {
