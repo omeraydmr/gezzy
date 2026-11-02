@@ -4,6 +4,8 @@ import GezzyKit
 /// Anılar sekmesinde ortak albüm: karşılıklı onay, yükleme durumu, kişi filtresi ve fotoğraf ızgarası.
 struct SharedAlbumCard: View {
     @Environment(TripStore.self) private var store
+    @Environment(\.tripTint) private var tint
+    @Environment(\.tripPalette) private var palette
     let trip: Trip
     @State private var owner: UUID?
     @State private var viewer: PhotoViewerContext?
@@ -47,7 +49,7 @@ struct SharedAlbumCard: View {
                 } label: {
                     Label("Fotoğraflarımı paylaş", systemImage: "person.2.badge.plus")
                 }
-                .buttonStyle(.primary)
+                .buttonStyle(PillButtonStyle(tint: tint, soft: .soft(palette)))
                 .disabled(!store.canEdit(trip))
                 Text("Ekran görüntüleri hariç; 2048 px'e küçültülmüş kopya iCloud'a yüklenir. İstediğin fotoğrafı sonra çıkarabilirsin.")
                     .font(.caption).foregroundStyle(Color.ink3)
@@ -126,10 +128,10 @@ struct SharedAlbumCard: View {
                 Text(title)
             }
             .font(.system(.footnote, weight: .semibold))
-            .foregroundStyle(isOn ? Color.onInk : Color.ink2)
+            .foregroundStyle(isOn ? Color.white : Color.ink2)
             .padding(.horizontal, 12)
             .frame(height: 32)
-            .background(isOn ? Color.ink : Color.track, in: Capsule())
+            .background(isOn ? tint : Color.track, in: Capsule())
         }
         .buttonStyle(.plain)
     }

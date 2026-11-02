@@ -139,10 +139,10 @@ struct PackingSection: View {
         } label: {
             label()
                 .font(.system(.footnote, weight: .semibold))
-                .foregroundStyle(isSelected ? Color.onInk : Color.ink2)
+                .foregroundStyle(isSelected ? Color.white : Color.ink2)
                 .padding(.horizontal, 12)
                 .frame(height: 34)
-                .cardBackground(isSelected ? Color.ink : Color.tray, in: Capsule())
+                .cardBackground(isSelected ? tint : Color.tray, in: Capsule())
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
@@ -410,6 +410,7 @@ struct WeatherStrip: View {
     let city: String
     let weather: WeatherSummary?
     let failed: Bool
+    @Environment(\.tripPalette) private var palette
 
     var body: some View {
         HStack(spacing: 14) {
@@ -417,7 +418,7 @@ struct WeatherStrip: View {
                 .symbolRenderingMode(.multicolor)
                 .font(.system(size: 26))
                 .frame(width: 44, height: 44)
-                .background(Color.transportTint, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .background(Color.soft(palette), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             VStack(alignment: .leading, spacing: 2) {
                 if let weather {
                     Text("\(city) · \(Int(weather.minTemperature.rounded()))° – \(Int(weather.maxTemperature.rounded()))°")
@@ -428,7 +429,6 @@ struct WeatherStrip: View {
                         .foregroundStyle(Color.ink2)
                 } else if failed {
                     Text("Hava durumu alınamadı").font(.tBodyStrong).foregroundStyle(Color.ink)
-                    Text("Öneriler mevsime göre yapılacak.").font(.caption).foregroundStyle(Color.ink2)
                 } else {
                     Text("\(city) için hava durumu").font(.tBodyStrong).foregroundStyle(Color.ink)
                     ProgressView().controlSize(.small)

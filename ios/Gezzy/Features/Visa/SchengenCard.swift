@@ -31,6 +31,13 @@ struct SchengenCard: View {
                 } else {
                     Tag(text: String(localized: "Sınır aşılıyor"), accent: .orange)
                 }
+                Button {
+                    isAdding = true
+                } label: {
+                    HeaderPlusLabel()
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Önceki ziyaret ekle")
             }
 
             HStack(alignment: .firstTextBaseline, spacing: 4) {
@@ -66,22 +73,13 @@ struct SchengenCard: View {
                 }
             }
 
-            Button {
-                isAdding = true
-            } label: {
-                Label("Önceki ziyaret ekle", systemImage: "plus")
-                    .font(.system(.subheadline, weight: .semibold))
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(Color.transport)
-
             VStack(alignment: .leading, spacing: 4) {
-                Text("Giriş ve çıkış günleri kalış günü sayılır. Bu uygulamadaki seyahatler ve eklediğin ziyaretlerle hesaplanır; sınırda resmî kayıtlar esastır.")
+                Text("Giriş ve çıkış günleri sayılır; sınırda resmî kayıtlar esastır.")
                     .font(.caption)
                     .foregroundStyle(Color.ink3)
                 Link("AB kısa süreli kalış hesaplayıcısı", destination: Self.officialCalculator)
                     .font(.system(.caption, weight: .semibold))
-                    .foregroundStyle(Color.transport)
+                    .foregroundStyle(tint)
             }
         }
         .tray()

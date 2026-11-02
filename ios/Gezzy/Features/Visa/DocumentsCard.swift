@@ -8,6 +8,8 @@ import UniformTypeIdentifiers
 /// şifreli (Data Protection) saklanır; "yalnızca bu cihazda" işaretlenmeyenler ekiple eşitlenir.
 struct DocumentsCard: View {
     @Environment(TripStore.self) private var store
+    @Environment(\.tripTint) private var tint
+    @Environment(\.tripPalette) private var palette
     let trip: Trip
 
     @State private var isPickingFile = false
@@ -27,23 +29,17 @@ struct DocumentsCard: View {
         let documents = trip.documentList
         ModuleCard(String(localized: "Belgeler"), symbol: "doc.on.doc.fill", accessory: {
             Menu {
-                Button("Dosya seç (PDF, görsel)", systemImage: "folder") { isPickingFile = true }
-                PhotosPicker(selection: $photoItem, matching: .images) {
-                    Label("Fotoğraflardan", systemImage: "photo")
-                }
-                if UIImagePickerController.isSourceTypeAvailable(.camera) {
-                    Button("Kamerayla tara", systemImage: "camera") { isShowingCamera = true }
-                }
+                addMenu
             } label: {
-                Image(systemName: "plus")
+                HeaderPlusLabel()
             }
-            .buttonStyle(.circleIcon(size: 32))
             .accessibilityLabel("Belge ekle")
         }) {
             if documents.isEmpty {
-                EmptyHint(symbol: "doc.badge.plus",
-                          text: String(localized: "Pasaport, sigorta poliçesi, bilet ve rezervasyonları burada sakla; internetsiz de açılır."))
-                    .tray()
+                AddPlaceholder(title: String(localized: "Belge ekle"),
+                               subtitle: String(localized: "Pasaport, sigorta poliçesi, bilet ve rezervasyonları burada sakla; internetsiz de açılır.")) {
+                    addMenu
+                }
             } else {
                 VStack(spacing: 0) {
                     ForEach(Array(documents.enumerated()), id: \.element.id) { index, document in
@@ -88,6 +84,18 @@ struct DocumentsCard: View {
         .quickLookPreview($previewURL)
     }
 
+    /// Başlıktaki + ve boş durumdaki satır aynı seçenekleri açar.
+    @ViewBuilder
+    private var addMenu: some View {
+        Button("Dosya seç (PDF, görsel)", systemImage: "folder") { isPickingFile = true }
+        PhotosPicker(selection: $photoItem, matching: .images) {
+            Label("Fotoğraflardan", systemImage: "photo")
+        }
+        if UIImagePickerController.isSourceTypeAvailable(.camera) {
+            Button("Kamerayla tara", systemImage: "camera") { isShowingCamera = true }
+        }
+    }
+
     private func row(_ document: TravelDocument) -> some View {
         let url = CoverImageStore.documents.fileURL(named: document.fileName)
         return Button {
@@ -96,9 +104,9 @@ struct DocumentsCard: View {
             HStack(spacing: 12) {
                 Image(systemName: DocumentText.symbol(document.kind))
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Accent.blue.base)
+                    .foregroundStyle(tint)
                     .frame(width: 40, height: 40)
-                    .background(Accent.blue.tint, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .background(Color.soft(palette), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 VStack(alignment: .leading, spacing: 2) {
                     Text(document.title).font(.tBodyStrong).foregroundStyle(Color.ink).lineLimit(1)
                     HStack(spacing: 4) {

@@ -33,3 +33,16 @@ struct AddPlaceholder<MenuContent: View>: View {
         .buttonStyle(.plain)
     }
 }
+
+/// Kart başlığındaki ekleme düğmesinin görünümü: palet renginde dolu daire, beyaz artı.
+struct HeaderPlusLabel: View {
+    @Environment(\.tripTint) private var tint
+
+    var body: some View {
+        Image(systemName: "plus")
+            .font(.system(size: 14, weight: .bold))
+            .foregroundStyle(.white)
+            .frame(width: 32, height: 32)
+            .background(tint, in: Circle())
+    }
+}

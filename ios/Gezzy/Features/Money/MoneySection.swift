@@ -142,14 +142,15 @@ struct MoneySection: View {
                 ShareLink(item: settlementSummary(transfers)) {
                     Label("Özeti paylaş", systemImage: "square.and.arrow.up")
                         .font(.system(.subheadline, weight: .semibold))
-                        .foregroundStyle(Color.ink2)
+                        .foregroundStyle(tint)
                 }
             }
 
-            if !settled.isEmpty {
+            // Herkes dengedeyse başlık zaten söylüyor; satır yalnızca transfer varken.
+            if !settled.isEmpty && !transfers.isEmpty {
                 HStack(spacing: 10) {
                     AvatarStack(members: settled, size: 28, limit: 5)
-                    Text(transfers.isEmpty ? String(localized: "Herkesin hesabı kapalı") : String(localized: "Hesabı kapalı"))
+                    Text("Hesabı kapalı")
                         .font(.tBody)
                         .foregroundStyle(Color.ink2)
                     Spacer()
@@ -157,13 +158,6 @@ struct MoneySection: View {
                 }
                 .tray(padding: 14)
             }
-
-            Button {
-                isAddingExpense = true
-            } label: {
-                Label("Masraf ekle", systemImage: "plus")
-            }
-            .buttonStyle(.primary(tint))
         }
     }
 
@@ -207,9 +201,19 @@ struct MoneySection: View {
         let groups = Dictionary(grouping: trip.expenses) { calendar.startOfDay(for: $0.date) }
             .map { ExpenseDay(date: $0.key, items: $0.value.sorted { $0.date > $1.date }) }
             .sorted { $0.date > $1.date }
-        return ModuleCard(String(localized: "Harcamalar"), symbol: "list.bullet.rectangle.fill") {
+        return ModuleCard(String(localized: "Harcamalar"), symbol: "list.bullet.rectangle.fill", accessory: {
+            Button {
+                isAddingExpense = true
+            } label: {
+                HeaderPlusLabel()
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Masraf ekle")
+        }) {
             if groups.isEmpty {
-                EmptyHint(symbol: "creditcard", text: String(localized: "Henüz harcama yok.")).tray()
+                AddPlaceholder(title: String(localized: "Masraf ekle"), subtitle: String(localized: "Henüz harcama yok.")) {
+                    Button("Masraf ekle", systemImage: "plus") { isAddingExpense = true }
+                }
             } else {
                 VStack(alignment: .leading, spacing: 14) {
                     ForEach(groups) { group in

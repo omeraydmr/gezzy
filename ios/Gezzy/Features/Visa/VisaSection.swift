@@ -4,6 +4,7 @@ import GezzyKit
 struct VisaSection: View {
     let trip: Trip
     @Environment(TripStore.self) private var store
+    @Environment(\.tripTint) private var tint
     @State private var focusedID: Member.ID?
     /// Çok ülkeli seyahatte seçili ülke; boşsa işlem gerektiren ilk ülke.
     @State private var selectedCountry: String?
@@ -42,7 +43,11 @@ struct VisaSection: View {
                     }
                     .pickerStyle(.segmented)
                 }
-                StoryHeadline(text: headline(ready: readyCount, total: rows.count))
+                if rows.isEmpty {
+                    EmptyHint(symbol: "person.2", text: String(localized: "Ekipte kimse yok."))
+                } else {
+                    StoryHeadline(text: headline(ready: readyCount, total: rows.count))
+                }
 
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 12) {
@@ -71,7 +76,7 @@ struct VisaSection: View {
                         ForEach(rows, id: \.member.id) { row in
                             let isFocused = row.member.id == focusedRow(rows)?.member.id
                             Capsule()
-                                .fill(isFocused ? Color.ink : Color.ink3.opacity(0.4))
+                                .fill(isFocused ? tint : Color.ink3.opacity(0.4))
                                 .frame(width: isFocused ? 18 : 6, height: 6)
                         }
                     }
@@ -121,7 +126,6 @@ struct VisaSection: View {
     }
 
     private func headline(ready: Int, total: Int) -> String {
-        if total == 0 { return String(localized: "Ekipte kimse yok.") }
         if ready == total { return total == 1 ? String(localized: "Girişe hazırsın.") : String(localized: "Herkes girişe hazır.") }
         let waiting = total - ready
         return ready == 0 ? String(localized: "\(waiting) kişinin yapacakları var.") : String(localized: "\(ready) kişi hazır, \(waiting) kişinin yapacakları var.")
@@ -252,14 +256,16 @@ struct VisaPreview: View {
 }
 
 struct SourceFootnote: View {
+    @Environment(\.tripTint) private var tint
+
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Bilgiler her kişinin pasaport türüne göredir (bordo, yeşil, gri, diplomatik); kaynak Dışişleri Bakanlığı, son gözden geçirme \(VisaRules.lastReviewed). Seyahatten önce resmî kaynaktan doğrula.")
+            Text("Kaynak: Dışişleri Bakanlığı, son gözden geçirme \(VisaRules.lastReviewed). Seyahatten önce resmî kaynaktan doğrula.")
                 .font(.footnote)
                 .foregroundStyle(Color.ink3)
             Link("konsolosluk.gov.tr", destination: VisaRules.officialSourceURL)
                 .font(.system(.footnote, weight: .semibold))
-                .foregroundStyle(Color.transport)
+                .foregroundStyle(tint)
         }
     }
 }
@@ -270,6 +276,7 @@ struct SourceFootnote: View {
 /// (durum, randevu, belge listesi). Takip seyahatle birlikte saklanır ve ekiple eşitlenir.
 struct VisaDetailPanel: View {
     @Environment(TripStore.self) private var store
+    @Environment(\.tripTint) private var tint
     let member: Member
     let result: VisaAssessment
     let trip: Trip
@@ -344,10 +351,10 @@ struct VisaDetailPanel: View {
                         } label: {
                             Text(VisaText.statusTitle(status))
                                 .font(.system(.footnote, weight: .semibold))
-                                .foregroundStyle(isSelected ? Color.onInk : Color.ink2)
+                                .foregroundStyle(isSelected ? Color.white : Color.ink2)
                                 .padding(.horizontal, 12)
                                 .frame(height: 32)
-                                .background(isSelected ? VisaText.statusAccent(status).base : Color.track, in: Capsule())
+                                .background(isSelected ? tint : Color.track, in: Capsule())
                         }
                         .buttonStyle(.plain)
                     }
@@ -370,7 +377,7 @@ struct VisaDetailPanel: View {
             )) {
                 Label("Randevu", systemImage: "calendar.badge.clock").font(.subheadline)
             }
-            .tint(Color.ink)
+            .tint(tint)
             if let appointment = application.appointment {
                 DatePicker("Tarih ve saat", selection: Binding(
                     get: { appointment },
@@ -429,7 +436,7 @@ struct VisaDetailPanel: View {
                 }
                 .buttonStyle(.plain)
             }
-            Text("Konsolosluğa ve başvuru amacına göre değişir; randevu ve güncel liste için yetkili aracı kurumu kontrol et.")
+            Text("Liste konsolosluğa göre değişir; yetkili aracı kurumdan doğrula.")
                 .font(.caption)
                 .foregroundStyle(Color.ink3)
                 .padding(.top, 4)

@@ -82,14 +82,16 @@ struct LodgingCard: View {
 
 struct LodgingRow: View {
     let lodging: Lodging
+    @Environment(\.tripTint) private var tint
+    @Environment(\.tripPalette) private var palette
 
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: "bed.double.fill")
                 .font(.system(size: 16))
-                .foregroundStyle(Accent.green.base)
+                .foregroundStyle(tint)
                 .frame(width: 44, height: 44)
-                .background(Accent.green.tint, in: RoundedRectangle(cornerRadius: Radius.thumb, style: .continuous))
+                .background(Color.soft(palette), in: RoundedRectangle(cornerRadius: Radius.thumb, style: .continuous))
             VStack(alignment: .leading, spacing: 2) {
                 Text(lodging.name).font(.tBodyStrong).foregroundStyle(Color.ink).lineLimit(1)
                 Text("\(AppFormat.dayPill(lodging.checkIn)) \(AppFormat.time(lodging.checkIn)) → \(AppFormat.dayPill(lodging.checkOut)) \(AppFormat.time(lodging.checkOut))")
@@ -103,7 +105,7 @@ struct LodgingRow: View {
                 }
             }
             Spacer(minLength: 8)
-            Tag(text: String(localized: "\(lodging.nights()) gece"), accent: .green)
+            Tag(text: String(localized: "\(lodging.nights()) gece"), color: tint, soft: .soft(palette))
         }
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)

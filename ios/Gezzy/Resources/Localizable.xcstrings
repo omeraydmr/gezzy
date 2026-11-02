@@ -183,6 +183,46 @@
         }
       }
     },
+    "Kaynak: Dışişleri Bakanlığı, son gözden geçirme %@. Seyahatten önce resmî kaynaktan doğrula." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Source: Turkish Ministry of Foreign Affairs, last reviewed %@. Check the official source before travelling."
+          }
+        }
+      }
+    },
+    "Liste konsolosluğa göre değişir; yetkili aracı kurumdan doğrula." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The list varies by consulate; check with the authorised visa centre."
+          }
+        }
+      }
+    },
+    "Giriş ve çıkış günleri sayılır; sınırda resmî kayıtlar esastır." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entry and exit days count; at the border, official records prevail."
+          }
+        }
+      }
+    },
+    "QR ile katılanlar" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Joined via QR"
+          }
+        }
+      }
+    },
     "elle ya da biletten" : {
       "localizations" : {
         "en" : {

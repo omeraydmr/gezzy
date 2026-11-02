@@ -3,6 +3,8 @@ import GezzyKit
 
 struct CrewSection: View {
     @Environment(TripStore.self) private var store
+    @Environment(\.tripTint) private var tint
+    @Environment(\.tripPalette) private var palette
     let trip: Trip
 
     @State private var editing: Member?
@@ -10,7 +12,15 @@ struct CrewSection: View {
     @State private var blockedRemoval: Member?
 
     var body: some View {
-        ModuleCard(String(localized: "Ekip"), symbol: "person.2.fill") {
+        ModuleCard(String(localized: "Ekip"), symbol: "person.2.fill", accessory: {
+            Button {
+                isAdding = true
+            } label: {
+                HeaderPlusLabel()
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Kişi ekle")
+        }) {
             StoryHeadline(text: String(localized: "\(trip.members.count) kişi \(trip.cityTitle) yolunda."))
 
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
@@ -29,24 +39,6 @@ struct CrewSection: View {
                         }
                     }
                 }
-                Button {
-                    isAdding = true
-                } label: {
-                    VStack(spacing: 8) {
-                        Image(systemName: "plus")
-                            .font(.system(size: 18, weight: .semibold))
-                            .frame(width: 52, height: 52)
-                            .background(Color.track, in: Circle())
-                        Text("Kişi ekle").font(.system(.subheadline, weight: .semibold))
-                    }
-                    .foregroundStyle(Color.ink2)
-                    .frame(maxWidth: .infinity, minHeight: 168)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 22, style: .continuous)
-                            .strokeBorder(Color.ink3.opacity(0.6), style: StrokeStyle(lineWidth: 1.5, dash: [6, 5]))
-                    )
-                }
-                .buttonStyle(.plain)
             }
 
             InviteCard(trip: trip)
@@ -73,9 +65,7 @@ struct CrewSection: View {
                             me.cloudUserID = CloudSync.shared.currentUserID
                             store.update(trip.id) { $0.members.append(me) }
                         }
-                        .font(.system(.subheadline, weight: .semibold))
-                        .buttonStyle(.borderedProminent)
-                        .tint(Color.ink)
+                        .buttonStyle(PillButtonStyle(tint: tint, soft: .soft(palette)))
                     }
                 }
                 .tray(padding: 14)
@@ -125,6 +115,7 @@ struct MemberTile: View {
     let member: Member
     let trip: Trip
     @Environment(TripStore.self) private var store
+    @Environment(\.tripTint) private var tint
 
     var body: some View {
         let result = store.visaAssessment(for: member, in: trip)
@@ -137,7 +128,7 @@ struct MemberTile: View {
                             .font(.system(size: 9, weight: .bold))
                             .foregroundStyle(.white)
                             .frame(width: 20, height: 20)
-                            .background(Color.food, in: Circle())
+                            .background(tint, in: Circle())
                             .overlay(Circle().strokeBorder(Color.tray, lineWidth: 2))
                     }
                 }
@@ -291,6 +282,7 @@ struct MemberEditor: View {
 /// iCloud paylaşım davetini (Mesajlar, Mail, AirDrop…) gönderen kart.
 struct InviteCard: View {
     @Environment(\.tripTint) private var tint
+    @Environment(\.tripPalette) private var palette
     let trip: Trip
     @Environment(TripStore.self) private var store
     @State private var isShowingQR = false
@@ -301,9 +293,9 @@ struct InviteCard: View {
             HStack(spacing: 10) {
                 Image(systemName: "person.crop.circle.badge.plus")
                     .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(Color.transport)
+                    .foregroundStyle(tint)
                     .frame(width: 36, height: 36)
-                    .background(Color.transportTint, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .background(Color.soft(palette), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title).font(.tBodyStrong).foregroundStyle(Color.ink)
                     Text(subtitle).font(.caption).foregroundStyle(Color.ink2)
@@ -326,15 +318,14 @@ struct InviteCard: View {
                               systemImage: "qrcode")
                             .frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.bordered)
-                    .tint(Color.ink)
+                    .buttonStyle(PillButtonStyle(tint: tint, soft: .soft(palette)))
                 }
             }
 
             // QR bağlantısıyla katılıp ekipte olmayanlar: salt okur; ekibe eklenince düzenleyebilir.
             if let joiners = sync.linkJoiners[trip.id], !joiners.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("QR ile katılanlar · şimdilik sadece görür").font(.caption).foregroundStyle(Color.ink2)
+                    Text("QR ile katılanlar").font(.tCaption).foregroundStyle(Color.ink3)
                     ForEach(joiners) { joiner in
                         HStack {
                             Label(joiner.name, systemImage: "person.crop.circle")
@@ -342,8 +333,7 @@ struct InviteCard: View {
                                 .foregroundStyle(Color.ink)
                             Spacer()
                             Button("Ekibe ekle") { add(joiner) }
-                                .font(.system(.footnote, weight: .semibold))
-                                .buttonStyle(.bordered)
+                                .buttonStyle(PillButtonStyle(tint: tint, soft: .soft(palette)))
                         }
                     }
                 }
@@ -382,6 +372,7 @@ struct InviteCard: View {
 /// Ekipten gelen son değişiklikler ("Elif bir harcama ekledi").
 struct ActivityFeed: View {
     let entries: [ActivityEntry]
+    @Environment(\.tripTint) private var tint
     @State private var isExpanded = false
 
     var body: some View {
@@ -412,7 +403,7 @@ struct ActivityFeed: View {
                     withAnimation { isExpanded.toggle() }
                 }
                 .font(.system(.footnote, weight: .semibold))
-                .foregroundStyle(Color.transport)
+                .foregroundStyle(tint)
             }
         }
         .tray()

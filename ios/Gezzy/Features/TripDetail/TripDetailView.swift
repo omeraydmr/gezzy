@@ -167,6 +167,7 @@ struct TripDetailView: View {
 
 /// Aşağı çekince esneyen, yukarı kayınca gezinme çubuğuna devreden kapak.
 struct TripHero: View {
+    @Environment(\.tripTint) private var tint
     let trip: Trip
     let height: CGFloat
     @Binding var isCollapsed: Bool
@@ -185,7 +186,8 @@ struct TripHero: View {
                     let tag = trip.countdownTag
                     Text(tag.text)
                         .font(.system(.footnote, weight: .semibold))
-                        .foregroundStyle(tag.accent == .gray ? Color.ink2 : tag.accent.base)
+                        // Geri sayım seyahat renginde; taslak (turuncu) ve geçmiş (gri) durum rengi kalır.
+                        .foregroundStyle(tag.accent == .gray ? Color.ink2 : tag.accent == .orange ? tag.accent.base : tint)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 5)
                         .background(.regularMaterial, in: Capsule())

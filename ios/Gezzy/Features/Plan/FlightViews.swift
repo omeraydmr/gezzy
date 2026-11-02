@@ -62,14 +62,16 @@ struct FlightsCard: View {
 
 struct FlightRow: View {
     let flight: FlightSegment
+    @Environment(\.tripTint) private var tint
+    @Environment(\.tripPalette) private var palette
 
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: "airplane")
                 .font(.system(size: 16))
-                .foregroundStyle(Accent.blue.base)
+                .foregroundStyle(tint)
                 .frame(width: 44, height: 44)
-                .background(Accent.blue.tint, in: RoundedRectangle(cornerRadius: Radius.thumb, style: .continuous))
+                .background(Color.soft(palette), in: RoundedRectangle(cornerRadius: Radius.thumb, style: .continuous))
             VStack(alignment: .leading, spacing: 2) {
                 Text("\(flight.fromCode) → \(flight.toCode)")
                     .font(.tBodyStrong)
@@ -83,7 +85,7 @@ struct FlightRow: View {
                     .foregroundStyle(Color.ink3)
             }
             Spacer(minLength: 8)
-            Tag(text: AppFormat.duration(minutes: flight.durationMinutes), accent: .blue)
+            Tag(text: AppFormat.duration(minutes: flight.durationMinutes), color: tint, soft: .soft(palette))
         }
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
