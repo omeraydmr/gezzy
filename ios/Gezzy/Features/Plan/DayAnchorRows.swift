@@ -24,7 +24,7 @@ struct AnchorRow: View {
                     .background(isAirport ? Accent.blue.tint : Accent.green.tint, in: Circle())
                 VStack(alignment: .leading, spacing: 3) {
                     Text(title).font(.tBody).foregroundStyle(Color.ink).lineLimit(1)
-                    ForEach(notes, id: \.text) { note in
+                    ForEach(Array(notes.enumerated()), id: \.offset) { _, note in
                         FlightTimingNote(text: note.text, symbol: note.symbol)
                     }
                 }

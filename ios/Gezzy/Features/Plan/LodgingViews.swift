@@ -2,7 +2,7 @@ import MapKit
 import SwiftUI
 import GezzyKit
 
-/// Plan sekmesindeki konaklama kartı: oteller, gece sayıları, konaklaması olmayan geceler; elle ekleme ya da
+/// Rezervasyon sekmesindeki konaklama kartı: oteller, gece sayıları, konaklaması olmayan geceler; elle ekleme ya da
 /// Booking.com/Airbnb onayından içe aktarma.
 struct LodgingCard: View {
     @Environment(TripStore.self) private var store

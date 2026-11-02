@@ -1,7 +1,7 @@
 import SwiftUI
 import GezzyKit
 
-/// Plan sekmesindeki uçuş kartı: uçuşları listeler; elle ekleme, düzenleme ve rezervasyondan içe aktarma.
+/// Rezervasyon sekmesindeki uçuş kartı: uçuşları listeler; elle ekleme, düzenleme ve rezervasyondan içe aktarma.
 struct FlightsCard: View {
     @Environment(TripStore.self) private var store
     let trip: Trip

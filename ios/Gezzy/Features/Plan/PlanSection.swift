@@ -79,12 +79,19 @@ struct PlanSection: View {
             let starts = trip.plannedStarts(on: day, from: anchors.start?.coordinate, dayStart: arrival?.readyAt ?? 9 * 60)
             for stop in stops {
                 guard let start = starts[stop.id] else { continue }
-                flightWarnings[stop.id] = FlightDayTiming.warning(start: start, duration: stop.durationMinutes,
-                                                                 arrival: arrival, departure: departure)
+                let warning = FlightDayTiming.warning(start: start, duration: stop.durationMinutes,
+                                                      arrival: arrival, departure: departure)
+                // "Erken varış" uyarısı yalnızca kullanıcının saat verdiği duraklar için.
+                if case .beforeReady? = warning, stop.startMinutes == nil { continue }
+                flightWarnings[stop.id] = warning
             }
         }
-        let path = (anchors.start?.coordinate.map { [$0] } ?? []) + coordinates
-            + (coordinates.isEmpty && anchors.start == nil ? [] : (anchors.end?.coordinate.map { [$0] } ?? []))
+        // Havalimanı bacakları transfer sayılır; toplam mesafe/yürüyüşe girmez.
+        func lodgingPoint(_ anchor: DayAnchor?) -> [Coordinate] {
+            if case .lodging(let lodging)? = anchor, let c = lodging.coordinate { return [c] }
+            return []
+        }
+        let path = lodgingPoint(anchors.start) + coordinates + lodgingPoint(anchors.end)
         return DayPlan(days: days, day: day, stops: stops, coordinates: coordinates,
                        totalMeters: Geo.routeDistance(path), hours: hours, fixes: fixes, stopCounts: counts,
                        start: anchors.start, end: anchors.end, arrival: arrival, departure: departure,
@@ -188,6 +195,7 @@ struct PlanSection: View {
                 Text(dayTitle(plan))
                     .font(.tBodyStrong)
                     .foregroundStyle(Color.ink)
+                ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
                     StatChip(symbol: "mappin", text: String(localized: "\(stops.count) durak"))
                     if totalMeters > 0 {
@@ -199,6 +207,8 @@ struct PlanSection: View {
                     if warnings > 0 {
                         StatChip(symbol: "clock.badge.exclamationmark", text: String(localized: "\(warnings) saat uyarısı"), accent: .orange)
                     }
+                }
+                .fixedSize()
                 }
             }
             .padding(.bottom, 14)
@@ -216,7 +226,7 @@ struct PlanSection: View {
                                          onAdd: { addHotelVisit(hotel, on: plan.day) },
                                          onDismiss: { dismissedHotelSuggestion.insert(plan.day) })
                 }
-                if let first = stops.first { HopRow(from: start.coordinate, to: first.coordinate) }
+                if let first = stops.first { HopRow(from: start.coordinate, to: first.coordinate, isTransfer: plan.arrival != nil) }
             }
 
             ForEach(Array(stops.enumerated()), id: \.element.id) { index, stop in
@@ -251,8 +261,8 @@ struct PlanSection: View {
             }
 
             if let end = plan.end {
-                if let last = stops.last { HopRow(from: last.coordinate, to: end.coordinate) }
-                else if let start = plan.start { HopRow(from: start.coordinate, to: end.coordinate) }
+                if let last = stops.last { HopRow(from: last.coordinate, to: end.coordinate, isTransfer: plan.departure != nil) }
+                else if let start = plan.start { HopRow(from: start.coordinate, to: end.coordinate, isTransfer: plan.arrival != nil || plan.departure != nil) }
                 AnchorRow(anchor: end, role: .end, timing: plan.departure.map(AnchorRow.Timing.departure))
             }
 
@@ -404,10 +414,8 @@ struct PlanSection: View {
     private func addHotelVisit(_ hotel: Lodging, on day: Date) {
         withAnimation(.spring(duration: 0.3)) {
             store.update(trip.id) { trip in
-                for index in trip.stops.indices where Calendar.current.isDate(trip.stops[index].day, inSameDayAs: day) {
-                    trip.stops[index].order += 1
-                }
-                trip.stops.append(Stop(day: day, order: 0, name: hotel.name, kind: .stay, durationMinutes: 30,
+                let lowest = trip.stops.filter { Calendar.current.isDate($0.day, inSameDayAs: day) }.map(\.order).min() ?? 1
+                trip.stops.append(Stop(day: day, order: lowest - 1, name: hotel.name, kind: .stay, durationMinutes: 30,
                                        coordinate: hotel.coordinate))
             }
         }
@@ -600,6 +608,8 @@ struct StopRow: View {
 struct HopRow: View {
     let from: Coordinate?
     let to: Coordinate?
+    /// Havalimanı bacağı: yürüyüş değil, toplu taşıma/araç tahmini.
+    var isTransfer = false
     @State private var times: TravelTimeService.Times?
 
     var body: some View {
@@ -626,7 +636,15 @@ struct HopRow: View {
 
     @ViewBuilder
     private var content: some View {
-        if let walking = times?.walkingMinutes {
+        if isTransfer {
+            if let transit = times?.transitMinutes {
+                Label("\(transit) dk", systemImage: "tram.fill")
+            } else if let from, let to {
+                Label("≈ \(FlightDayTiming.transferMinutes(from, to)) dk", systemImage: "car")
+            } else {
+                Label("Geçiş", systemImage: "arrow.down")
+            }
+        } else if let walking = times?.walkingMinutes {
             HStack(spacing: 10) {
                 Label("\(walking) dk", systemImage: "figure.walk")
                 if let transit = times?.transitMinutes, walking > 15, transit < walking {
@@ -644,27 +662,6 @@ struct HopRow: View {
     private var estimate: Int? {
         guard let from, let to else { return nil }
         return Geo.walkingMinutes(meters: Geo.distance(from, to))
-    }
-}
-
-/// Günün başladığı konaklama satırı.
-struct LodgingStartRow: View {
-    let lodging: Lodging
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "bed.double.fill")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(Accent.green.base)
-                .frame(width: 36, height: 36)
-                .background(Accent.green.tint, in: Circle())
-            Text(lodging.name)
-                .font(.tBody)
-                .foregroundStyle(Color.ink2)
-                .lineLimit(1)
-            Spacer()
-        }
-        .accessibilityLabel(Text("Gün \(lodging.name) konaklamasından başlıyor"))
     }
 }
 
