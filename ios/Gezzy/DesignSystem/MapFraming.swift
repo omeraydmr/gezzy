@@ -24,15 +24,16 @@ enum MapFraming {
                                           span: MKCoordinateSpan(latitudeDelta: grown, longitudeDelta: fitted.span.longitudeDelta)))
     }
 
-    /// Tek noktaya yakın bakış: nokta görünür bölümün ortasına gelir (merkez güneye kayar).
-    /// Görünür yükseklik yaklaşık kamera mesafesi kadar kabul edilir.
-    static func focus(_ coordinate: CLLocationCoordinate2D, distance: CLLocationDistance,
+    /// Tek noktaya yakın bakış: görünür bölümde ~`visibleMeters` dikey alan, nokta görünür bölümün ortasında.
+    /// Toplam enlem aralığı S = visibleMeters / f; bölge merkezi noktanın (0.5 - f/2) x S güneyindedir,
+    /// böylece nokta ekran merkezinin üstüne, görünür alanın ortasına düşer.
+    static func focus(_ coordinate: CLLocationCoordinate2D, visibleMeters: CLLocationDistance = 3_000,
                       visibleFraction: Double) -> MapCameraPosition {
         let f = min(1, max(0.2, visibleFraction))
-        let shiftMeters = distance * (1 / f - 1) / 2
-        let center = CLLocationCoordinate2D(latitude: coordinate.latitude - shiftMeters / 111_320,
+        let span = visibleMeters / f
+        let center = CLLocationCoordinate2D(latitude: coordinate.latitude - (0.5 - f / 2) * span / 111_320,
                                             longitude: coordinate.longitude)
-        return .camera(MapCamera(centerCoordinate: center, distance: distance))
+        return .region(MKCoordinateRegion(center: center, latitudinalMeters: span, longitudinalMeters: span))
     }
 
     private static func region(_ coordinates: [CLLocationCoordinate2D], minimumSpan: CLLocationDistance,

@@ -118,7 +118,7 @@ struct PlacePickerSheet: View {
         let c = item.suggestion.coordinate
         withAnimation(.easeInOut(duration: 0.4)) {
             position = MapFraming.focus(CLLocationCoordinate2D(latitude: c.latitude, longitude: c.longitude),
-                                        distance: 6000, visibleFraction: fraction)
+                                        visibleFraction: fraction)
         }
     }
 
