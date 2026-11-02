@@ -132,7 +132,14 @@ struct PlanSection: View {
         .sheet(item: $editingStop) { stop in
             StopDetailsSheet(stop: stop) { saved in
                 store.update(trip.id) { trip in
-                    if let index = trip.stops.firstIndex(where: { $0.id == saved.id }) { trip.stops[index] = saved }
+                    // Yalnızca düzenlenen alanlar; arada gelen saat/konum/gün/sıra değişiklikleri ezilmesin.
+                    if let index = trip.stops.firstIndex(where: { $0.id == saved.id }) {
+                        trip.stops[index].name = saved.name
+                        trip.stops[index].kind = saved.kind
+                        trip.stops[index].startMinutes = saved.startMinutes
+                        trip.stops[index].durationMinutes = saved.durationMinutes
+                        trip.stops[index].note = saved.note
+                    }
                 }
             }
         }

@@ -48,6 +48,7 @@ final class PlaceRankingTests: XCTestCase {
         XCTAssertEqual(PlaceRanking.badge(popularity: 0.79, contributors: nil), .popular)
         XCTAssertEqual(PlaceRanking.badge(popularity: 0.5, contributors: nil), .popular)
         XCTAssertNil(PlaceRanking.badge(popularity: 0.49, contributors: nil))
+        XCTAssertNil(PlaceRanking.badge(popularity: 0.1, contributors: 0), "0 katkıcı rozet olmaz")
     }
 
     func testCommunityPlaceMatchingWikipediaReplacesItWithBonus() {
@@ -103,6 +104,14 @@ final class PlaceRankingTests: XCTestCase {
         XCTAssertEqual(ranked.map(\.id), ["wiki/1", "map/b"],
                        "Apple sonucu havuzdaki kayda dönüşür; eşleşmeyen Apple sonucu eşiğe takılmaz")
         XCTAssertEqual(ranked[1].popularity, 0)
+    }
+
+    func testMapResultWithDifferentNameNearPoolPlaceStaysSeparate() {
+        let pool = PlaceRanking.pool(wikipedia: [place("wiki/1", "Rossio", score: 9, slot: 3)], community: [])
+        var cafe = place("map/cafe", "Café Nicola", score: 0, slot: 3)
+        cafe.coordinate = Coordinate(latitude: cafe.coordinate.latitude + 0.00045, longitude: cafe.coordinate.longitude)
+        let ids = PlaceRanking.search("nicola", pool: pool, mapResults: [cafe], center: center).map(\.id)
+        XCTAssertEqual(ids, ["map/cafe"], "Yakındaki farklı adlı yer Apple sonucunu silmez")
     }
 
     func testSearchIsLimited() {

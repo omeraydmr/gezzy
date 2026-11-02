@@ -12,6 +12,10 @@ struct PlacePickerSheet: View {
     @State private var position: MapCameraPosition = .automatic
     @State private var detent: PresentationDetent = .medium
     @State private var showsDrawer = true
+    /// Haritanın genişlik/yükseklik oranı; odak bölgesinde enlemi bağlayıcı kenar yapmak için.
+    @State private var mapAspect: Double?
+    /// Büyük çekmecede liste değişti; çekmece küçülünce yeniden çerçevelenecek.
+    @State private var reframePending = false
 
     /// Çekmecenin en küçük hâli: harita baskın.
     static let peek = PresentationDetent.fraction(0.3)
@@ -36,6 +40,11 @@ struct PlacePickerSheet: View {
             detent = target
         }
         .ignoresSafeArea()
+        .background(GeometryReader { proxy in
+            Color.clear
+                .onAppear { mapAspect = aspect(proxy.size) }
+                .onChange(of: proxy.size) { _, size in mapAspect = aspect(size) }
+        })
         .overlay(alignment: .top) { cityChips(trip) }
         .sheet(isPresented: $showsDrawer) {
             PlacePickerList(trip: trip, model: model, detent: $detent,
@@ -54,10 +63,14 @@ struct PlacePickerSheet: View {
         }
         .task(id: model.query) { await model.search(trip: trip) }
         // Liste (arama, filtre, şehir) değişince harita yeniden çerçevelenir; eklemek listeyi değiştirmez.
-        .onChange(of: model.numbered.map(\.id), initial: true) { _, _ in frame(trip) }
-        // Çekmece peek ile medium arasında değişince, kullanıcı bir yer seçmediyse yeniden çerçevele.
-        .onChange(of: detent) { _, _ in
-            if model.focusedID == nil { frame(trip) }
+        .onChange(of: model.numbered.map(\.id), initial: true) { _, _ in
+            if detent == .large { reframePending = true } else { frame(trip) }
+        }
+        // Çekmece küçülünce: seçili yer varsa ona odaklan, yoksa çerçevele (büyükteyken kaçan yeniden çerçeveleme dahil).
+        .onChange(of: detent) { _, new in
+            guard new != .large else { return }
+            reframePending = false
+            if let id = model.focusedID { focus(id, trip: trip) } else { frame(trip) }
         }
     }
 
@@ -83,6 +96,10 @@ struct PlacePickerSheet: View {
         }
     }
 
+    private func aspect(_ size: CGSize) -> Double? {
+        size.height > 0 ? Double(size.width / size.height) : nil
+    }
+
     /// Çekmecenin kapatmadığı üst bölümün oranı; büyük çekmecede harita zaten görünmez, nil.
     private func visibleFraction(_ detent: PresentationDetent) -> Double? {
         if detent == Self.peek { return 0.7 }
@@ -102,7 +119,7 @@ struct PlacePickerSheet: View {
         let coordinates = points.map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) }
         withAnimation(.easeInOut(duration: 0.4)) {
             if let fraction = visibleFraction(detent) {
-                position = MapFraming.position(coordinates, visibleFraction: fraction)
+                position = MapFraming.position(coordinates, visibleFraction: fraction, aspect: mapAspect)
             } else if case .large = detent {
                 // Büyük çekmecede haritayı oynatma.
             } else {
@@ -118,7 +135,7 @@ struct PlacePickerSheet: View {
         let c = item.suggestion.coordinate
         withAnimation(.easeInOut(duration: 0.4)) {
             position = MapFraming.focus(CLLocationCoordinate2D(latitude: c.latitude, longitude: c.longitude),
-                                        visibleFraction: fraction)
+                                        visibleFraction: fraction, aspect: mapAspect)
         }
     }
 

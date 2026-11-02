@@ -49,8 +49,13 @@ public enum PlaceRanking {
             && OpeningHoursLookup.bestMatch(for: a.name, in: [.init(name: b.name, openingHours: "")]) != nil
     }
 
+    private static func isSameNamedPlace(_ a: PlaceSuggestions.Suggestion, _ b: PlaceSuggestions.Suggestion) -> Bool {
+        Geo.distance(a.coordinate, b.coordinate) < samePlaceNameDistance
+            && OpeningHoursLookup.bestMatch(for: a.name, in: [.init(name: b.name, openingHours: "")]) != nil
+    }
+
     public static func badge(popularity: Double, contributors: Int?) -> Badge? {
-        if let contributors { return .community(contributors) }
+        if let contributors, contributors > 0 { return .community(contributors) }
         if popularity >= veryPopularThreshold { return .veryPopular }
         if popularity >= popularThreshold { return .popular }
         return nil
@@ -110,7 +115,10 @@ public enum PlaceRanking {
             similarity(item.suggestion.name) >= matchFloor || PlaceMatch.normalize(item.suggestion.category).contains(folded)
         }
         for result in mapResults {
-            if let known = pool.first(where: { isSamePlace($0.suggestion, result) }) {
+            // Aramada Apple sonucu yalnızca adı tutan, 300 m içindeki en yakın havuz kaydına dönüşür.
+            let known = pool.filter { isSameNamedPlace($0.suggestion, result) }
+                .min { Geo.distance($0.suggestion.coordinate, result.coordinate) < Geo.distance($1.suggestion.coordinate, result.coordinate) }
+            if let known {
                 if !candidates.contains(where: { $0.id == known.id }) { candidates.append(known) }
             } else if !candidates.contains(where: { $0.id == result.id }) {
                 candidates.append(Ranked(suggestion: result, popularity: 0))
