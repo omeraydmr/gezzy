@@ -137,8 +137,8 @@ final class PlacePickerModel {
             guard generation == loadGeneration, !Task.isCancelled else { return }
             // "Sonra genelde" yerleri havuza da girer; aynı kimlik iki kez yazılmaz.
             var merged = PlaceRanking.pool(wikipedia: wikipedia, community: fresh)
-            let ids = Set(merged.map(\.id))
-            merged += groups.flatMap(\.places).filter { !ids.contains($0.id) }
+            var ids = Set(merged.map(\.id))
+            merged += groups.flatMap(\.places).filter { ids.insert($0.id).inserted }
             withAnimation {
                 pool = PlaceRanking.browse(merged, center: center)
                 nextGroups = groups
@@ -157,11 +157,14 @@ final class PlacePickerModel {
         let anchors = trip.stops.filter { $0.coordinate != nil && $0.kind != .transport && $0.kind != .stay }
             .sorted { ($0.day, $0.order) < ($1.day, $1.order) }.suffix(2)
         var groups: [NextGroup] = []
+        // Aynı yer iki bölümde tekrar etmez; ilk bölüm kalır.
+        var seen: Set<String> = []
         for anchor in anchors.reversed() {
             let places = await CommunityService.shared.next(after: anchor.coordinate!)
                 .filter { suggestion in !existing.contains(where: suggestion.matches) }
-            if !places.isEmpty {
-                groups.append(NextGroup(anchor: anchor.name, places: PlaceRanking.pool(wikipedia: [], community: places)))
+            let ranked = PlaceRanking.pool(wikipedia: [], community: places).filter { seen.insert($0.id).inserted }
+            if !ranked.isEmpty {
+                groups.append(NextGroup(anchor: anchor.name, places: ranked))
             }
         }
         return groups

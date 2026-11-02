@@ -39,7 +39,7 @@ struct PlacePickerSheet: View {
         .sheet(isPresented: $showsDrawer) {
             PlacePickerList(trip: trip, model: model, detent: $detent,
                             onFocus: { focus($0, trip: trip) },
-                            onRetry: { Task { await model.load(trip: trip) } },
+                            onRetry: { Task { await model.load(trip: trip); await model.search(trip: trip) } },
                             onDone: close)
                 .presentationDetents([Self.peek, .medium, .large], selection: $detent)
                 .presentationBackgroundInteraction(.enabled(upThrough: .medium))
