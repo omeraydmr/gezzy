@@ -48,8 +48,8 @@ Kapsam dışı: ücretli yer API'leri (Google Places, Foursquare), sunucu taraf�
   - Listedeki yerler, listedeki sırasıyla numaralı pin (`NumberedPin`). Filtre ya da arama değişince pinler de değişir.
   - Plandaki duraklar ve hedef günün oteli soluk gri pin. Bunlara dokunulmaz, yalnızca bağlam verir.
   - Bu oturumda eklenen yerler yeşil ✓ pin olur.
-  - Kamera ilk açılışta listedeki ilk 10 yeri ve plandaki durakları çerçeveler (`MapFraming`). Liste değişince yeniden
-    çerçeveler, ama kullanıcı haritayı elle oynattıysa çerçevelemez.
+  - Kamera ilk açılışta listedeki ilk 10 yeri ve plandaki durakları çerçeveler (`MapFraming`). Liste değişince (arama,
+    filtre, şehir) yeniden çerçeveler; yer eklemek listeyi değiştirmediği için haritayı oynatmaz.
 - **Çekmece**: `presentationDetents` üç kademe: küçük (~%30, harita baskın), yarım (açılış), büyük (liste baskın).
   Arama alanına odaklanınca büyük kademeye çıkar.
 - **Pin ↔ satır bağı**: pine dokununca çekmece en az yarım kademeye çıkar ve satır görünür olup vurgulanır. Satıra
@@ -101,8 +101,10 @@ Topluluk etiketi varsa "Çok popüler/Popüler" ayrıca yazılmaz. Yıldız kull
 Adaylar: yüklü öneri havuzunda ad/tür eşleşenler + `PlaceSearch.places` (Apple Haritalar) sonuçları. Apple sonuçları
 havuzla `matches` üzerinden eşleşirse havuzdaki popülerliği alır ve tek satır olur.
 
-- Eşik: `PlaceMatch.similarity(sorgu, ad) < 0,35` ve tür eşleşmesi yoksa aday atılır.
-- **Tam eşleşme kuralı**: benzerlik ≥ 0,9 olan adaylar her zaman en üstte (kendi aralarında aşağıdaki puanla).
+- Eşik: havuzdaki bir önerinin `PlaceMatch.similarity(sorgu, ad) < 0,35` ise ve türü de sorguyu içermiyorsa aday
+  atılır. Apple sonuçları zaten sorguya göre geldiği için eşiğe tabi değildir.
+- **Tam eşleşme kuralı**: benzerliği 1 olan (normalize edilmiş adı sorguyla birebir aynı) adaylar her zaman en üstte.
+  Baştan eşleşmeler (0,9) bu gruba girmez; "museu" yazınca popüler müze önce gelsin.
 - Puan = 0,55 × benzerlik + 0,35 × popülerlik + 0,10 × yakınlık, yakınlık = `max(0, 1 − mesafe / 15 km)`.
 - En çok 25 sonuç.
 
