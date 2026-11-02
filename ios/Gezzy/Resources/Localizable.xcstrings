@@ -83,6 +83,46 @@
         }
       }
     },
+    "%@ · başlangıç" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ · start"
+          }
+        }
+      }
+    },
+    "%@ · bitiş" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ · end"
+          }
+        }
+      }
+    },
+    "%@ · iniş %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · lands %2$@"
+          }
+        }
+      }
+    },
+    "%@ · kalkış %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · departs %2$@"
+          }
+        }
+      }
+    },
     "%lld. gün" : {
       "localizations" : {
         "en" : {
@@ -143,6 +183,26 @@
         }
       }
     },
+    "elle ya da biletten" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "manually or from a ticket"
+          }
+        }
+      }
+    },
+    "elle ya da rezervasyondan" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "manually or from a booking"
+          }
+        }
+      }
+    },
     "Gitmek istediğin yerleri ekle; sonra otomatik rota günlere dağıtsın." : {
       "localizations" : {
         "en" : {
@@ -163,12 +223,82 @@
         }
       }
     },
+    "Havalimanına çıkış saatinden (%@) sonra bitiyor" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ends after you need to leave for the airport (%@)"
+          }
+        }
+      }
+    },
+    "Havalimanına çıkış: yaklaşık %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leave for the airport around %@"
+          }
+        }
+      }
+    },
+    "Havalimanında ol: en geç %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Be at the airport by %@"
+          }
+        }
+      }
+    },
+    "İnişten sonra şehre en erken varış: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Earliest arrival in the city after landing: %@"
+          }
+        }
+      }
+    },
+    "Kapı ve biniş saatini bilette kontrol et." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check the gate and boarding time on your ticket."
+          }
+        }
+      }
+    },
     "Listede yok mu? Elle ekle" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Not listed? Add it yourself"
+          }
+        }
+      }
+    },
+    "Önce otele uğramak ister misin?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drop by the hotel first?"
+          }
+        }
+      }
+    },
+    "Öneriyi kapat" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dismiss suggestion"
           }
         }
       }
@@ -193,6 +323,26 @@
         }
       }
     },
+    "Sabah erken uçuş; bu gün için durak planlama." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Early morning flight; don't plan stops for this day."
+          }
+        }
+      }
+    },
+    "Şehirde yaklaşık %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In the city around %@"
+          }
+        }
+      }
+    },
     "Tümü" : {
       "localizations" : {
         "en" : {
@@ -209,6 +359,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Food & drink"
+          }
+        }
+      }
+    },
+    "Yeni AB sınır kaydı (EES) nedeniyle pasaport sırası uzun sürebilir." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passport queues can be long because of the new EU Entry/Exit System (EES)."
           }
         }
       }
@@ -4198,16 +4358,6 @@
         }
       }
     },
-    "Gün %@ konaklamasından başlıyor" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The day starts from %@"
-          }
-        }
-      }
-    },
     "Gün %lld/%lld" : {
       "localizations" : {
         "en" : {
@@ -4884,16 +5034,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Copy IBAN · %@"
-          }
-        }
-      }
-    },
-    "İçe aktar" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Import"
           }
         }
       }
@@ -6621,16 +6761,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hotel or home name"
-          }
-        }
-      }
-    },
-    "Otel ya da ev ekle ya da Booking.com, Airbnb onayından içe aktar; günlerin planı oradan başlasın." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Add a hotel or home, or import a Booking.com or Airbnb confirmation; each day's plan starts there."
           }
         }
       }
@@ -8877,16 +9007,6 @@
         }
       }
     },
-    "Uçuşunu elle yaz ya da e-bilet, ekran görüntüsü veya Wallet kartından içe aktar." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Type your flight in, or import it from an e-ticket, screenshot or Wallet pass."
-          }
-        }
-      }
-    },
     "Ulaşım" : {
       "localizations" : {
         "en" : {
@@ -9580,6 +9700,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Delete visit"
+          }
+        }
+      }
+    },
+    "≈ %lld dk" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "≈ %lld min"
           }
         }
       }
