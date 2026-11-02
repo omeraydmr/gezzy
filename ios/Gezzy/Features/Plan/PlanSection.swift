@@ -13,6 +13,7 @@ struct PlanSection: View {
     @State private var dropTarget: Stop.ID?
     @State private var editingHours: Stop?
     @State private var editingStop: Stop?
+    @State private var dismissedHotelSuggestion: Set<Date> = []
     private var network: NetworkMonitor { .shared }
     private var offlineMaps: OfflineMapStore { .shared }
     @Environment(\.tripTint) private var tint
@@ -38,8 +39,13 @@ struct PlanSection: View {
         let hours: [Stop.ID: OpeningHours.Status]
         let fixes: [Stop.ID: Trip.HoursFix]
         let stopCounts: [Date: Int]
+        let start: DayAnchor?
+        let end: DayAnchor?
+        let arrival: FlightDayTiming.Arrival?
+        let departure: FlightDayTiming.Departure?
+        let flightWarnings: [Stop.ID: FlightDayTiming.StopWarning]
 
-        var warningCount: Int { hours.values.filter(\.isWarning).count }
+        var warningCount: Int { hours.values.filter(\.isWarning).count + flightWarnings.count }
     }
 
     private func makePlan() -> DayPlan {
@@ -56,8 +62,33 @@ struct PlanSection: View {
             hours[stop.id] = trip.hoursStatus(of: stop)
             fixes[stop.id] = trip.hoursFix(for: stop)
         }
+        let anchors = trip.anchors(on: day)
+        let nationality = store.me.passport?.nationality ?? "TR"
+        let firstPoint = stops.first(where: { $0.coordinate != nil })?.coordinate ?? trip.lodging(forNightOf: day)?.coordinate
+        let lastPoint = stops.last(where: { $0.coordinate != nil })?.coordinate ?? trip.lodging(forMorningOf: day)?.coordinate
+        var arrival: FlightDayTiming.Arrival?
+        if case .airport(_, let flight)? = anchors.start {
+            arrival = FlightDayTiming.arrival(flight, firstPoint: firstPoint, nationality: nationality)
+        }
+        var departure: FlightDayTiming.Departure?
+        if case .airport(_, let flight)? = anchors.end {
+            departure = FlightDayTiming.departure(flight, lastPoint: lastPoint, nationality: nationality)
+        }
+        var flightWarnings: [Stop.ID: FlightDayTiming.StopWarning] = [:]
+        if arrival != nil || departure != nil {
+            let starts = trip.plannedStarts(on: day, from: anchors.start?.coordinate, dayStart: arrival?.readyAt ?? 9 * 60)
+            for stop in stops {
+                guard let start = starts[stop.id] else { continue }
+                flightWarnings[stop.id] = FlightDayTiming.warning(start: start, duration: stop.durationMinutes,
+                                                                 arrival: arrival, departure: departure)
+            }
+        }
+        let path = (anchors.start?.coordinate.map { [$0] } ?? []) + coordinates
+            + (coordinates.isEmpty && anchors.start == nil ? [] : (anchors.end?.coordinate.map { [$0] } ?? []))
         return DayPlan(days: days, day: day, stops: stops, coordinates: coordinates,
-                       totalMeters: Geo.routeDistance(coordinates), hours: hours, fixes: fixes, stopCounts: counts)
+                       totalMeters: Geo.routeDistance(path), hours: hours, fixes: fixes, stopCounts: counts,
+                       start: anchors.start, end: anchors.end, arrival: arrival, departure: departure,
+                       flightWarnings: flightWarnings)
     }
 
     var body: some View {
@@ -176,9 +207,16 @@ struct PlanSection: View {
                 EmptyHint(symbol: "mappin.and.ellipse", text: String(localized: "Bu gün için henüz durak yok."))
             }
 
-            if let lodging = trip.lodging(forMorningOf: plan.day), let first = stops.first {
-                LodgingStartRow(lodging: lodging)
-                HopRow(from: lodging.coordinate, to: first.coordinate)
+            if let start = plan.start {
+                AnchorRow(anchor: start, role: .start, timing: plan.arrival.map(AnchorRow.Timing.arrival))
+                if plan.arrival != nil, !dismissedHotelSuggestion.contains(plan.day),
+                   let hotel = trip.lodging(forNightOf: plan.day),
+                   !stops.contains(where: { $0.kind == .stay && $0.name == hotel.name }) {
+                    HotelVisitSuggestion(lodging: hotel,
+                                         onAdd: { addHotelVisit(hotel, on: plan.day) },
+                                         onDismiss: { dismissedHotelSuggestion.insert(plan.day) })
+                }
+                if let first = stops.first { HopRow(from: start.coordinate, to: first.coordinate) }
             }
 
             ForEach(Array(stops.enumerated()), id: \.element.id) { index, stop in
@@ -186,7 +224,7 @@ struct PlanSection: View {
                     HopRow(from: stops[index - 1].coordinate, to: stop.coordinate)
                 }
                 StopRow(stop: stop, number: index + 1, hours: plan.hours[stop.id],
-                        fix: plan.fixes[stop.id]) { fix in apply(fix, to: stop) }
+                        fix: plan.fixes[stop.id], flightWarning: plan.flightWarnings[stop.id]) { fix in apply(fix, to: stop) }
                     .overlay(alignment: .top) {
                         Capsule()
                             .fill(tint)
@@ -210,6 +248,12 @@ struct PlanSection: View {
                         if targeted { dropTarget = stop.id } else if dropTarget == stop.id { dropTarget = nil }
                     }
                     .contextMenu { menu(for: stop, index: index, in: plan) }
+            }
+
+            if let end = plan.end {
+                if let last = stops.last { HopRow(from: last.coordinate, to: end.coordinate) }
+                else if let start = plan.start { HopRow(from: start.coordinate, to: end.coordinate) }
+                AnchorRow(anchor: end, role: .end, timing: plan.departure.map(AnchorRow.Timing.departure))
             }
 
             if stops.contains(where: { $0.openingHours != nil }) {
@@ -285,25 +329,26 @@ struct PlanSection: View {
             return PinnedStop(stop: stop, number: index + 1,
                               coordinate: CLLocationCoordinate2D(latitude: coordinate.latitude, longitude: coordinate.longitude))
         }
-        let hotel = trip.lodging(forMorningOf: plan.day)
-        let hotelCoordinate: CLLocationCoordinate2D? = hotel?.coordinate.map {
-            CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude)
+        func cl(_ c: Coordinate?) -> CLLocationCoordinate2D? {
+            c.map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) }
         }
+        let startCoordinate = cl(plan.start?.coordinate)
+        let endCoordinate = cl(plan.end?.coordinate)
         var route: [CLLocationCoordinate2D] = []
-        if let hotelCoordinate { route.append(hotelCoordinate) }
+        if let startCoordinate { route.append(startCoordinate) }
         route += pinned.map(\.coordinate)
+        if let endCoordinate { route.append(endCoordinate) }
+        // Başlangıç ve bitiş aynı otelse tek işaret.
+        var sameLodging = false
+        if case .lodging(let a)? = plan.start, case .lodging(let b)? = plan.end { sameLodging = a.id == b.id }
         return Map(position: $cameraPosition) {
             MapPolyline(coordinates: route)
                 .stroke(Color.ink, style: StrokeStyle(lineWidth: 3, lineCap: .round, dash: [0.5, 8]))
-            if let hotel, let hotelCoordinate {
-                Annotation(hotel.name, coordinate: hotelCoordinate, anchor: .center) {
-                    Image(systemName: "bed.double.fill")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundStyle(.white)
-                        .frame(width: 28, height: 28)
-                        .background(Accent.green.base, in: Circle())
-                        .overlay(Circle().strokeBorder(.white, lineWidth: 2))
-                }
+            if let anchor = plan.start, let startCoordinate {
+                anchorAnnotation(anchor, at: startCoordinate)
+            }
+            if let anchor = plan.end, let endCoordinate, !sameLodging {
+                anchorAnnotation(anchor, at: endCoordinate)
             }
             ForEach(pinned) { item in
                 Annotation(item.stop.name, coordinate: item.coordinate, anchor: .bottom) {
@@ -320,6 +365,19 @@ struct PlanSection: View {
         .clipShape(RoundedRectangle(cornerRadius: Radius.tray, style: .continuous))
         // Gölge haritanın kendisinden değil zemin şeklinden: canlı harita katmana birleştirilmez.
         .cardBackground(Color.tray, in: RoundedRectangle(cornerRadius: Radius.tray, style: .continuous))
+    }
+
+    @MapContentBuilder
+    private func anchorAnnotation(_ anchor: DayAnchor, at coordinate: CLLocationCoordinate2D) -> some MapContent {
+        let airport: Bool = { if case .airport = anchor { true } else { false } }()
+        Annotation(anchor.name, coordinate: coordinate, anchor: .center) {
+            Image(systemName: airport ? "airplane" : "bed.double.fill")
+                .font(.system(size: 12, weight: .bold))
+                .foregroundStyle(.white)
+                .frame(width: 28, height: 28)
+                .background(airport ? Accent.blue.base : Accent.green.base, in: Circle())
+                .overlay(Circle().strokeBorder(.white, lineWidth: 2))
+        }
     }
 
     private struct PinnedStop: Identifiable {
@@ -341,6 +399,19 @@ struct PlanSection: View {
     }
 
     // MARK: Opening hours
+
+    /// Varış gününde otele uğrama durağı listenin başına; basılı tutup sürüklenerek taşınabilir.
+    private func addHotelVisit(_ hotel: Lodging, on day: Date) {
+        withAnimation(.spring(duration: 0.3)) {
+            store.update(trip.id) { trip in
+                for index in trip.stops.indices where Calendar.current.isDate(trip.stops[index].day, inSameDayAs: day) {
+                    trip.stops[index].order += 1
+                }
+                trip.stops.append(Stop(day: day, order: 0, name: hotel.name, kind: .stay, durationMinutes: 30,
+                                       coordinate: hotel.coordinate))
+            }
+        }
+    }
 
     /// Açılış saati henüz aranmamış, konumu olan duraklar (tüm günler).
     private var pendingHoursLookup: [Stop.ID] {
@@ -411,8 +482,9 @@ struct PlanSection: View {
                                  fixedStart: stop.startMinutes)
         }
         let dayStart = min(9 * 60, located.compactMap(\.startMinutes).min() ?? 9 * 60)
-        // Sabah otelden çıkılıyorsa rota otelden başlar.
-        let order = RouteOptimizer.order(visits, from: trip.lodging(forMorningOf: day)?.coordinate, dayStart: dayStart)
+        // Rota günün başlangıç ve bitiş noktasına (otel ya da havalimanı) bağlanır.
+        let anchors = trip.anchors(on: day)
+        let order = RouteOptimizer.order(visits, from: anchors.start?.coordinate, to: anchors.end?.coordinate, dayStart: dayStart)
         lastOrderBeforeOptimize = Dictionary(uniqueKeysWithValues: stops.map { ($0.id, $0.order) })
         withAnimation(.spring(duration: 0.35)) {
             applyOrder(order.map { located[$0].id } + others.map(\.id))
@@ -448,6 +520,7 @@ struct StopRow: View {
     let number: Int
     var hours: OpeningHours.Status?
     var fix: Trip.HoursFix?
+    var flightWarning: FlightDayTiming.StopWarning?
     var onFix: (Trip.HoursFix) -> Void = { _ in }
 
     var body: some View {
@@ -460,6 +533,10 @@ struct StopRow: View {
                 Text(detail).font(.tBody).foregroundStyle(Color.ink2)
                 if let hours {
                     HoursLabel(status: hours)
+                }
+                if let flightWarning {
+                    FlightTimingNote(text: flightText(flightWarning), symbol: "exclamationmark.circle.fill")
+                        .foregroundStyle(Color.food)
                 }
                 if let fix {
                     Button {
@@ -488,6 +565,13 @@ struct StopRow: View {
         }
         .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
+    }
+
+    private func flightText(_ warning: FlightDayTiming.StopWarning) -> String {
+        switch warning {
+        case .beforeReady(let t): String(localized: "İnişten sonra şehre en erken varış: \(AppFormat.time(minutes: t))")
+        case .afterLeave(let t): String(localized: "Havalimanına çıkış saatinden (\(AppFormat.time(minutes: max(0, t)))) sonra bitiyor")
+        }
     }
 
     private func fixTitle(_ fix: Trip.HoursFix) -> String {
