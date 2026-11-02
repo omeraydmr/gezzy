@@ -25,26 +25,34 @@ struct IdeasCard: View {
                     Text("\(ideas.count)").font(.tCaption).foregroundStyle(Color.ink3)
                 }
                 Spacer()
-            }
-
-            if ideas.isEmpty {
-                EmptyHint(symbol: "lightbulb", text: String(localized: "Gitmek istediğin yerleri ekle; sonra otomatik rota günlere dağıtsın."))
-            }
-
-            HStack(spacing: 8) {
                 Button {
                     isPicking = true
                 } label: {
-                    Label("Yer ekle", systemImage: "plus")
+                    Image(systemName: "plus")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 32, height: 32)
+                        .background(tint, in: Circle())
                 }
-                .buttonStyle(PillButtonStyle())
+                .buttonStyle(.plain)
+                .accessibilityLabel("Yer ekle")
+            }
+
+            if ideas.isEmpty {
+                AddPlaceholder(title: String(localized: "Yer ekle"),
+                               subtitle: String(localized: "Gitmek istediğin yerleri ekle; sonra otomatik rota günlere dağıtsın.")) {
+                    Button("Haritada ara", systemImage: "map") { isPicking = true }
+                }
+            }
+
+            HStack(spacing: 8) {
                 if !ideas.isEmpty {
                     Button {
                         isPlanning = true
                     } label: {
                         Label("Otomatik rota", systemImage: "wand.and.stars")
                     }
-                    .buttonStyle(PillButtonStyle(isProminent: true))
+                    .buttonStyle(PillButtonStyle(tint: tint, soft: .soft(palette)))
                 }
                 if let undo {
                     Button {
@@ -73,8 +81,8 @@ struct IdeasCard: View {
                     Image(systemName: idea.kind.symbol)
                         .font(.system(size: 14))
                         .foregroundStyle(Color.ink2)
-                        .frame(width: 34, height: 34)
-                        .background(Color.track, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        .frame(width: 28, height: 28)
+                        .background(Color.track, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
                     VStack(alignment: .leading, spacing: 1) {
                         Text(idea.name).font(.subheadline).foregroundStyle(Color.ink).lineLimit(1)
                         if !idea.note.isEmpty {
@@ -82,17 +90,22 @@ struct IdeasCard: View {
                         }
                     }
                     Spacer(minLength: 8)
-                    Button {
-                        withAnimation(.spring(duration: 0.3)) { schedule(idea) }
+                    Menu {
+                        ForEach(trip.days(), id: \.self) { target in
+                            Button("\(AppFormat.dayPill(target)) ekle") {
+                                withAnimation(.spring(duration: 0.3)) { schedule(idea, on: target) }
+                            }
+                        }
                     } label: {
-                        Text("\(AppFormat.dayPill(day)) ekle")
-                            .font(.system(.caption, weight: .bold))
-                            .foregroundStyle(Color.onInk)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(Color.ink, in: Capsule())
+                        Image(systemName: "plus")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundStyle(tint)
+                            .frame(width: 32, height: 32)
+                            .background(Color.soft(palette), in: Circle())
+                    } primaryAction: {
+                        withAnimation(.spring(duration: 0.3)) { schedule(idea, on: day) }
                     }
-                    .buttonStyle(.plain)
+                    .accessibilityLabel(Text("\(AppFormat.dayPill(day)) gününe ekle"))
                 }
                 .contextMenu {
                     Button("Sil", systemImage: "trash", role: .destructive) {
@@ -116,12 +129,12 @@ struct IdeasCard: View {
 
     /// Fikri günün sonuna durak olarak ekler. Durak yeni kimlik alır; böylece fikrin silinmesi
     /// eşitlemede diğer cihazlara da yansır.
-    private func schedule(_ idea: Stop) {
+    private func schedule(_ idea: Stop, on target: Date) {
         store.update(trip.id) { trip in
-            let order = (trip.stops(on: day).map(\.order).max() ?? -1) + 1
+            let order = (trip.stops(on: target).map(\.order).max() ?? -1) + 1
             var stop = idea
             stop.id = UUID()
-            stop.day = Calendar.current.startOfDay(for: day)
+            stop.day = Calendar.current.startOfDay(for: target)
             stop.order = order
             trip.stops.append(stop)
             trip.ideas?.removeAll { $0.id == idea.id }
@@ -129,17 +142,18 @@ struct IdeasCard: View {
     }
 }
 
-/// Kart içi küçük hap düğme.
+/// Kart içi küçük hap düğme; `tint` verilirse yumuşak zemin + renkli metin.
 struct PillButtonStyle: ButtonStyle {
-    var isProminent = false
+    var tint: Color?
+    var soft: Color?
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(.footnote, weight: .semibold))
-            .foregroundStyle(isProminent ? Color.onInk : Color.ink)
+            .foregroundStyle(tint ?? Color.ink)
             .padding(.horizontal, 12)
             .frame(height: 34)
-            .background(isProminent ? Color.ink : Color.track, in: Capsule())
+            .background(soft ?? Color.track, in: Capsule())
             .opacity(configuration.isPressed ? 0.8 : 1)
     }
 }

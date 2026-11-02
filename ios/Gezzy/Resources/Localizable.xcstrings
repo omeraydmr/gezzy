@@ -373,6 +373,26 @@
         }
       }
     },
+    "Haritada ara" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search the map"
+          }
+        }
+      }
+    },
+    "%@ gününe ekle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add to %@"
+          }
+        }
+      }
+    },
     "Yer ekle" : {
       "localizations" : {
         "en" : {
