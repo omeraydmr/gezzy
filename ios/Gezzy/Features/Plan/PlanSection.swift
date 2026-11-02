@@ -12,6 +12,7 @@ struct PlanSection: View {
     @State private var lastOrderBeforeOptimize: [Stop.ID: Int]?
     @State private var dropTarget: Stop.ID?
     @State private var editingHours: Stop?
+    @State private var editingStop: Stop?
     private var network: NetworkMonitor { .shared }
     private var offlineMaps: OfflineMapStore { .shared }
     @Environment(\.tripTint) private var tint
@@ -128,6 +129,13 @@ struct PlanSection: View {
             }
             .presentationDetents([.medium, .large])
         }
+        .sheet(item: $editingStop) { stop in
+            StopDetailsSheet(stop: stop) { saved in
+                store.update(trip.id) { trip in
+                    if let index = trip.stops.firstIndex(where: { $0.id == saved.id }) { trip.stops[index] = saved }
+                }
+            }
+        }
         .task(id: trip.stops.filter { $0.coordinate != nil }.count) { await lookUpOpeningHours() }
         .onChange(of: plan.day) { _, _ in
             lastOrderBeforeOptimize = nil
@@ -235,6 +243,7 @@ struct PlanSection: View {
 
     @ViewBuilder
     private func menu(for stop: Stop, index: Int, in plan: DayPlan) -> some View {
+        Button("Düzenle", systemImage: "pencil") { editingStop = stop }
         if index > 0 {
             Button("Yukarı taşı", systemImage: "arrow.up") { move(stop, by: -1) }
         }
