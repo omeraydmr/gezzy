@@ -51,6 +51,28 @@ extension ShareCardConfig.Stat {
     }
 }
 
+// MARK: - Kurallar
+
+extension ShareCardConfig {
+    /// Kartta Gezzy işareti çizilecek mi: Premium değilse kayıtlı değerden bağımsız olarak hep açık.
+    func effectiveShowsBrand(isPremium: Bool) -> Bool { showsBrand || !isPremium }
+
+    /// Kayıtlı ya da düzenlenen config'i geçerli kılar: gizli/görünmeyen fotoğraflar çıkar, tekrarlar ve
+    /// şablon sınırını aşanlar düşer, fotoğrafsız "photo" paleti seyahat paletine döner, Premium değilse işaret açılır.
+    /// `available` nil ise (anlar henüz yüklenmedi) görünürlüğe göre eleme yapılmaz.
+    func sanitized(hidden: Set<String>, available: Set<String>?, isPremium: Bool) -> ShareCardConfig {
+        var config = self
+        var seen = Set<String>()
+        let ids = photoIDs.filter { id in
+            !hidden.contains(id) && (available?.contains(id) ?? true) && seen.insert(id).inserted
+        }
+        config.photoIDs = Array(ids.prefix(Self.photoLimit(template).upperBound))
+        if config.photoIDs.isEmpty && config.paletteID == "photo" { config.paletteID = nil }
+        config.showsBrand = effectiveShowsBrand(isPremium: isPremium)
+        return config
+    }
+}
+
 // MARK: - Kontroller
 
 /// Stüdyonun düzenleme bölümleri: fotoğraf, renk, metin, bilgiler ve Gezzy işareti.
@@ -168,7 +190,7 @@ struct StudioControls: View {
                 }
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(Text("Fotoğraf"))
+        .accessibilityLabel(order.map { Text("Fotoğraf \($0 + 1), seçili") } ?? Text("Fotoğraf"))
         .accessibilityAddTraits(order != nil ? .isSelected : [])
     }
 
@@ -176,6 +198,7 @@ struct StudioControls: View {
     private func toggle(_ id: String) {
         if let index = config.photoIDs.firstIndex(of: id) {
             config.photoIDs.remove(at: index)
+            if config.photoIDs.isEmpty && config.paletteID == "photo" { config.paletteID = nil }
             return
         }
         config.photoIDs.append(id)
@@ -205,8 +228,13 @@ struct StudioControls: View {
         }
     }
 
+    /// Fotoğraf paleti seçili ama hesaplanamadıysa (fotoğraf yok/yükleniyor) seyahat paleti seçili görünür.
+    private var effectivePaletteID: String? {
+        config.paletteID == "photo" && (config.photoIDs.isEmpty || photoPalette == nil) ? nil : config.paletteID
+    }
+
     private func swatch(_ palette: TripPalette, id: String?, label: String?) -> some View {
-        let isSelected = config.paletteID == id
+        let isSelected = effectivePaletteID == id
         return Button {
             config.paletteID = id
         } label: {

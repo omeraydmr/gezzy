@@ -343,6 +343,16 @@
         }
       }
     },
+    "Fotoğraf %lld, seçili" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photo %lld, selected"
+          }
+        }
+      }
+    },
     "Fotoğraf seçmek için Anılar'dan erişim ver." : {
       "localizations" : {
         "en" : {

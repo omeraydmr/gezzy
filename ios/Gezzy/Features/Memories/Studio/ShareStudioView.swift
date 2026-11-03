@@ -14,6 +14,9 @@ struct ShareStudioView: View {
     @Environment(\.tripPalette) private var tripPalette
     @State private var config: ShareCardConfig
     @State private var photoPalette: TripPalette?
+    /// Anlardan türetilenler; her body geçişinde değil, anlar değişince hesaplanır.
+    @State private var highlights: [MemoryHighlights.Highlight]
+    @State private var visible: [PhotoClusterer.Moment]
     private var studioStore: ShareStudioStore { .shared }
 
     init(trip: Trip, request: StudioRequest, moments: [PhotoClusterer.Moment]? = nil) {
@@ -22,14 +25,14 @@ struct ShareStudioView: View {
         self.moments = moments
         var config = ShareStudioStore.shared.config(for: trip.id, template: request.template)
         if !request.photoIDs.isEmpty { config.photoIDs = request.photoIDs }
-        _config = State(initialValue: Self.sanitized(config, tripID: trip.id, moments: moments))
+        // Premium bilgisi ortamdan gelir; işaret kuralı görünüm açılınca uygulanır.
+        _config = State(initialValue: Self.sanitized(config, tripID: trip.id, moments: moments, isPremium: true))
+        let derived = Self.derive(moments, tripID: trip.id)
+        _highlights = State(initialValue: derived.highlights)
+        _visible = State(initialValue: derived.visible)
     }
 
     var body: some View {
-        let hidden = MemoryPrefs.shared.hidden(trip.id)
-        let favorites = MemoryPrefs.shared.favorites(trip.id)
-        let allMoments = moments ?? []
-        let visible = Self.visible(allMoments, hidden: hidden)
         NavigationStack {
             GeometryReader { geometry in
                 VStack(spacing: 0) {
@@ -44,7 +47,7 @@ struct ShareStudioView: View {
                             StudioControls(
                                 config: $config,
                                 trip: trip,
-                                highlights: MemoryHighlights.pick(moments: allMoments, favorites: favorites, hidden: hidden),
+                                highlights: highlights,
                                 moments: visible,
                                 isPremium: entitlements.isPremium,
                                 photoPalette: photoPalette)
@@ -64,9 +67,24 @@ struct ShareStudioView: View {
                 }
             }
         }
-        .onChange(of: config) { _, newValue in
-            studioStore.save(newValue, for: trip.id)
+        .onAppear { resanitize() }
+        // Premium biterse işaret yeniden açılır.
+        .onChange(of: entitlements.isPremium) { _, isPremium in
+            if !isPremium { resanitize() }
         }
+        .onChange(of: moments) { _, newValue in
+            let derived = Self.derive(newValue, tripID: trip.id)
+            highlights = derived.highlights
+            visible = derived.visible
+            resanitize()
+        }
+        // Kayıt seyrek: son değişiklikten 0,5 sn sonra ve kapanırken.
+        .task(id: config) {
+            try? await Task.sleep(for: .milliseconds(500))
+            guard !Task.isCancelled else { return }
+            studioStore.save(config, for: trip.id)
+        }
+        .onDisappear { studioStore.save(config, for: trip.id) }
         .task(id: config.photoIDs.first) { await loadPhotoPalette() }
     }
 
@@ -88,7 +106,7 @@ struct ShareStudioView: View {
                 .foregroundStyle(.white)
             }
             .overlay(alignment: .bottom) {
-                if config.showsBrand {
+                if config.effectiveShowsBrand(isPremium: entitlements.isPremium) {
                     GezzyMark(onDark: true).padding(.bottom, 12)
                 }
             }
@@ -102,7 +120,7 @@ struct ShareStudioView: View {
     private var resolvedPalette: TripPalette {
         switch config.paletteID {
         case nil: tripPalette
-        case "photo": photoPalette ?? tripPalette
+        case "photo": config.photoIDs.isEmpty ? tripPalette : (photoPalette ?? tripPalette)
         case let id?: TripPalette.all.first { $0.id == id } ?? tripPalette
         }
     }
@@ -138,7 +156,7 @@ struct ShareStudioView: View {
         var next = studioStore.config(for: trip.id, template: template)
         if next.photoIDs.isEmpty { next.photoIDs = config.photoIDs }
         withAnimation(.spring(duration: 0.3)) {
-            config = Self.sanitized(next, tripID: trip.id, moments: moments)
+            config = Self.sanitized(next, tripID: trip.id, moments: moments, isPremium: entitlements.isPremium)
         }
     }
 
@@ -181,27 +199,28 @@ struct ShareStudioView: View {
         photoPalette = TripPalette.derived(from: hex, fallbackSeed: trip.coverSeed)
     }
 
-    /// Gizliler ve (anlar yüklendiyse) artık görünmeyenler çıkar; şablon sınırı aşılırsa ilkler kalır.
-    private static func sanitized(_ config: ShareCardConfig, tripID: UUID,
-                                  moments: [PhotoClusterer.Moment]?) -> ShareCardConfig {
-        var config = config
-        let hidden = MemoryPrefs.shared.hidden(tripID)
-        var ids = config.photoIDs.filter { !hidden.contains($0) }
-        if let moments {
-            let available = Set(moments.flatMap(\.photoIDs))
-            ids = ids.filter(available.contains)
-        }
-        var seen = Set<String>()
-        ids = ids.filter { seen.insert($0).inserted }
-        config.photoIDs = Array(ids.prefix(ShareCardConfig.photoLimit(config.template).upperBound))
-        return config
+    private func resanitize() {
+        let next = Self.sanitized(config, tripID: trip.id, moments: moments, isPremium: entitlements.isPremium)
+        if next != config { config = next }
     }
 
-    private static func visible(_ moments: [PhotoClusterer.Moment], hidden: Set<String>) -> [PhotoClusterer.Moment] {
-        moments.compactMap { moment in
+    private static func sanitized(_ config: ShareCardConfig, tripID: UUID,
+                                  moments: [PhotoClusterer.Moment]?, isPremium: Bool) -> ShareCardConfig {
+        config.sanitized(hidden: MemoryPrefs.shared.hidden(tripID),
+                         available: moments.map { Set($0.flatMap(\.photoIDs)) }, isPremium: isPremium)
+    }
+
+    /// Öne çıkanlar ve gizliler çıkarılmış anlar.
+    private static func derive(_ moments: [PhotoClusterer.Moment]?, tripID: UUID)
+        -> (highlights: [MemoryHighlights.Highlight], visible: [PhotoClusterer.Moment]) {
+        let moments = moments ?? []
+        let hidden = MemoryPrefs.shared.hidden(tripID)
+        let favorites = MemoryPrefs.shared.favorites(tripID)
+        let visible = moments.compactMap { moment -> PhotoClusterer.Moment? in
             var moment = moment
             moment.photoIDs.removeAll(where: hidden.contains)
             return moment.photoIDs.isEmpty ? nil : moment
         }
+        return (MemoryHighlights.pick(moments: moments, favorites: favorites, hidden: hidden), visible)
     }
 }
