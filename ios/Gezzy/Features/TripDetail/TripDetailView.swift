@@ -24,6 +24,7 @@ struct TripDetailView: View {
     @State private var saveMapsAfterPaywall = false
     @State private var calendarMessage: String?
     @State private var isHeroCollapsed = false
+    @State private var isLiveActivityRunning = false
 
     init(tripID: Trip.ID, initialSection: TripSection = .plan) {
         self.tripID = tripID
@@ -58,7 +59,7 @@ struct TripDetailView: View {
         }
     }
 
-    static let heroHeight: CGFloat = 300
+    static let heroHeight: CGFloat = 180
 
     var body: some View {
         if let trip = store.trip(tripID) {
@@ -69,9 +70,9 @@ struct TripDetailView: View {
                 VStack(spacing: 0) {
                     TripHero(trip: trip, height: Self.heroHeight, isCollapsed: $isHeroCollapsed)
 
-                    TripStub(trip: trip)
+                    TripTicketRow(trip: trip)
                         .padding(.horizontal, 16)
-                        .padding(.top, -44)
+                        .padding(.top, -28)
 
                     if !canEdit {
                         Label("Bu seyahati yalnızca görüntüleyebilirsin", systemImage: "eye")
@@ -121,6 +122,7 @@ struct TripDetailView: View {
                     coverMenu(trip)
                 }
             }
+            .onAppear { isLiveActivityRunning = LiveActivityController.isRunning(for: trip) }
             .coverPhotoPicker(for: $coverTarget)
             .sheet(isPresented: $isEditingTrip) { TripEditSheet(trip: trip) }
             .sheet(isPresented: $isShowingPaywall, onDismiss: {
@@ -165,6 +167,14 @@ struct TripDetailView: View {
                     isShowingPaywall = true
                 }
             }
+            if LiveActivityController.canStart(for: trip) {
+                let running = isLiveActivityRunning
+                Button(running ? String(localized: "Kilit ekranından kaldır") : String(localized: "Kilit ekranında göster"),
+                       systemImage: running ? "lock.slash" : "lock.iphone") {
+                    if running { LiveActivityController.stop(for: trip) } else { LiveActivityController.start(for: trip) }
+                    isLiveActivityRunning.toggle()
+                }
+            }
             Button("Kapak fotoğrafı seç", systemImage: "photo") { coverTarget = trip.id }
             if trip.coverPhoto != nil {
                 Button("Fotoğrafı kaldır", systemImage: "photo.badge.minus", role: .destructive) {
@@ -196,7 +206,8 @@ struct TripHero: View {
                 TripCover(trip: trip)
                     .frame(width: proxy.size.width, height: height + stretch)
                     .clipped()
-                LinearGradient(colors: [.black.opacity(0.35), .clear, .clear, .black.opacity(0.55)],
+                LinearGradient(stops: [.init(color: .black.opacity(0.35), location: 0), .init(color: .clear, location: 0.3),
+                                       .init(color: .clear, location: 0.45), .init(color: .black.opacity(0.6), location: 1)],
                                startPoint: .top, endPoint: .bottom)
                 VStack(alignment: .leading, spacing: 6) {
                     let tag = trip.countdownTag
@@ -210,8 +221,8 @@ struct TripHero: View {
                     Text(trip.name)
                         .font(.system(.largeTitle, weight: .semibold))
                         .foregroundStyle(.white)
-                        .lineLimit(2)
-                        .minimumScaleFactor(0.7)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
                     Text(trip.isMultiCity
                          ? "\(trip.countryCodes.map(Countries.flag).joined()) \(trip.cityTitle)"
                          : "\(Countries.flag(trip.destination.countryCode)) \(trip.destination.city), \(Countries.name(trip.destination.countryCode))")
@@ -219,11 +230,11 @@ struct TripHero: View {
                         .foregroundStyle(.white.opacity(0.9))
                 }
                 .padding(.horizontal, 20)
-                .padding(.bottom, 60)
+                .padding(.bottom, 40)
             }
             .frame(width: proxy.size.width, height: height + stretch)
             .offset(y: -stretch)
-            .onChange(of: minY < -(height - 140)) { _, collapsed in
+            .onChange(of: minY < -(height - 100)) { _, collapsed in
                 isCollapsed = collapsed
             }
         }
@@ -231,79 +242,48 @@ struct TripHero: View {
     }
 }
 
-// MARK: - Stub
+// MARK: - Ticket
 
-/// Kapağın altına binen bilet koçanı: rota, tarih, gece, ekip.
-struct TripStub: View {
+/// Kapağın altına binen tek satırlık bilet: rota, tarih, gece, ekip. Dokununca Rezervasyon sekmesi.
+struct TripTicketRow: View {
     let trip: Trip
     @Environment(\.tripTint) private var tint
-    @State private var isLiveActivityRunning = false
+    @Environment(\.openReservations) private var openReservations
 
     var body: some View {
-        VStack(spacing: 14) {
-            if let flight = trip.primaryFlight {
-                HStack(spacing: 12) {
-                    endpoint(flight.fromCode, "\(flight.fromCity) · \(AppFormat.time(flight.departure, timeZone: flight.departureTimeZone))")
-                    VStack(spacing: 2) {
-                        FlightArc(accent: tint).frame(height: 26)
-                        Text(AppFormat.duration(minutes: flight.durationMinutes))
-                            .font(.caption)
-                            .foregroundStyle(Color.ink3)
-                    }
-                    endpoint(flight.toCode, "\(AppFormat.time(flight.arrival, timeZone: flight.arrivalTimeZone)) · \(flight.toCity)",
-                             trailing: true)
+        Button { openReservations() } label: {
+            HStack(spacing: 8) {
+                if let flight = trip.primaryFlight {
+                    Text(flight.fromCode).font(.system(.subheadline, weight: .semibold))
+                    Text(AppFormat.time(flight.departure, timeZone: flight.departureTimeZone))
+                        .font(.footnote).foregroundStyle(Color.ink2)
+                    Image(systemName: "airplane").font(.caption).foregroundStyle(tint)
+                    Text(AppFormat.time(flight.arrival, timeZone: flight.arrivalTimeZone))
+                        .font(.footnote).foregroundStyle(Color.ink2)
+                    Text(flight.toCode).font(.system(.subheadline, weight: .semibold))
+                    Circle().fill(Color.ink3).frame(width: 3, height: 3)
+                } else {
+                    Image(systemName: "calendar").font(.caption).foregroundStyle(tint)
                 }
-                Divider().overlay(Color.line)
+                Text("\(AppFormat.dateRange(trip.startDate, trip.endDate)) · \(trip.nights()) gece")
+                    .font(.footnote)
+                    .foregroundStyle(Color.ink2)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                Spacer(minLength: 0)
+                AvatarStack(members: trip.members, size: 26, limit: 3)
             }
-            HStack(alignment: .top) {
-                meta(String(localized: "Tarih"), AppFormat.dateRange(trip.startDate, trip.endDate))
-                Spacer()
-                meta(String(localized: "Konaklama"), String(localized: "\(trip.nights()) gece"))
-                Spacer()
-                if let flight = trip.primaryFlight, let seat = flight.seat {
-                    meta(String(localized: "Koltuk"), seat)
-                    Spacer()
-                }
-                AvatarStack(members: trip.members, size: 30, limit: 3)
-            }
-            if LiveActivityController.canStart(for: trip) {
-                let running = isLiveActivityRunning
-                Button {
-                    if running { LiveActivityController.stop(for: trip) } else { LiveActivityController.start(for: trip) }
-                    isLiveActivityRunning.toggle()
-                } label: {
-                    Label(running ? String(localized: "Kilit ekranından kaldır") : String(localized: "Kilit ekranında göster"),
-                          systemImage: running ? "lock.slash" : "lock.iphone")
-                        .font(.system(.subheadline, weight: .semibold))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                        .foregroundStyle(running ? Color.ink : Color.white)
-                        .background(running ? Color.track : tint, in: Capsule())
-                }
-                .buttonStyle(.plain)
+            .foregroundStyle(Color.ink)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .frame(maxWidth: .infinity)
+            .cardBackground(Color.tray, in: RoundedRectangle(cornerRadius: Radius.tray, style: .continuous))
+            .overlay(alignment: .top) {
+                Capsule().fill(tint).frame(width: 36, height: 4).offset(y: -2)
             }
         }
-        .onAppear { isLiveActivityRunning = LiveActivityController.isRunning(for: trip) }
-        .padding(18)
-        .cardBackground(Color.tray, in: RoundedRectangle(cornerRadius: Radius.tray, style: .continuous))
-        .overlay(alignment: .top) {
-            Capsule().fill(tint).frame(width: 36, height: 4).offset(y: -2)
-        }
-    }
-
-    private func endpoint(_ code: String, _ detail: String, trailing: Bool = false) -> some View {
-        VStack(alignment: trailing ? .trailing : .leading, spacing: 2) {
-            Text(code).font(.system(.title, weight: .semibold)).foregroundStyle(Color.ink)
-            Text(detail).font(.caption).foregroundStyle(Color.ink2).lineLimit(1)
-        }
-        .fixedSize()
-    }
-
-    private func meta(_ label: String, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(label).font(.tCaption).foregroundStyle(Color.ink3)
-            Text(value).font(.system(.subheadline, weight: .semibold)).foregroundStyle(Color.ink)
-        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Rezervasyonları aç")
     }
 }
 

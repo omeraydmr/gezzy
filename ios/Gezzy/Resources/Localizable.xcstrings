@@ -8217,6 +8217,16 @@
         }
       }
     },
+    "Rezervasyonları aç" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open reservations"
+          }
+        }
+      }
+    },
     "Rezervasyon" : {
       "localizations" : {
         "en" : {
