@@ -346,10 +346,13 @@ struct CardTemplateView: View {
             VStack(spacing: 0) {
                 VStack(alignment: .leading, spacing: 0) {
                     HStack {
-                        Text(verbatim: "GEZZY")
+                        // İşaret kapalıysa (Premium) üst satırda Gezzy yerine seyahat adı; başlıkla aynıysa şehirler.
+                        Text(config.showsBrand ? "GEZZY" : ticketHeader.uppercased(with: AppFormat.locale))
                             .font(font(12, .heavy))
                             .tracking(3 * u)
                             .foregroundStyle(accent)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.6)
                         Spacer()
                         Text(flags).font(font(16)).lineLimit(1)
                     }
@@ -448,6 +451,8 @@ struct CardTemplateView: View {
             .frame(maxWidth: .infinity, alignment: Alignment(horizontal: alignment, vertical: .center))
     }
 
+    private var ticketHeader: String { title == trip.name ? trip.cityTitle : trip.name }
+
     private var ticketFields: some View {
         var fixed = [
             CardStat(id: nil, value: AppFormat.dateRange(trip.startDate, trip.endDate), label: String(localized: "Tarih")),
@@ -501,14 +506,21 @@ struct CardStat: Identifiable {
 
     init(_ stat: ShareCardConfig.Stat, _ summary: TripSummary, currency: String) {
         switch stat {
-        case .days: self.init(id: stat, value: "\(summary.days)", label: String(localized: "gün"))
-        case .stops: self.init(id: stat, value: "\(summary.stops)", label: String(localized: "durak"))
+        // Etiket sayıdan ayrı çizilir; tekil için ayrı anahtar ("gün (1)": en "day").
+        case .days:
+            self.init(id: stat, value: "\(summary.days)",
+                      label: summary.days == 1 ? String(localized: "gün (1)") : String(localized: "gün"))
+        case .stops:
+            self.init(id: stat, value: "\(summary.stops)",
+                      label: summary.stops == 1 ? String(localized: "durak (1)") : String(localized: "durak"))
         case .distance:
             self.init(id: stat,
                       value: (summary.routeMeters / 1000).formatted(.number.precision(.fractionLength(0...1))
                           .locale(AppFormat.locale)),
                       label: String(localized: "km"))
-        case .travellers: self.init(id: stat, value: "\(summary.travellers)", label: String(localized: "kişi"))
+        case .travellers:
+            self.init(id: stat, value: "\(summary.travellers)",
+                      label: summary.travellers == 1 ? String(localized: "kişi (1)") : String(localized: "kişi"))
         case .spent:
             self.init(id: stat, value: AppFormat.money(summary.totalSpent, currency), label: String(localized: "harcama"))
         case .perPerson:

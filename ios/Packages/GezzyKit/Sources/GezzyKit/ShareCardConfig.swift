@@ -49,4 +49,41 @@ public struct ShareCardConfig: Codable, Hashable, Sendable {
     public static func clampedText(_ text: String) -> String {
         String(text.trimmingCharacters(in: .whitespacesAndNewlines).prefix(maxTextLength))
     }
+
+    // MARK: Kurallar
+
+    /// Şablon en az bir fotoğraf ister mi (kartpostal, kolaj).
+    public static func needsPhotos(_ template: Template) -> Bool { photoLimit(template).lowerBound > 0 }
+
+    /// Stüdyonun açılış şablonu: rota yoksa ya da fotoğraf gerekip yoksa fotoğrafsız şablona düşülür.
+    public static func initialTemplate(_ requested: Template, hasRoute: Bool, hasPhotos: Bool) -> Template {
+        var template = requested
+        if template == .route && !hasRoute { template = .postcard }
+        if needsPhotos(template) && !hasPhotos { template = .stats }
+        return template
+    }
+
+    /// Kartta Gezzy işareti çizilecek mi: Premium değilse kayıtlı değerden bağımsız olarak hep açık.
+    /// Kayıtlı `showsBrand` kullanıcının tercihidir ve değiştirilmez; kural yalnızca gösterim/çıktıda uygulanır.
+    public func effectiveShowsBrand(isPremium: Bool) -> Bool { showsBrand || !isPremium }
+
+    /// Dışa verilebilir mi: rota konumlu durak, fotoğraflı şablonlar en az sınır kadar fotoğraf ister.
+    public func canExport(hasRoute: Bool) -> Bool {
+        if template == .route { return hasRoute }
+        return photoIDs.count >= Self.photoLimit(template).lowerBound
+    }
+
+    /// Kayıtlı ya da düzenlenen config'i geçerli kılar: gizli/görünmeyen fotoğraflar çıkar, tekrarlar ve
+    /// şablon sınırını aşanlar düşer, fotoğrafsız "photo" paleti seyahat paletine döner.
+    /// `available` nil ise (anlar henüz yüklenmedi) görünürlüğe göre eleme yapılmaz. İşaret tercihine dokunmaz.
+    public func sanitized(hidden: Set<String>, available: Set<String>?) -> ShareCardConfig {
+        var config = self
+        var seen = Set<String>()
+        let ids = photoIDs.filter { id in
+            !hidden.contains(id) && (available?.contains(id) ?? true) && seen.insert(id).inserted
+        }
+        config.photoIDs = Array(ids.prefix(Self.photoLimit(template).upperBound))
+        if config.photoIDs.isEmpty && config.paletteID == "photo" { config.paletteID = nil }
+        return config
+    }
 }

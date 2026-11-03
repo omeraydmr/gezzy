@@ -18,6 +18,8 @@ enum CardRenderer {
                        width: CGFloat = 1080) async throws -> UIImage {
         var config = config
         config.showsBrand = config.effectiveShowsBrand(isPremium: isPremium)
+        // Fotoğraflı şablon fotoğrafsız (yalnızca gradyan) dışa verilmez.
+        guard config.canExport(hasRoute: hasRoute(trip)) else { throw RenderError.image }
         let ids = Array(config.photoIDs.prefix(ShareCardConfig.photoLimit(config.template).upperBound))
         // Kartpostal tam kaplar (story'de yumuşamasın); kolajda hücre başına 2 kat yeter.
         let maxPixelSize: CGFloat = config.template == .collage
@@ -70,7 +72,14 @@ enum CardRenderer {
         trip.stops.contains { $0.coordinate != nil }
     }
 
-    private static var snapshots: [String: UIImage] = [:]
+    /// Harita önbelleği ~15 MB ile sınırlı (story haritası ~6 MB); stüdyo kapanınca ve bellek uyarısında boşalır.
+    private static let snapshots: NSCache<NSString, UIImage> = {
+        let cache = NSCache<NSString, UIImage>()
+        cache.totalCostLimit = 15 * 1024 * 1024
+        return cache
+    }()
+
+    static func clearMapCache() { snapshots.removeAllObjects() }
 
     /// Tüm konumlu durakları kapsayan harita (%20 pay); üzerine gün gün palet renginde rota ve numaralı daireler.
     /// `size` nokta (`mapScale` ile çizilir); sonuç seyahat + palet + boyut + durak konumlarına göre önbelleğe alınır.
@@ -84,7 +93,7 @@ enum CardRenderer {
             hasher.combine(day.coordinates)
         }
         let key = "\(trip.id)-\(palette.id)-\(palette.accent)-\(Int(size.width))x\(Int(size.height))-\(hasher.finalize())"
-        if let cached = snapshots[key] { return cached }
+        if let cached = snapshots.object(forKey: key as NSString) { return cached }
 
         let options = MKMapSnapshotter.Options()
         options.region = region(for: all)
@@ -133,9 +142,8 @@ enum CardRenderer {
                 }
             }
         }
-        // Önbellek küçük kalsın: biçim × palet denemeleri birikmesin.
-        if snapshots.count >= 12 { snapshots.removeAll() }
-        snapshots[key] = image
+        let bytes = Int(image.size.width * image.scale * image.size.height * image.scale) * 4
+        snapshots.setObject(image, forKey: key as NSString, cost: bytes)
         return image
     }
 

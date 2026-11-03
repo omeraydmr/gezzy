@@ -15,9 +15,11 @@ struct ShareStudioView: View {
     @Environment(\.tripPalette) private var tripPalette
     @State private var config: ShareCardConfig
     @State private var photoPalette: TripPalette?
-    /// Anlardan türetilenler; her body geçişinde değil, anlar değişince hesaplanır.
-    @State private var highlights: [MemoryHighlights.Highlight]
-    @State private var visible: [PhotoClusterer.Moment]
+    /// Anlardan ve seyahatten türetilenler; init'te değil, açılışta ve girdiler değişince hesaplanır.
+    @State private var highlights: [MemoryHighlights.Highlight] = []
+    @State private var visible: [PhotoClusterer.Moment] = []
+    @State private var summary: TripSummary?
+    @State private var didSetUp = false
     /// Önizleme görselleri (küçük boy) ve rota haritası.
     @State private var previewPhotos: [UIImage] = []
     @State private var mapImage: UIImage?
@@ -27,15 +29,14 @@ struct ShareStudioView: View {
     @State private var toast: Toast?
     @State private var exportTask: Task<Void, Never>?
     @State private var toastTask: Task<Void, Never>?
-    private let summary: TripSummary
-    private let hasRoute: Bool
+    private var hasRoute: Bool { CardRenderer.hasRoute(trip) }
     private var studioStore: ShareStudioStore { .shared }
 
     private enum ExportAction { case save, share }
 
-    /// Kısa bilgi; izin reddinde Ayarlar'ı açar.
+    /// Kısa bilgi (VoiceOver'a da duyurulur); izin reddinde Ayarlar'ı açar.
     private struct Toast {
-        let text: LocalizedStringKey
+        let text: String
         var opensSettings = false
     }
 
@@ -43,18 +44,8 @@ struct ShareStudioView: View {
         self.trip = trip
         self.request = request
         self.moments = moments
-        let hasRoute = CardRenderer.hasRoute(trip)
-        self.hasRoute = hasRoute
-        self.summary = TripSummary.make(trip)
-        // Konumlu durak yoksa Rota pasif; kartpostala düşülür.
-        let template = request.template == .route && !hasRoute ? .postcard : request.template
-        var config = ShareStudioStore.shared.config(for: trip.id, template: template)
-        if !request.photoIDs.isEmpty { config.photoIDs = request.photoIDs }
-        // Premium bilgisi ortamdan gelir; işaret kuralı görünüm açılınca uygulanır.
-        _config = State(initialValue: Self.sanitized(config, tripID: trip.id, moments: moments, isPremium: true))
-        let derived = Self.derive(moments, tripID: trip.id)
-        _highlights = State(initialValue: derived.highlights)
-        _visible = State(initialValue: derived.visible)
+        // Asıl config açılışta (`setUp`) kayıttan gelir.
+        _config = State(initialValue: .default(for: request.template))
     }
 
     var body: some View {
@@ -92,26 +83,25 @@ struct ShareStudioView: View {
                 }
             }
         }
-        .onAppear { resanitize() }
-        // Premium biterse işaret yeniden açılır.
-        .onChange(of: entitlements.isPremium) { _, isPremium in
-            if !isPremium { resanitize() }
-        }
-        .onChange(of: moments) { _, newValue in
-            let derived = Self.derive(newValue, tripID: trip.id)
-            highlights = derived.highlights
-            visible = derived.visible
+        .onAppear(perform: setUp)
+        .onChange(of: moments) { _, _ in
+            derive()
             resanitize()
         }
+        .onChange(of: trip) { _, newValue in summary = TripSummary.make(newValue) }
         // Kayıt seyrek: son değişiklikten 0,5 sn sonra ve kapanırken.
         .task(id: config) {
             try? await Task.sleep(for: .milliseconds(500))
-            guard !Task.isCancelled else { return }
+            guard !Task.isCancelled, didSetUp else { return }
             studioStore.save(config, for: trip.id)
         }
         .onDisappear {
-            studioStore.save(config, for: trip.id)
+            if didSetUp { studioStore.save(config, for: trip.id) }
             exportTask?.cancel()
+            CardRenderer.clearMapCache()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didReceiveMemoryWarningNotification)) { _ in
+            CardRenderer.clearMapCache()
         }
         .task(id: config.photoIDs.first) { await loadPhotoPalette() }
         .task(id: "\(config.template)-\(config.photoIDs)") { await loadPreviewPhotos() }
@@ -132,8 +122,14 @@ struct ShareStudioView: View {
         GeometryReader { geometry in
             let aspect = config.format.aspect
             let width = max(1, min(geometry.size.width - 32, geometry.size.height * aspect))
-            CardTemplateView(trip: trip, summary: summary, config: previewConfig, photos: previewPhotos,
-                             mapImage: mapImage, palette: resolvedPalette, width: width, mapFailed: mapFailed)
+            Group {
+                if let summary {
+                    CardTemplateView(trip: trip, summary: summary, config: previewConfig, photos: previewPhotos,
+                                     mapImage: mapImage, palette: resolvedPalette, width: width, mapFailed: mapFailed)
+                } else {
+                    Color.tray.frame(width: width, height: width / aspect)
+                }
+            }
                 .clipShape(RoundedRectangle(cornerRadius: 12 * width / 360 + 4, style: .continuous))
                 .shadow(color: .black.opacity(0.18), radius: 16, y: 8)
                 .accessibilityElement(children: .ignore)
@@ -193,6 +189,8 @@ struct ShareStudioView: View {
             HStack(spacing: 8) {
                 ForEach(ShareCardConfig.Template.allCases, id: \.self) { template in
                     let isSelected = template == config.template
+                    let dimmed = (template == .route && !hasRoute)
+                        || (ShareCardConfig.needsPhotos(template) && !hasPhotos)
                     Button {
                         select(template)
                     } label: {
@@ -205,7 +203,9 @@ struct ShareStudioView: View {
                     }
                     .buttonStyle(.plain)
                     .disabled(template == .route && !hasRoute)
-                    .opacity(template == .route && !hasRoute ? 0.4 : 1)
+                    .opacity(dimmed && !isSelected ? 0.4 : 1)
+                    .accessibilityHint(ShareCardConfig.needsPhotos(template) && !hasPhotos
+                                       ? Text("Fotoğraf gerekli") : Text(verbatim: ""))
                     .accessibilityAddTraits(isSelected ? .isSelected : [])
                 }
             }
@@ -213,6 +213,12 @@ struct ShareStudioView: View {
             }
             if !hasRoute {
                 Text("Rota için konumlu durak gerekli")
+                    .font(.caption)
+                    .foregroundStyle(Color.ink3)
+            }
+            // Fotoğraflı şablonlar seçilebilir kalır (erişim/seçim oradan); fotoğrafsız dışa verilmez.
+            if !hasPhotos {
+                Text("Fotoğraf gerekli: Kartpostal, Kolaj")
                     .font(.caption)
                     .foregroundStyle(Color.ink3)
             }
@@ -225,8 +231,15 @@ struct ShareStudioView: View {
         var next = studioStore.config(for: trip.id, template: template)
         if next.photoIDs.isEmpty { next.photoIDs = config.photoIDs }
         withAnimation(.spring(duration: 0.3)) {
-            config = Self.sanitized(next, tripID: trip.id, moments: moments, isPremium: entitlements.isPremium)
+            config = Self.sanitized(next, tripID: trip.id, moments: moments)
         }
+    }
+
+    /// Kullanılabilir fotoğraf var mı: erişim ve (anlar yüklendiyse) görünür an ya da hazır seçim.
+    private var hasPhotos: Bool {
+        if !config.photoIDs.isEmpty || !request.photoIDs.isEmpty { return true }
+        guard PhotoLibrary.shared.canRead else { return false }
+        return moments == nil || !visible.isEmpty
     }
 
     // MARK: Alt çubuk
@@ -250,6 +263,7 @@ struct ShareStudioView: View {
                 .background(Color.tray, in: Capsule())
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(Text("Kaydet"))
             Button {
                 export(.share)
             } label: {
@@ -260,6 +274,7 @@ struct ShareStudioView: View {
                 }
             }
             .buttonStyle(.primary)
+            .accessibilityLabel(Text("Paylaş"))
         }
         .disabled(!canExport || busy != nil)
         .padding(.horizontal, 16)
@@ -268,14 +283,8 @@ struct ShareStudioView: View {
         .background(Color.canvas)
     }
 
-    /// Kolajda en az 2 fotoğraf; rota konumlu durak ister.
-    private var canExport: Bool {
-        switch config.template {
-        case .route: hasRoute
-        case .collage: config.photoIDs.count >= ShareCardConfig.photoLimit(.collage).lowerBound
-        case .postcard, .stats, .ticket: true
-        }
-    }
+    /// Kartpostal 1, kolaj en az 2 fotoğraf; rota konumlu durak ister.
+    private var canExport: Bool { summary != nil && config.canExport(hasRoute: hasRoute) }
 
     private func export(_ action: ExportAction) {
         exportTask?.cancel()
@@ -287,12 +296,12 @@ struct ShareStudioView: View {
             do {
                 image = try await CardRenderer.render(trip: trip, config: config, palette: palette, isPremium: isPremium)
             } catch CardRenderer.RenderError.map {
-                showToast(Toast(text: "Harita oluşturulamadı, internet bağlantını kontrol et."))
+                showToast(Toast(text: String(localized: "Harita oluşturulamadı, internet bağlantını kontrol et.")))
                 return
             } catch is CancellationError {
                 return
             } catch {
-                showToast(Toast(text: "Kart oluşturulamadı"))
+                showToast(Toast(text: String(localized: "Kart oluşturulamadı")))
                 return
             }
             guard !Task.isCancelled else { return }
@@ -301,9 +310,9 @@ struct ShareStudioView: View {
                 shareItem = ShareImage(image: image)
             case .save:
                 switch await save(image) {
-                case .saved: showToast(Toast(text: "Fotoğraflar'a kaydedildi"))
-                case .denied: showToast(Toast(text: "Ayarlar'dan Fotoğraflar iznini aç", opensSettings: true), seconds: 4)
-                case .failed: showToast(Toast(text: "Fotoğraflar'a kaydedilemedi"))
+                case .saved: showToast(Toast(text: String(localized: "Fotoğraflar'a kaydedildi")))
+                case .denied: showToast(Toast(text: String(localized: "Ayarlar'dan Fotoğraflar iznini aç"), opensSettings: true), seconds: 4)
+                case .failed: showToast(Toast(text: String(localized: "Fotoğraflar'a kaydedilemedi")))
                 }
             }
         }
@@ -327,6 +336,7 @@ struct ShareStudioView: View {
 
     private func showToast(_ next: Toast, seconds: Double = 1.8) {
         toastTask?.cancel()
+        UIAccessibility.post(notification: .announcement, argument: next.text)
         toastTask = Task {
             withAnimation { toast = next }
             try? await Task.sleep(for: .seconds(seconds))
@@ -367,29 +377,40 @@ struct ShareStudioView: View {
         photoPalette = TripPalette.derived(from: hex, fallbackSeed: trip.coverSeed)
     }
 
+    /// Açılışta bir kez: özet, anlar ve kayıtlı config. Fotoğraf yoksa fotoğrafsız şablonla açılır.
+    private func setUp() {
+        guard !didSetUp else { return }
+        summary = TripSummary.make(trip)
+        derive()
+        let template = ShareCardConfig.initialTemplate(request.template, hasRoute: hasRoute, hasPhotos: hasPhotos)
+        var next = studioStore.config(for: trip.id, template: template)
+        if !request.photoIDs.isEmpty { next.photoIDs = request.photoIDs }
+        config = Self.sanitized(next, tripID: trip.id, moments: moments)
+        didSetUp = true
+    }
+
     private func resanitize() {
-        let next = Self.sanitized(config, tripID: trip.id, moments: moments, isPremium: entitlements.isPremium)
+        let next = Self.sanitized(config, tripID: trip.id, moments: moments)
         if next != config { config = next }
     }
 
     private static func sanitized(_ config: ShareCardConfig, tripID: UUID,
-                                  moments: [PhotoClusterer.Moment]?, isPremium: Bool) -> ShareCardConfig {
+                                  moments: [PhotoClusterer.Moment]?) -> ShareCardConfig {
         config.sanitized(hidden: MemoryPrefs.shared.hidden(tripID),
-                         available: moments.map { Set($0.flatMap(\.photoIDs)) }, isPremium: isPremium)
+                         available: moments.map { Set($0.flatMap(\.photoIDs)) })
     }
 
     /// Öne çıkanlar ve gizliler çıkarılmış anlar.
-    private static func derive(_ moments: [PhotoClusterer.Moment]?, tripID: UUID)
-        -> (highlights: [MemoryHighlights.Highlight], visible: [PhotoClusterer.Moment]) {
+    private func derive() {
         let moments = moments ?? []
-        let hidden = MemoryPrefs.shared.hidden(tripID)
-        let favorites = MemoryPrefs.shared.favorites(tripID)
-        let visible = moments.compactMap { moment -> PhotoClusterer.Moment? in
+        let hidden = MemoryPrefs.shared.hidden(trip.id)
+        let favorites = MemoryPrefs.shared.favorites(trip.id)
+        visible = moments.compactMap { moment -> PhotoClusterer.Moment? in
             var moment = moment
             moment.photoIDs.removeAll(where: hidden.contains)
             return moment.photoIDs.isEmpty ? nil : moment
         }
-        return (MemoryHighlights.pick(moments: moments, favorites: favorites, hidden: hidden), visible)
+        highlights = MemoryHighlights.pick(moments: moments, favorites: favorites, hidden: hidden)
     }
 }
 
