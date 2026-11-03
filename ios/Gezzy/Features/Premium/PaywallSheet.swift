@@ -4,7 +4,7 @@ import GezzyKit
 
 /// Premium satın alma ekranı; her zaman kapatılabilir.
 struct PaywallSheet: View {
-    enum Reason { case dataSharingDeclined, tripLimit, offlineMaps, autoPlan, profile }
+    enum Reason { case dataSharingDeclined, tripLimit, offlineMaps, autoPlan, profile, branding }
 
     let reason: Reason
     let onPurchased: () -> Void
@@ -81,6 +81,7 @@ struct PaywallSheet: View {
         case .tripLimit: String(localized: "2 ücretsiz seyahatini kullandın")
         case .offlineMaps, .autoPlan: String(localized: "Bu bir Premium özelliği")
         case .profile: String(localized: "Gezzy Premium")
+        case .branding: String(localized: "Kartlardan Gezzy işaretini kaldır")
         }
     }
 

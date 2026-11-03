@@ -233,6 +233,16 @@
         }
       }
     },
+    "Bilgiler" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Details"
+          }
+        }
+      }
+    },
     "Bu bir Premium özelliği" : {
       "localizations" : {
         "en" : {
@@ -269,6 +279,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ per month"
+          }
+        }
+      }
+    },
+    "Durak" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stops"
           }
         }
       }
@@ -313,6 +333,26 @@
         }
       }
     },
+    "En az %lld fotoğraf seç." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose at least %lld photos."
+          }
+        }
+      }
+    },
+    "Fotoğraf seçmek için Anılar'dan erişim ver." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Allow access in Memories to choose photos."
+          }
+        }
+      }
+    },
     "Geri yüklenecek satın alma bulunamadı." : {
       "localizations" : {
         "en" : {
@@ -343,12 +383,62 @@
         }
       }
     },
+    "Gezzy ile planlandı" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Planned with Gezzy"
+          }
+        }
+      }
+    },
+    "Gönderi" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Post"
+          }
+        }
+      }
+    },
     "Gönderilmedi" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Not sent"
+          }
+        }
+      }
+    },
+    "Gün" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Days"
+          }
+        }
+      }
+    },
+    "Harcama" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spent"
+          }
+        }
+      }
+    },
+    "Kare" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Square"
           }
         }
       }
@@ -363,12 +453,62 @@
         }
       }
     },
+    "Kartlardan Gezzy işaretini kaldır" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove the Gezzy mark from cards"
+          }
+        }
+      }
+    },
+    "Kartpostal" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Postcard"
+          }
+        }
+      }
+    },
     "Kaynak: Dışişleri Bakanlığı, son gözden geçirme %@. Seyahatten önce resmî kaynaktan doğrula." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Source: Turkish Ministry of Foreign Affairs, last reviewed %@. Check the official source before travelling."
+          }
+        }
+      }
+    },
+    "Kişi" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "People"
+          }
+        }
+      }
+    },
+    "Km" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Km"
+          }
+        }
+      }
+    },
+    "Kolaj" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Collage"
           }
         }
       }
@@ -403,6 +543,26 @@
         }
       }
     },
+    "Metin" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Text"
+          }
+        }
+      }
+    },
+    "Premium" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Premium"
+          }
+        }
+      }
+    },
     "Premium'a geç" : {
       "localizations" : {
         "en" : {
@@ -423,12 +583,42 @@
         }
       }
     },
+    "Rota" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Route"
+          }
+        }
+      }
+    },
+    "Seyahat" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trip"
+          }
+        }
+      }
+    },
     "Seyahatini paylaş" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Share your trip"
+          }
+        }
+      }
+    },
+    "Story" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Story"
           }
         }
       }
@@ -659,6 +849,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Early morning flight; don't plan stops for this day."
+          }
+        }
+      }
+    },
+    "İstatistik" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stats"
           }
         }
       }

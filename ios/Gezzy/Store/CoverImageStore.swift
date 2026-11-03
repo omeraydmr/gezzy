@@ -165,18 +165,23 @@ final class CoverImageStore {
     /// Fotoğrafın doygunlaştırılmamış ortalama rengi (0xRRGGBB); palet türetmek için.
     func averageHex(named name: String) -> UInt32? {
         if let cached = averages[name] { return cached }
-        guard let average = averageColor(named: name) else { return nil }
-        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
-        average.getRed(&r, green: &g, blue: &b, alpha: &a)
-        func byte(_ v: CGFloat) -> UInt32 { UInt32(max(0, min(255, (v * 255).rounded()))) }
-        let hex = byte(r) << 16 | byte(g) << 8 | byte(b)
+        // Ortalama renk için 64 piksellik görüntü yeter; tam boy açmaya gerek yok.
+        guard let image = thumbnail(named: name, maxPixelSize: 64), let hex = averageHex(of: image) else { return nil }
         averages[name] = hex
         return hex
     }
 
-    private func averageColor(named name: String) -> UIColor? {
-        // Ortalama renk için 64 piksellik görüntü yeter; tam boy açmaya gerek yok.
-        guard let image = thumbnail(named: name, maxPixelSize: 64), let input = CIImage(image: image) else { return nil }
+    /// Verilen görüntünün ortalama rengi (0xRRGGBB); küçük görsel vermek yeterli. Önbelleğe yazılmaz.
+    func averageHex(of image: UIImage) -> UInt32? {
+        guard let average = averageColor(of: image) else { return nil }
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        average.getRed(&r, green: &g, blue: &b, alpha: &a)
+        func byte(_ v: CGFloat) -> UInt32 { UInt32(max(0, min(255, (v * 255).rounded()))) }
+        return byte(r) << 16 | byte(g) << 8 | byte(b)
+    }
+
+    private func averageColor(of image: UIImage) -> UIColor? {
+        guard let input = CIImage(image: image) else { return nil }
 
         let filter = CIFilter.areaAverage()
         filter.inputImage = input

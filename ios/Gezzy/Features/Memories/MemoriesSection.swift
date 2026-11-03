@@ -16,6 +16,7 @@ struct MemoriesSection: View {
     @Environment(TripStore.self) private var store
     @Environment(\.tripTint) private var tint
     @Environment(\.tripText) private var tripText
+    @Environment(\.tripPalette) private var palette
     let trip: Trip
 
     @State private var moments: [PhotoClusterer.Moment]?
@@ -59,6 +60,13 @@ struct MemoriesSection: View {
         .fullScreenCover(item: $viewer) { context in
             PhotoViewer(items: context.items, index: context.index, tripID: trip.id)
                 .environment(store)
+        }
+        .fullScreenCover(item: $studioRequest) { request in
+            ShareStudioView(trip: trip, request: request, moments: moments)
+                .environment(store)
+                .environment(\.tripPalette, palette)
+                .environment(\.tripTint, tint)
+                .environment(\.tripText, tripText)
         }
     }
 
@@ -138,8 +146,8 @@ struct MemoriesSection: View {
         .tray(padding: 16)
     }
 
-    /// Son kullanılan şablon; stüdyo ayarları (Task 4, `gezzy.shareStudio.v1`) gelince oradan okunur.
-    private var lastTemplate: ShareCardConfig.Template? { nil }
+    /// Son kullanılan şablon (`gezzy.shareStudio.v1`).
+    private var lastTemplate: ShareCardConfig.Template? { ShareStudioStore.shared.lastTemplate(for: trip.id) }
 
     /// Stüdyo kancası: şablon ve önceden seçili fotoğraflarla stüdyoyu açar.
     private func openStudio(_ template: ShareCardConfig.Template, _ photoIDs: [String]) {
