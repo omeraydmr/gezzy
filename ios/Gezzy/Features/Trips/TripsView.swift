@@ -308,7 +308,7 @@ struct TripGlance: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            tile(.visa, symbol: "person.text.rectangle.fill", accent: visa.accent, value: visa.value, caption: String(localized: "Vize"))
+            tile(.visa, symbol: "person.text.rectangle.fill", accent: visa.accent, value: visa.text, caption: String(localized: "Vize"))
             tile(.money, symbol: "chart.pie.fill", accent: .blue, value: budgetValue, caption: String(localized: "Bütçe"))
             tile(.packing, symbol: "bag.fill", accent: .purple, value: packingValue, caption: String(localized: "Valiz"))
         }
@@ -344,9 +344,8 @@ struct TripGlance: View {
         .accessibilityLabel(Text("\(caption): \(value)"))
     }
 
-    private var visa: (value: String, accent: Accent) {
-        let pending = TripSummaries.visaPending(trip, store: store)
-        return (TripSummaries.visaText(trip, store: store), pending == 0 ? .green : .orange)
+    private var visa: (text: String, accent: Accent) {
+        TripSummaries.visa(trip, store: store)
     }
 
     private var budgetValue: String {

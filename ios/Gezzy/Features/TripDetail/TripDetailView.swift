@@ -373,7 +373,7 @@ struct TripTicketRow: View {
 
 // MARK: - Tabs
 
-/// Dört eşit sekme; seçili olan seyahat rengiyle dolu kapsül. "Daha fazla" açık bölümün adını gösterir.
+/// Dört eşit sekme; seçili olan seyahat rengiyle dolu. "Daha fazla" açık bölümün adını gösterir.
 struct SectionTabs: View {
     let selection: TripTab
     /// "Daha fazla" altında açık bölüm (yoksa ızgara).
@@ -391,44 +391,44 @@ struct SectionTabs: View {
             }
         }
         .padding(4)
-        .background(Color.track, in: Capsule())
-        // Kapsül geçişi; Reduce Motion açıksa animasyonsuz (dıştaki içerik animasyonunu da ezer).
+        .background(Color.track, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        // Seçili zemin geçişi; Reduce Motion açıksa animasyonsuz (dıştaki içerik animasyonunu da ezer).
         .animation(reduceMotion ? nil : .spring(duration: 0.3), value: selection)
-        .animation(reduceMotion ? nil : .spring(duration: 0.3), value: openSection)
     }
 
+    /// Sekme çubuğu düzeni: üstte simge, altta etiket; dört etiket 320 pt'de de sığar.
     private func button(_ tab: TripTab) -> some View {
         let isSelected = tab == selection
         let shown = tab == .more ? openSection : nil
         let title = shown?.title ?? tab.title
         let symbol = shown?.symbol ?? tab.symbol
         let iconOnly = dynamicTypeSize >= .accessibility1
+        let shape = RoundedRectangle(cornerRadius: 14, style: .continuous)
         return Button {
             select(tab)
         } label: {
-            Group {
-                if iconOnly {
-                    Image(systemName: symbol)
-                        .foregroundStyle(isSelected ? Color.white : Color.ink3)
-                } else {
-                    Label(title, systemImage: symbol)
+            VStack(spacing: 3) {
+                Image(systemName: symbol)
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(isSelected ? Color.white : Color.ink3)
+                if !iconOnly {
+                    Text(title)
+                        .font(.system(.caption, weight: .semibold))
                         .foregroundStyle(isSelected ? Color.white : Color.ink2)
-                        .labelStyle(TintedIconLabelStyle(iconColor: isSelected ? .white : Color.ink3))
                         .lineLimit(1)
-                        .minimumScaleFactor(0.75)
+                        .minimumScaleFactor(0.8)
                 }
             }
-            .font(.system(.subheadline, weight: .semibold))
-            .padding(.horizontal, 6)
-            .frame(maxWidth: .infinity, minHeight: 44)
+            .padding(.horizontal, 4)
+            .frame(maxWidth: .infinity, minHeight: 52)
             .background {
                 if isSelected {
-                    Capsule()
+                    shape
                         .fill(tint)
                         .matchedGeometryEffect(id: "tab", in: namespace)
                 }
             }
-            .contentShape(Capsule())
+            .contentShape(shape)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(title))

@@ -49,17 +49,13 @@ extension TripDetailView.TripSection {
 
 /// Seyahat özetleri: Seyahatler listesindeki bakış karoları ve "Daha fazla" ızgarası ortak kullanır.
 enum TripSummaries {
-    /// Vize için işlem bekleyen kişi sayısı.
+    /// Vize özeti tek geçişte: kısa metin ve renk (bekleyen yoksa "Hazır ✓", yeşil).
     @MainActor
-    static func visaPending(_ trip: Trip, store: TripStore) -> Int {
-        trip.members.filter { store.visaAssessment(for: $0, in: trip).needsAction }.count
-    }
-
-    /// Vize kısa metni: bekleyen yoksa "Hazır ✓".
-    @MainActor
-    static func visaText(_ trip: Trip, store: TripStore) -> String {
-        let pending = visaPending(trip, store: store)
-        return pending == 0 ? String(localized: "Hazır ✓") : String(localized: "\(pending) kişi bekliyor")
+    static func visa(_ trip: Trip, store: TripStore) -> (text: String, accent: Accent) {
+        let pending = trip.members.filter { store.visaAssessment(for: $0, in: trip).needsAction }.count
+        return pending == 0
+            ? (String(localized: "Hazır ✓"), .green)
+            : (String(localized: "\(pending) kişi bekliyor"), .orange)
     }
 
     /// Valiz: hazır ve toplam eşya sayısı.
@@ -126,7 +122,7 @@ struct MoreSections: View {
                 ? String(localized: "Liste boş")
                 : String(localized: "\(packing.packed)/\(packing.count) hazır")
         case .visa:
-            return trip.members.isEmpty ? String(localized: "Kişi ekle") : TripSummaries.visaText(trip, store: store)
+            return trip.members.isEmpty ? String(localized: "Kişi ekle") : TripSummaries.visa(trip, store: store).text
         case .crew:
             return String(localized: "\(trip.members.count) kişi")
         case .memories:
