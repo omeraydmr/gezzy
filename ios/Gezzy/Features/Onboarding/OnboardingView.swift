@@ -316,7 +316,7 @@ struct OnboardingView: View {
         RouteReporter.shared.setChoice(routeChoice)
         if routeChoice == .yes {
             // Daha önce bitmiş seyahatler de gönderilsin.
-            Task { await RouteReporter.shared.run(store: store, isPremium: entitlements.isPremium) }
+            Task { await RouteReporter.shared.run(store: store) }
         }
     }
 

@@ -14,6 +14,8 @@ final class Entitlements {
         didSet { UserDefaults.standard.set(isPremium, forKey: Self.cacheKey) }
     }
     private(set) var products: [Product] = []
+    /// StoreKit bu açılışta en az bir kez cevap verdi mi; o zamana kadar rota raporu gönderilmez.
+    private(set) var hasLoaded = false
 
     @ObservationIgnored private var updatesTask: Task<Void, Never>?
 
@@ -64,9 +66,12 @@ final class Entitlements {
         }
     }
 
-    func restore() async {
+    /// Geri yüklemeden sonra premium etkinse `true`.
+    @discardableResult
+    func restore() async -> Bool {
         try? await AppStore.sync()
         await refresh()
+        return isPremium
     }
 
     /// Geçerli haklardan premium durumunu yeniden hesaplar.
@@ -80,5 +85,6 @@ final class Entitlements {
             active = true
         }
         if isPremium != active { isPremium = active }
+        hasLoaded = true
     }
 }

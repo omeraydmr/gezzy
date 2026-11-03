@@ -22,7 +22,7 @@ struct RouteSharingPrompt: View {
     }
 
     /// Her yerde aynı açıklama (tek yerelleştirme anahtarı).
-    static let explanation: LocalizedStringKey = "Seyahat bitince gittiğin yerler, sırası ve saatleri, kaç gece ve kaç kişi olduğun, harcama tutarların Gezzy'ye gider. Adın, otelin, uçuşun ve harcama başlıkların gitmez. Profil'den istediğin zaman değiştirebilirsin."
+    static let explanation: LocalizedStringKey = "Seyahat bitince — daha önce bitmiş seyahatlerin dahil — gittiğin yerler, sırası ve saatleri, kaç gece ve kaç kişi olduğun, harcama tutarların Gezzy'ye gider. Adın, otelin, uçuşun ve harcama başlıkların gitmez. Profil'den istediğin zaman değiştirebilirsin."
 
     private func option(_ value: RouteReporter.Choice, title: LocalizedStringKey) -> some View {
         let isOn = choice == value

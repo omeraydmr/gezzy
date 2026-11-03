@@ -28,6 +28,8 @@ struct TripsView: View {
     @State private var isAskingRouteSharing = false
     @State private var paywallAfterRoutePrompt = false
     @State private var isShowingSharingPaywall = false
+    /// Oluşturulan seyahat sayacı; anahtar zinciri her çizimde okunmasın diye saklanır.
+    @State private var tripsCreated: Int?
 
     enum Scope: Hashable { case upcoming, past }
 
@@ -146,7 +148,10 @@ struct TripsView: View {
             }
             .onAppear {
                 if !store.hasCompletedOnboarding { isOnboarding = true }
+                refreshTripsCreated()
             }
+            // Oluşturma, silme ve eşitleme sayıyı değiştirir.
+            .onChange(of: store.trips.count) { _, _ in refreshTripsCreated() }
             .task {
                 // Açılıştaki diğer sunumlar otursun.
                 try? await Task.sleep(for: .seconds(1))
@@ -164,7 +169,7 @@ struct TripsView: View {
                     RouteReporter.shared.setChoice(choice)
                     routeSharingPrompted = true
                     if choice == .yes {
-                        Task { await RouteReporter.shared.run(store: store, isPremium: entitlements.isPremium) }
+                        Task { await RouteReporter.shared.run(store: store) }
                     } else {
                         paywallAfterRoutePrompt = true
                     }
@@ -203,6 +208,7 @@ struct TripsView: View {
     /// Ücretsiz hak varsa (ya da premium ise) oluşturmayı açar; yoksa paywall gösterir.
     private func startTripCreation() {
         let created = TripAllowance.created(store: store)
+        tripsCreated = created
         if PremiumRules.canCreateTrip(created: created, isPremium: entitlements.isPremium) {
             isCreating = true
         } else {
@@ -211,12 +217,16 @@ struct TripsView: View {
     }
 
     private var allowanceCaption: String? {
-        guard !entitlements.isPremium else { return nil }
-        switch PremiumRules.remainingFreeTrips(created: TripAllowance.created(store: store)) {
+        guard !entitlements.isPremium, let tripsCreated else { return nil }
+        switch PremiumRules.remainingFreeTrips(created: tripsCreated) {
         case 1: return String(localized: "Ücretsiz: 1 seyahat hakkın kaldı")
         case ...0: return String(localized: "Ücretsiz seyahat hakkın doldu")
         default: return nil
         }
+    }
+
+    private func refreshTripsCreated() {
+        tripsCreated = TripAllowance.created(store: store)
     }
 
     /// Bildirim ya da widget'tan gelen bağlantı: seyahati destede öne al ve sekmesini aç.

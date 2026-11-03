@@ -11,6 +11,7 @@ struct ProfileView: View {
     @State private var isShowingPaywall = false
     @State private var isManagingSubscription = false
     @State private var isRestoring = false
+    @State private var restoreFoundNothing = false
     @Environment(Entitlements.self) private var entitlements
 
     var body: some View {
@@ -84,9 +85,16 @@ struct ProfileView: View {
                 premiumRow("Satın alımları geri yükle", symbol: "arrow.clockwise", isBusy: isRestoring) {
                     Task {
                         isRestoring = true
-                        await entitlements.restore()
+                        restoreFoundNothing = false
+                        let restored = await entitlements.restore()
                         isRestoring = false
+                        withAnimation { restoreFoundNothing = !restored }
                     }
+                }
+                if restoreFoundNothing {
+                    Text("Geri yüklenecek satın alma bulunamadı.")
+                        .font(.footnote)
+                        .foregroundStyle(Color.ink2)
                 }
             }
         }
@@ -105,7 +113,7 @@ struct ProfileView: View {
                 set: { isOn in
                     reporter.setChoice(isOn ? .yes : .no)
                     if isOn {
-                        Task { await reporter.run(store: store, isPremium: entitlements.isPremium) }
+                        Task { await reporter.run(store: store) }
                     }
                 })) {
                 Text("Rotamı Gezzy ile paylaş").font(.tBodyStrong).foregroundStyle(Color.ink)

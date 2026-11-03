@@ -283,6 +283,16 @@
         }
       }
     },
+    "Geri yüklenecek satın alma bulunamadı." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No purchases found to restore."
+          }
+        }
+      }
+    },
     "Gezzy Premium" : {
       "localizations" : {
         "en" : {
@@ -299,6 +309,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Gezzy Premium · active"
+          }
+        }
+      }
+    },
+    "Gönderilmedi" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not sent"
           }
         }
       }
@@ -10024,12 +10044,12 @@
         }
       }
     },
-    "Seyahat bitince gittiğin yerler, sırası ve saatleri, kaç gece ve kaç kişi olduğun, harcama tutarların Gezzy'ye gider. Adın, otelin, uçuşun ve harcama başlıkların gitmez. Profil'den istediğin zaman değiştirebilirsin." : {
+    "Seyahat bitince — daha önce bitmiş seyahatlerin dahil — gittiğin yerler, sırası ve saatleri, kaç gece ve kaç kişi olduğun, harcama tutarların Gezzy'ye gider. Adın, otelin, uçuşun ve harcama başlıkların gitmez. Profil'den istediğin zaman değiştirebilirsin." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "When your trip ends, the places you went, their order and times, how many nights and how many people you were, and your expense amounts go to Gezzy. Your name, hotel, flight and expense titles don't. You can change this anytime in Profile."
+            "value" : "When a trip ends — including trips you've already finished — the places you went, their order and times, how many nights and how many people you were, and your expense amounts go to Gezzy. Your name, hotel, flight and expense titles don't. You can change this anytime in Profile."
           }
         }
       }

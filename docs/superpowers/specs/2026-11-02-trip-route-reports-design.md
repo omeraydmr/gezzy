@@ -92,8 +92,8 @@ Topluluk havuzu için aynı seyahatten mevcut `CommunityPlaces.contribution(...)
 
 - **Tercih:** `@AppStorage("gezzy.routeSharing.choice")`: `"yes"`, `"no"` ya da boş (sorulmadı). Boşken gönderim yok.
 - **Survey adımı (`OnboardingView.survey`):** mevcut soruların sonuna "Rotanı başkalarına ilham yap" kartı:
-  açıklama ("Seyahat bitince gittiğin yerler, sırası ve saatleri, kaç gece ve kaç kişi olduğun, harcama tutarların
-  Gezzy'ye gider. Adın, otelin, uçuşun ve harcama başlıkların gitmez. Profil'den istediğin zaman değiştirebilirsin.")
+  açıklama ("Seyahat bitince — daha önce bitmiş seyahatlerin dahil — gittiğin yerler, sırası ve saatleri, kaç gece ve
+  kaç kişi olduğun, harcama tutarların Gezzy'ye gider. Adın, otelin, uçuşun ve harcama başlıkların gitmez. Profil'den istediğin zaman değiştirebilirsin.")
   ve iki eşit görünümlü düğme "Evet, paylaş" / "Hayır". Biri seçilmeden "Devam" pasif. "Hayır" seçilince premium
   teklif ekranı (`PaywallSheet`, premium spec'i) açılır; kapatınca onboarding sürer.
 - **Mevcut kullanıcılar** (onboarding'i geçmiş, tercih boş): ilk açılışta aynı kart tek başına bir sheet olarak sorulur.

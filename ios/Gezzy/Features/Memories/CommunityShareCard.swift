@@ -7,6 +7,7 @@ struct CommunityShareCard: View {
     @Environment(\.tripPalette) private var palette
     @Environment(\.tripText) private var tintText
     @Environment(Entitlements.self) private var entitlements
+    @Environment(TripStore.self) private var store
     let trip: Trip
     /// Fotoğraflarla doğrulanan duraklar.
     let verified: Set<UUID>
@@ -23,15 +24,20 @@ struct CommunityShareCard: View {
     private var service: CommunityService { .shared }
     private var reporter: RouteReporter { .shared }
 
-    /// Rota raporu durumu; izin yoksa ya da premium'da nil (bugünkü kart).
-    private enum ReportStatus { case sent, pending }
+    /// Rota raporu durumu; nil ise bugünkü kart.
+    private enum ReportStatus { case sent, pending, notSent }
 
     private var reportStatus: ReportStatus? {
-        guard reporter.choice == .yes, !entitlements.isPremium else { return nil }
         switch reporter.state(for: trip.id) {
+        // Gönderilmiş rapor tercih ya da premium değişse de görünür ve geri alınabilir.
         case .sent: return .sent
-        case .pending, nil: return .pending
-        case .withdrawn, .rejected: return nil
+        case .withdrawn, .skippedPremium: return .notSent
+        case .rejected: return nil
+        case .pending, nil:
+            // Yalnızca bu cihazın gerçekten göndereceği seyahatlerde "Gönderilecek".
+            guard reporter.choice == .yes, !entitlements.isPremium,
+                  RouteReport.willSend(trip: trip, me: store.me.id) else { return nil }
+            return .pending
         }
     }
 
@@ -40,6 +46,14 @@ struct CommunityShareCard: View {
             switch reportStatus {
             case .sent: sentCard.tray()
             case .pending: pendingCard.tray(padding: 14)
+            case .notSent:
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("Gönderilmedi", systemImage: "nosign")
+                        .font(.footnote)
+                        .foregroundStyle(Color.ink2)
+                        .padding(.horizontal, 4)
+                    communityCard
+                }
             case nil: communityCard
             }
         }
