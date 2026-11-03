@@ -14,14 +14,18 @@ struct GezzyApp: App {
         WindowGroup {
             TripsView()
                 .environment(store)
+                .environment(Entitlements.shared)
                 .environment(\.locale, AppFormat.locale)
                 .tint(Color.ink)
                 .task {
+                    // Premium durumu diğer başlangıç işlerini bekletmeden yüklenir.
+                    async let premiumLoaded: Void = Entitlements.shared.load()
                     WidgetBridge.shared.tripsChanged(store.trips)
                     await CloudSync.shared.start(with: store)
                     NotificationScheduler.shared.documentsChanged(store.me.passport)
                     NotificationScheduler.shared.tripsChanged(store.trips)
                     LiveActivityController.refresh(trips: store.trips)
+                    await premiumLoaded
                 }
                 .onOpenURL { url in
                     if let link = TripLink(url: url) {

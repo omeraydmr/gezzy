@@ -20,6 +20,9 @@ targets:
     platform: iOS
     sources:
       - path: Gezzy
+        # StoreKit test yapılandırması bundle'a girmez; yalnızca scheme'den kullanılır.
+        excludes:
+          - "Support/Gezzy.storekit"
       - path: Shared
     info:
       path: Support/Info.plist
@@ -139,5 +142,6 @@ schemes:
         Gezzy: all
     run:
       config: Debug
+      storeKitConfiguration: Gezzy/Support/Gezzy.storekit
     archive:
       config: Release

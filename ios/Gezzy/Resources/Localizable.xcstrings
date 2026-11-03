@@ -133,12 +133,112 @@
         }
       }
     },
+    "2 ücretsiz seyahatini kullandın" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You've used your 2 free trips"
+          }
+        }
+      }
+    },
+    "Abonelikler şu an yüklenemedi." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Subscriptions couldn't be loaded right now."
+          }
+        }
+      }
+    },
+    "7 gün ücretsiz" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "7 days free"
+          }
+        }
+      }
+    },
+    "/yıl" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "/year"
+          }
+        }
+      }
+    },
+    "/ay" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "/month"
+          }
+        }
+      }
+    },
+    "Abonelik, dönem bitmeden 24 saat önce iptal edilmezse otomatik yenilenir. App Store ayarlarından yönetebilirsin." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Subscription renews automatically unless cancelled at least 24 hours before the end of the period. You can manage it in App Store settings."
+          }
+        }
+      }
+    },
+    "Aboneliği yönet" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manage subscription"
+          }
+        }
+      }
+    },
     "Aramayı temizle" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Clear search"
+          }
+        }
+      }
+    },
+    "Bu bir Premium özelliği" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This is a Premium feature"
+          }
+        }
+      }
+    },
+    "Devam et" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue"
+          }
+        }
+      }
+    },
+    "Aylık %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ per month"
           }
         }
       }
@@ -183,12 +283,42 @@
         }
       }
     },
+    "Gezzy Premium" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gezzy Premium"
+          }
+        }
+      }
+    },
+    "Gezzy Premium · aktif" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gezzy Premium · active"
+          }
+        }
+      }
+    },
     "Kaynak: Dışişleri Bakanlığı, son gözden geçirme %@. Seyahatten önce resmî kaynaktan doğrula." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Source: Turkish Ministry of Foreign Affairs, last reviewed %@. Check the official source before travelling."
+          }
+        }
+      }
+    },
+    "Kullanım koşulları" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Terms of use"
           }
         }
       }
@@ -213,12 +343,72 @@
         }
       }
     },
+    "Premium'a geç" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Go Premium"
+          }
+        }
+      }
+    },
     "QR ile katılanlar" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Joined via QR"
+          }
+        }
+      }
+    },
+    "Sınırsız seyahat" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unlimited trips"
+          }
+        }
+      }
+    },
+    "Rotan hiç paylaşılmaz" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your route is never shared"
+          }
+        }
+      }
+    },
+    "Satın alma tamamlanamadı" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Purchase couldn't be completed"
+          }
+        }
+      }
+    },
+    "Verini paylaşmadan Gezzy'yi destekle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Support Gezzy without sharing your data"
+          }
+        }
+      }
+    },
+    "Satın alımları geri yükle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restore purchases"
           }
         }
       }
@@ -289,6 +479,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Be at the airport by %@"
+          }
+        }
+      }
+    },
+    "Çevrimdışı haritalar ve otomatik rota" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Offline maps and automatic routes"
           }
         }
       }

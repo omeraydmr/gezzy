@@ -8,6 +8,10 @@ struct ProfileView: View {
     @State private var isEditing = false
     @State private var isAddingCountry = false
     @State private var isShowingAbout = false
+    @State private var isShowingPaywall = false
+    @State private var isManagingSubscription = false
+    @State private var isRestoring = false
+    @Environment(Entitlements.self) private var entitlements
 
     var body: some View {
         let visited = TravelStats.visitedCountries(trips: store.trips, extra: store.extraVisitedCountries)
@@ -16,6 +20,7 @@ struct ProfileView: View {
                 VStack(spacing: 16) {
                     meCard
                     countriesCard(visited)
+                    premiumCard
                     Button {
                         store.restartOnboarding()
                     } label: {
@@ -57,10 +62,55 @@ struct ProfileView: View {
                 MemberEditor(member: store.me) { updated in store.saveProfile(updated) }
             }
             .sheet(isPresented: $isShowingAbout) { AboutView() }
+            .sheet(isPresented: $isShowingPaywall) { PaywallSheet(reason: .profile) }
+            .manageSubscriptionsSheet(isPresented: $isManagingSubscription)
             .sheet(isPresented: $isAddingCountry) {
                 CountryPickerSheet(selected: Set(visited)) { code, isOn in store.setVisited(code, isOn) }
             }
         }
+    }
+
+    /// Premium durumu: aktifse yönetim, değilse paywall ve geri yükleme.
+    private var premiumCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            if entitlements.isPremium {
+                Label("Gezzy Premium · aktif", systemImage: "checkmark.seal.fill")
+                    .font(.tBodyStrong)
+                    .foregroundStyle(Color.ink)
+                premiumRow("Aboneliği yönet", symbol: "creditcard") { isManagingSubscription = true }
+            } else {
+                premiumRow("Premium'a geç", symbol: "star") { isShowingPaywall = true }
+                premiumRow("Satın alımları geri yükle", symbol: "arrow.clockwise", isBusy: isRestoring) {
+                    Task {
+                        isRestoring = true
+                        await entitlements.restore()
+                        isRestoring = false
+                    }
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .tray()
+    }
+
+    private func premiumRow(_ title: LocalizedStringKey, symbol: String, isBusy: Bool = false,
+                            action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack {
+                Label(title, systemImage: symbol)
+                    .font(.tBodyStrong)
+                    .foregroundStyle(Color.ink)
+                Spacer()
+                if isBusy {
+                    ProgressView()
+                } else {
+                    Image(systemName: "chevron.right").foregroundStyle(Color.ink3)
+                }
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(isBusy)
     }
 
     private var meCard: some View {

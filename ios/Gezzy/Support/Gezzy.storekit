@@ -1,0 +1,93 @@
+{
+  "identifier" : "4F7A2C91",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+
+  ],
+  "settings" : {
+    "_failTransactionsEnabled" : false,
+    "_locale" : "tr_TR",
+    "_storefront" : "TUR"
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "21584736",
+      "localizations" : [
+
+      ],
+      "name" : "Gezzy Premium",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "599.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "67392018",
+          "introductoryOffer" : {
+            "internalID" : "83920471",
+            "paymentMode" : "free",
+            "subscriptionPeriod" : "P1W"
+          },
+          "localizations" : [
+            {
+              "description" : "Sınırsız seyahat, çevrimdışı haritalar ve otomatik rota",
+              "displayName" : "Premium (Yıllık)",
+              "locale" : "tr"
+            },
+            {
+              "description" : "Unlimited trips, offline maps and automatic routes",
+              "displayName" : "Premium (Yearly)",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "gezzy.premium.yearly",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "Premium Yearly",
+          "subscriptionGroupID" : "21584736",
+          "type" : "RecurringSubscription"
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "79.99",
+          "familyShareable" : false,
+          "groupNumber" : 2,
+          "internalID" : "50718263",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Sınırsız seyahat, çevrimdışı haritalar ve otomatik rota",
+              "displayName" : "Premium (Aylık)",
+              "locale" : "tr"
+            },
+            {
+              "description" : "Unlimited trips, offline maps and automatic routes",
+              "displayName" : "Premium (Monthly)",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "gezzy.premium.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Premium Monthly",
+          "subscriptionGroupID" : "21584736",
+          "type" : "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 3,
+    "minor" : 0
+  }
+}
