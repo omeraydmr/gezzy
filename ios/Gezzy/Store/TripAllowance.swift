@@ -65,7 +65,10 @@ enum TripAllowance {
         if status == errSecItemNotFound {
             var add = baseQuery
             add.merge(update) { _, new in new }
-            SecItemAdd(add as CFDictionary, nil)
+            let addStatus = SecItemAdd(add as CFDictionary, nil)
+            if addStatus != errSecSuccess { print("TripAllowance: sayaç eklenemedi (\(addStatus))") }
+        } else if status != errSecSuccess {
+            print("TripAllowance: sayaç güncellenemedi (\(status))")
         }
     }
 }

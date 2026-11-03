@@ -16,6 +16,9 @@ struct PaywallSheet: View {
     @State private var isRestoring = false
     @State private var isLoading = false
     @State private var showsError = false
+    @State private var restoreFoundNothing = false
+    /// Ücretsiz deneme hakkı olan ürünler (deneme kullanıldıysa rozet gösterilmez).
+    @State private var trialEligible: Set<String> = []
 
     init(reason: Reason, onPurchased: @escaping () -> Void = {}) {
         self.reason = reason
@@ -61,6 +64,13 @@ struct PaywallSheet: View {
             }
             .task {
                 if entitlements.products.isEmpty { await reload() }
+            }
+            .task(id: entitlements.products.map(\.id)) {
+                var eligible: Set<String> = []
+                for product in entitlements.products where product.subscription?.introductoryOffer != nil {
+                    if await product.subscription?.isEligibleForIntroOffer == true { eligible.insert(product.id) }
+                }
+                trialEligible = eligible
             }
         }
     }
@@ -133,7 +143,7 @@ struct PaywallSheet: View {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 8) {
                         Text(product.displayName).font(.tBodyStrong).foregroundStyle(Color.ink)
-                        if isYearly, product.subscription?.introductoryOffer != nil {
+                        if isYearly, trialEligible.contains(product.id) {
                             Tag(text: String(localized: "7 gün ücretsiz"), accent: .green)
                         }
                     }
@@ -158,6 +168,7 @@ struct PaywallSheet: View {
             )
         }
         .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
     private var footer: some View {
@@ -165,11 +176,14 @@ struct PaywallSheet: View {
             Button {
                 Task {
                     isRestoring = true
-                    await entitlements.restore()
+                    restoreFoundNothing = false
+                    let restored = await entitlements.restore()
                     isRestoring = false
-                    if entitlements.isPremium {
+                    if restored {
                         onPurchased()
                         dismiss()
+                    } else {
+                        withAnimation { restoreFoundNothing = true }
                     }
                 }
             } label: {
@@ -178,6 +192,12 @@ struct PaywallSheet: View {
             .font(.tBodyStrong)
             .foregroundStyle(Color.ink)
             .disabled(isRestoring)
+
+            if restoreFoundNothing {
+                Text("Geri yüklenecek satın alma bulunamadı.")
+                    .font(.tCaption)
+                    .foregroundStyle(Color.ink2)
+            }
 
             HStack(spacing: 16) {
                 Link("Kullanım koşulları", destination: URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!)
