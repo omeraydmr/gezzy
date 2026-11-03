@@ -19,6 +19,9 @@ struct TripDetailView: View {
     @State private var section: TripSection
     @State private var coverTarget: Trip.ID?
     @State private var isEditingTrip = false
+    @Environment(Entitlements.self) private var entitlements
+    @State private var isShowingPaywall = false
+    @State private var saveMapsAfterPaywall = false
     @State private var calendarMessage: String?
     @State private var isHeroCollapsed = false
 
@@ -120,6 +123,14 @@ struct TripDetailView: View {
             }
             .coverPhotoPicker(for: $coverTarget)
             .sheet(isPresented: $isEditingTrip) { TripEditSheet(trip: trip) }
+            .sheet(isPresented: $isShowingPaywall, onDismiss: {
+                if saveMapsAfterPaywall {
+                    saveMapsAfterPaywall = false
+                    Task { await OfflineMapStore.shared.save(trip) }
+                }
+            }) {
+                PaywallSheet(reason: .offlineMaps) { saveMapsAfterPaywall = true }
+            }
             .alert("Takvim", isPresented: Binding(get: { calendarMessage != nil }, set: { if !$0 { calendarMessage = nil } })) {
                 Button("Tamam", role: .cancel) {}
             } message: {
@@ -147,8 +158,12 @@ struct TripDetailView: View {
                     }
                 }
             }
-            Button("Haritaları internetsiz kaydet", systemImage: "arrow.down.circle") {
-                Task { await OfflineMapStore.shared.save(trip) }
+            Button("Haritaları internetsiz kaydet", systemImage: entitlements.isPremium ? "arrow.down.circle" : "lock") {
+                if entitlements.isPremium {
+                    Task { await OfflineMapStore.shared.save(trip) }
+                } else {
+                    isShowingPaywall = true
+                }
             }
             Button("Kapak fotoğrafı seç", systemImage: "photo") { coverTarget = trip.id }
             if trip.coverPhoto != nil {

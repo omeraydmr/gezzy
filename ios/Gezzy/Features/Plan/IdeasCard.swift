@@ -12,6 +12,9 @@ struct IdeasCard: View {
     let day: Date
     @State private var isPicking = false
     @State private var isPlanning = false
+    @Environment(Entitlements.self) private var entitlements
+    @State private var isShowingPaywall = false
+    @State private var planAfterPaywall = false
     /// Son otomatik rotadan önceki duraklar ve fikirler; "Geri al" bunları geri yükler.
     @State private var undo: (stops: [Stop], ideas: [Stop]?)?
 
@@ -45,9 +48,18 @@ struct IdeasCard: View {
             HStack(spacing: 8) {
                 if !ideas.isEmpty {
                     Button {
-                        isPlanning = true
+                        if entitlements.isPremium {
+                            isPlanning = true
+                        } else {
+                            isShowingPaywall = true
+                        }
                     } label: {
-                        Label("Otomatik rota", systemImage: "wand.and.stars")
+                        HStack(spacing: 6) {
+                            Label("Otomatik rota", systemImage: "wand.and.stars")
+                            if !entitlements.isPremium {
+                                Image(systemName: "lock.fill").font(.system(size: 10))
+                            }
+                        }
                     }
                     .buttonStyle(PillButtonStyle(tint: tintText, soft: .soft(palette)))
                 }
@@ -119,6 +131,14 @@ struct IdeasCard: View {
                 .environment(\.tripPalette, palette)
                 .environment(\.tripTint, tint)
                 .environment(\.tripText, tintText)
+        }
+        .sheet(isPresented: $isShowingPaywall, onDismiss: {
+            if planAfterPaywall {
+                planAfterPaywall = false
+                isPlanning = true
+            }
+        }) {
+            PaywallSheet(reason: .autoPlan) { planAfterPaywall = true }
         }
         .sheet(isPresented: $isPlanning) {
             AutoPlanSheet(trip: trip) { before in

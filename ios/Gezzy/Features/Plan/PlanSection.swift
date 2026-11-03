@@ -987,6 +987,9 @@ struct OfflineMapRow: View {
     let day: Date
     private var store: OfflineMapStore { .shared }
     @State private var isPreviewing = false
+    @State private var isShowingPaywall = false
+    @State private var saveAfterPaywall = false
+    @Environment(Entitlements.self) private var entitlements
 
     var body: some View {
         let state = store.state(for: trip.id)
@@ -1013,11 +1016,23 @@ struct OfflineMapRow: View {
                     .accessibilityLabel("Kayıtlı haritayı göster")
                 }
                 Button(isSaved(state) ? String(localized: "Güncelle") : String(localized: "Kaydet")) {
-                    Task { await store.save(trip) }
+                    if entitlements.isPremium {
+                        Task { await store.save(trip) }
+                    } else {
+                        isShowingPaywall = true
+                    }
                 }
                 .font(.system(.footnote, weight: .semibold))
                 .foregroundStyle(Color.ink)
             }
+        }
+        .sheet(isPresented: $isShowingPaywall, onDismiss: {
+            if saveAfterPaywall {
+                saveAfterPaywall = false
+                Task { await store.save(trip) }
+            }
+        }) {
+            PaywallSheet(reason: .offlineMaps) { saveAfterPaywall = true }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)

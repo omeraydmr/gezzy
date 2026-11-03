@@ -1474,6 +1474,26 @@
         }
       }
     },
+    "Ücretsiz: 1 seyahat hakkın kaldı" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Free: 1 trip left"
+          }
+        }
+      }
+    },
+    "Ücretsiz seyahat hakkın doldu" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No free trips left"
+          }
+        }
+      }
+    },
     "Haritaları internetsiz kaydet" : {
       "localizations" : {
         "en" : {

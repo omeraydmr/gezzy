@@ -9,6 +9,9 @@ struct TripRoute: Hashable {
 
 struct TripsView: View {
     @Environment(TripStore.self) private var store
+    @Environment(Entitlements.self) private var entitlements
+    @State private var isShowingPaywall = false
+    @State private var createAfterPaywall = false
     @State private var scope: Scope = .upcoming
     @State private var isOnboarding = false
     @State private var index = 0
@@ -68,13 +71,19 @@ struct TripsView: View {
                 Spacer(minLength: 12)
 
                 Button {
-                    isCreating = true
+                    startTripCreation()
                 } label: {
                     Label("Seyahat planla", systemImage: "plus")
                 }
                 .buttonStyle(.primary)
                 .padding(.horizontal, 16)
-                .padding(.bottom, 8)
+                .padding(.bottom, allowanceCaption == nil ? 8 : 0)
+                if let caption = allowanceCaption {
+                    Text(caption)
+                        .font(.caption)
+                        .foregroundStyle(Color.ink2)
+                        .padding(.bottom, 8)
+                }
             }
             .background { background }
             .toolbar(.hidden, for: .navigationBar)
@@ -88,6 +97,7 @@ struct TripsView: View {
                     withAnimation(.spring(response: 0.6, dampingFraction: 0.78)) {
                         scope = .upcoming
                         store.add(trip)
+                        TripAllowance.recordCreation(store: store)
                         index = store.upcoming.firstIndex { $0.id == trip.id } ?? 0
                     }
                     Task {
@@ -95,6 +105,15 @@ struct TripsView: View {
                         withAnimation(.easeOut(duration: 0.5)) { arrivingID = nil }
                     }
                 }
+            }
+            .sheet(isPresented: $isShowingPaywall, onDismiss: {
+                // İkinci sheet'i ilki kapanırken açmak güvenilmez; kapandıktan sonra aç.
+                if createAfterPaywall {
+                    createAfterPaywall = false
+                    isCreating = true
+                }
+            }) {
+                PaywallSheet(reason: .tripLimit) { createAfterPaywall = true }
             }
             .coverPhotoPicker(for: $coverTarget)
             .sheet(isPresented: $isShowingProfile) { ProfileView() }
@@ -109,7 +128,7 @@ struct TripsView: View {
                     if planFirstTrip {
                         Task {
                             try? await Task.sleep(for: .milliseconds(450))
-                            isCreating = true
+                            startTripCreation()
                         }
                     }
                 }
@@ -143,6 +162,25 @@ struct TripsView: View {
             .onChange(of: AppRouter.shared.pending) { _, _ in openPendingLink() }
             .onAppear { openPendingLink() }
             .animation(.easeInOut(duration: 0.25), value: focused?.id)
+        }
+    }
+
+    /// Ücretsiz hak varsa (ya da premium ise) oluşturmayı açar; yoksa paywall gösterir.
+    private func startTripCreation() {
+        let created = TripAllowance.created(store: store)
+        if PremiumRules.canCreateTrip(created: created, isPremium: entitlements.isPremium) {
+            isCreating = true
+        } else {
+            isShowingPaywall = true
+        }
+    }
+
+    private var allowanceCaption: String? {
+        guard !entitlements.isPremium else { return nil }
+        switch PremiumRules.remainingFreeTrips(created: TripAllowance.created(store: store)) {
+        case 1: return String(localized: "Ücretsiz: 1 seyahat hakkın kaldı")
+        case ...0: return String(localized: "Ücretsiz seyahat hakkın doldu")
+        default: return nil
         }
     }
 
