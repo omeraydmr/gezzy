@@ -26,6 +26,7 @@ struct GezzyApp: App {
                     NotificationScheduler.shared.tripsChanged(store.trips)
                     LiveActivityController.refresh(trips: store.trips)
                     await premiumLoaded
+                    await RouteReporter.shared.run(store: store, isPremium: Entitlements.shared.isPremium)
                 }
                 .onOpenURL { url in
                     if let link = TripLink(url: url) {
@@ -40,6 +41,7 @@ struct GezzyApp: App {
             if phase == .active {
                 Task { await CloudSync.shared.refresh() }
                 LiveActivityController.refresh(trips: store.trips)
+                Task { await RouteReporter.shared.run(store: store, isPremium: Entitlements.shared.isPremium) }
             }
         }
     }

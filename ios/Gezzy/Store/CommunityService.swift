@@ -41,6 +41,19 @@ final class CommunityService {
         try await send("places/contribute", body: JSONEncoder().encode(contribution))
     }
 
+    /// Biten seyahatin anonim rota raporunu gönderir.
+    func sendReport(_ report: RouteReport) async throws {
+        try await send("trips/report", body: JSONEncoder().encode(report))
+    }
+
+    func withdrawReport(id: String) async throws {
+        try await send("trips/report/withdraw", body: JSONEncoder().encode(["id": id]))
+    }
+
+    func withdraw(_ contribution: CommunityPlaces.Contribution) async throws {
+        try await send("places/withdraw", body: JSONEncoder().encode(contribution))
+    }
+
     enum ReportReason: String, CaseIterable, Identifiable {
         case wrong, closed, spam, offensive
         var id: String { rawValue }
