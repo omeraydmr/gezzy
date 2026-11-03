@@ -66,9 +66,10 @@ struct TripDetailView: View {
             let palette = trip.palette
             let tint = Color(hex: palette.accent)
             let canEdit = store.canEdit(trip)
+            GeometryReader { outer in
             ScrollView {
                 VStack(spacing: 0) {
-                    TripHero(trip: trip, height: Self.heroHeight, isCollapsed: $isHeroCollapsed)
+                    TripHero(trip: trip, height: Self.heroHeight + outer.safeAreaInsets.top, topInset: outer.safeAreaInsets.top, isCollapsed: $isHeroCollapsed)
 
                     TripTicketRow(trip: trip)
                         .padding(.horizontal, 16)
@@ -108,6 +109,7 @@ struct TripDetailView: View {
                 }
             }
             .ignoresSafeArea(edges: .top)
+            }
             .background(TintGlow(tint: tint, offsetY: 260))
             .environment(\.tripTint, tint)
             .environment(\.tripPalette, palette)
@@ -196,6 +198,8 @@ struct TripHero: View {
     @Environment(\.tripText) private var tintText
     let trip: Trip
     let height: CGFloat
+    /// Üst güvenli alan: başlık bloğu gezinme düğmelerinin altında kalır.
+    var topInset: CGFloat = 0
     @Binding var isCollapsed: Bool
 
     var body: some View {
@@ -211,30 +215,35 @@ struct TripHero: View {
                                startPoint: .top, endPoint: .bottom)
                 VStack(alignment: .leading, spacing: 6) {
                     let tag = trip.countdownTag
-                    Text(tag.text)
-                        .font(.system(.footnote, weight: .semibold))
-                        // Geri sayım seyahat renginde; taslak (turuncu) ve geçmiş (gri) durum rengi kalır.
-                        .foregroundStyle(tag.accent == .gray ? Color.ink2 : tag.accent == .orange ? tag.accent.base : tintText)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 5)
-                        .background(.regularMaterial, in: Capsule())
                     Text(trip.name)
-                        .font(.system(.largeTitle, weight: .semibold))
+                        .font(.system(.title, weight: .semibold))
                         .foregroundStyle(.white)
                         .lineLimit(1)
                         .minimumScaleFactor(0.6)
-                    Text(trip.isMultiCity
-                         ? "\(trip.countryCodes.map(Countries.flag).joined()) \(trip.cityTitle)"
-                         : "\(Countries.flag(trip.destination.countryCode)) \(trip.destination.city), \(Countries.name(trip.destination.countryCode))")
-                        .font(.system(.subheadline, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.9))
+                    HStack(spacing: 8) {
+                        Text(trip.isMultiCity
+                             ? "\(trip.countryCodes.map(Countries.flag).joined()) \(trip.cityTitle)"
+                             : "\(Countries.flag(trip.destination.countryCode)) \(trip.destination.city), \(Countries.name(trip.destination.countryCode))")
+                            .font(.system(.subheadline, weight: .medium))
+                            .foregroundStyle(.white.opacity(0.9))
+                            .lineLimit(1)
+                        Spacer(minLength: 0)
+                        Text(tag.text)
+                            .font(.system(.caption, weight: .semibold))
+                            // Geri sayım seyahat renginde; taslak (turuncu) ve geçmiş (gri) durum rengi kalır.
+                            .foregroundStyle(tag.accent == .gray ? Color.ink2 : tag.accent == .orange ? tag.accent.base : tintText)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(.regularMaterial, in: Capsule())
+                            .fixedSize()
+                    }
                 }
                 .padding(.horizontal, 20)
-                .padding(.bottom, 40)
+                .padding(.bottom, 44)
             }
             .frame(width: proxy.size.width, height: height + stretch)
             .offset(y: -stretch)
-            .onChange(of: minY < -(height - 100)) { _, collapsed in
+            .onChange(of: minY < -(height - topInset - 80)) { _, collapsed in
                 isCollapsed = collapsed
             }
         }
@@ -252,26 +261,10 @@ struct TripTicketRow: View {
 
     var body: some View {
         Button { openReservations() } label: {
-            HStack(spacing: 8) {
-                if let flight = trip.primaryFlight {
-                    Text(flight.fromCode).font(.system(.subheadline, weight: .semibold))
-                    Text(AppFormat.time(flight.departure, timeZone: flight.departureTimeZone))
-                        .font(.footnote).foregroundStyle(Color.ink2)
-                    Image(systemName: "airplane").font(.caption).foregroundStyle(tint)
-                    Text(AppFormat.time(flight.arrival, timeZone: flight.arrivalTimeZone))
-                        .font(.footnote).foregroundStyle(Color.ink2)
-                    Text(flight.toCode).font(.system(.subheadline, weight: .semibold))
-                    Circle().fill(Color.ink3).frame(width: 3, height: 3)
-                } else {
-                    Image(systemName: "calendar").font(.caption).foregroundStyle(tint)
-                }
-                Text("\(AppFormat.dateRange(trip.startDate, trip.endDate)) · \(trip.nights()) gece")
-                    .font(.footnote)
-                    .foregroundStyle(Color.ink2)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
-                Spacer(minLength: 0)
-                AvatarStack(members: trip.members, size: 26, limit: 3)
+            ViewThatFits(in: .horizontal) {
+                line(times: true, nights: true)
+                line(times: true, nights: false)
+                line(times: false, nights: false)
             }
             .foregroundStyle(Color.ink)
             .padding(.horizontal, 16)
@@ -283,7 +276,55 @@ struct TripTicketRow: View {
             }
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Rezervasyonları aç")
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(summary)
+        .accessibilityHint("Rezervasyonları aç")
+    }
+
+    private var dates: String { AppFormat.dateRange(trip.startDate, trip.endDate) }
+    private var nightsText: String { String(localized: "\(trip.nights()) gece") }
+
+    private var summary: String {
+        var parts: [String] = []
+        if let f = trip.primaryFlight {
+            parts.append("\(f.fromCode) \(AppFormat.time(f.departure, timeZone: f.departureTimeZone)) – \(f.toCode) \(AppFormat.time(f.arrival, timeZone: f.arrivalTimeZone))")
+        }
+        parts.append(dates)
+        parts.append(nightsText)
+        parts.append(String(localized: "\(trip.members.count) kişi"))
+        return parts.joined(separator: ", ")
+    }
+
+    private func line(times: Bool, nights: Bool) -> some View {
+        HStack(spacing: 8) {
+            if let flight = trip.primaryFlight {
+                Group {
+                    Text(flight.fromCode).font(.system(.subheadline, weight: .semibold))
+                    if times {
+                        Text(AppFormat.time(flight.departure, timeZone: flight.departureTimeZone))
+                            .font(.footnote).foregroundStyle(Color.ink2)
+                    }
+                    Image(systemName: "airplane").font(.caption).foregroundStyle(tint)
+                    if times {
+                        Text(AppFormat.time(flight.arrival, timeZone: flight.arrivalTimeZone))
+                            .font(.footnote).foregroundStyle(Color.ink2)
+                    }
+                    Text(flight.toCode).font(.system(.subheadline, weight: .semibold))
+                }
+                .lineLimit(1)
+                .fixedSize()
+                Circle().fill(Color.ink3).frame(width: 3, height: 3)
+            } else {
+                Image(systemName: "calendar").font(.caption).foregroundStyle(tint)
+            }
+            Text(nights ? "\(dates) · \(nightsText)" : dates)
+                .font(.footnote)
+                .foregroundStyle(Color.ink2)
+                .lineLimit(1)
+                .fixedSize()
+            Spacer(minLength: 0)
+            AvatarStack(members: trip.members, size: 26, limit: 3)
+        }
     }
 }
 
