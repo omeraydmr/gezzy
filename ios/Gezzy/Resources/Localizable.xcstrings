@@ -123,6 +123,16 @@
         }
       }
     },
+    "%lld gizli fotoğraf" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld hidden photos"
+          }
+        }
+      }
+    },
     "%lld. gün" : {
       "localizations" : {
         "en" : {
@@ -139,6 +149,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "You've used your 2 free trips"
+          }
+        }
+      }
+    },
+    "5 şablon · story, gönderi, kare" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "5 templates · story, post, square"
           }
         }
       }
@@ -219,6 +239,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "This is a Premium feature"
+          }
+        }
+      }
+    },
+    "Bu günde fotoğraf yok." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No photos on this day."
           }
         }
       }
@@ -323,6 +353,16 @@
         }
       }
     },
+    "Kart oluştur" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create card"
+          }
+        }
+      }
+    },
     "Kaynak: Dışişleri Bakanlığı, son gözden geçirme %@. Seyahatten önce resmî kaynaktan doğrula." : {
       "localizations" : {
         "en" : {
@@ -379,6 +419,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Joined via QR"
+          }
+        }
+      }
+    },
+    "Seyahatini paylaş" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Share your trip"
           }
         }
       }
@@ -503,6 +553,16 @@
         }
       }
     },
+    "· Göster" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "· Show"
+          }
+        }
+      }
+    },
     "Çevrimdışı haritalar ve otomatik rota" : {
       "localizations" : {
         "en" : {
@@ -549,6 +609,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Drop by the hotel first?"
+          }
+        }
+      }
+    },
+    "Öne çıkanlar" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Highlights"
           }
         }
       }
