@@ -383,6 +383,8 @@ struct TripTicketRow: View {
                 line(times: true, nights: true)
                 line(times: true, nights: false)
                 line(times: false, nights: false)
+                // Son çare: dar ekranda tarih küçülür, sığmazsa kesilir; satır kart dışına taşmaz.
+                line(times: false, nights: false, shrinkDates: true)
             }
             .foregroundStyle(Color.ink)
             .padding(.horizontal, 16)
@@ -413,7 +415,7 @@ struct TripTicketRow: View {
         return parts.joined(separator: ", ")
     }
 
-    private func line(times: Bool, nights: Bool) -> some View {
+    private func line(times: Bool, nights: Bool, shrinkDates: Bool = false) -> some View {
         HStack(spacing: 8) {
             if let flight = trip.primaryFlight {
                 Group {
@@ -439,7 +441,8 @@ struct TripTicketRow: View {
                 .font(.footnote)
                 .foregroundStyle(Color.ink2)
                 .lineLimit(1)
-                .fixedSize()
+                .minimumScaleFactor(shrinkDates ? 0.75 : 1)
+                .fixedSize(horizontal: !shrinkDates, vertical: false)
             Spacer(minLength: 0)
             AvatarStack(members: trip.members, size: 26, limit: 3)
         }
