@@ -29,6 +29,9 @@ struct TripDetailView: View {
     @State private var calendarMessage: String?
     @State private var isHeroCollapsed = false
     @State private var isLiveActivityRunning = false
+    /// Sekme çubuğu gezinme çubuğunun altına sabitlendi mi.
+    @State private var isTabsPinned = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(tripID: Trip.ID, initialSection: TripSection = .plan) {
         self.tripID = tripID
@@ -66,6 +69,11 @@ struct TripDetailView: View {
     }
 
     static let heroHeight: CGFloat = 180
+    /// Bilet/not ile sekmeler, sekmeler ile içerik arasındaki görünür boşluk.
+    private static let tabsGap: CGFloat = 16
+    /// Sekme başlığının iç dikey boşluğu (sabitken cam bant).
+    private static let tabsInset: CGFloat = 8
+    private static let tabsAnchor = "tabs"
 
     var body: some View {
         if let trip = store.trip(tripID) {
@@ -73,60 +81,80 @@ struct TripDetailView: View {
             let tint = Color(hex: palette.accent)
             let canEdit = store.canEdit(trip)
             GeometryReader { outer in
+            // Gezinme çubuğunun alt kenarı (durum çubuğu + çubuk); kaydırma görünümü üst güvenli alanı yok sayar.
+            let navBarBottom = outer.safeAreaInsets.top
+            ScrollViewReader { proxy in
             ScrollView {
-                VStack(spacing: 0) {
-                    TripHero(trip: trip, height: Self.heroHeight + outer.safeAreaInsets.top, topInset: outer.safeAreaInsets.top, isCollapsed: $isHeroCollapsed)
+                LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
+                    VStack(spacing: 0) {
+                        TripHero(trip: trip, height: Self.heroHeight + navBarBottom, topInset: navBarBottom, isCollapsed: $isHeroCollapsed)
 
-                    TripTicketRow(trip: trip)
-                        .padding(.horizontal, 16)
-                        .padding(.top, -28)
+                        TripTicketRow(trip: trip)
+                            .padding(.horizontal, 16)
+                            .padding(.top, -28)
 
-                    if !canEdit {
-                        Label("Bu seyahati yalnızca görüntüleyebilirsin", systemImage: "eye")
-                            .font(.system(.footnote, weight: .semibold))
-                            .foregroundStyle(Color.ink2)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 8)
-                            .background(Color.track, in: Capsule())
-                            .padding(.top, 12)
-                    }
-
-                    SectionTabs(selection: selectedTab, openSection: moreOpen ? section : nil, select: selectTab)
-                        .padding(.horizontal, 16)
-                        .padding(.top, 16)
-
-                    Group {
-                        if selectedTab == .more && !moreOpen {
-                            MoreSections(trip: trip) { opened in
-                                section = opened
-                                moreOpen = true
-                            }
-                        } else {
-                            VStack(alignment: .leading, spacing: 12) {
-                                if moreOpen {
-                                    Button { moreOpen = false } label: {
-                                        Label("Daha fazla", systemImage: "chevron.left")
-                                            .font(.system(.footnote, weight: .semibold))
-                                            .foregroundStyle(palette.accentText)
-                                            .frame(minHeight: 44)
-                                            .contentShape(Rectangle())
-                                    }
-                                    .buttonStyle(.plain)
-                                }
-                                sectionContent(trip)
-                                    // Görüntüleyici: düğmeler ve alanlar kapalı (anılar yalnızca okuma olduğu için açık kalır).
-                                    .disabled(!canEdit && section != .memories)
-                            }
+                        if !canEdit {
+                            Label("Bu seyahati yalnızca görüntüleyebilirsin", systemImage: "eye")
+                                .font(.system(.footnote, weight: .semibold))
+                                .foregroundStyle(Color.ink2)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 8)
+                                .background(Color.track, in: Capsule())
+                                .padding(.top, 12)
                         }
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 16)
-                    .padding(.bottom, 32)
-                    .transition(.opacity)
-                    .id(contentID)
+                    // Sekme başlığının üstündeki boşluk (gezinme çubuğu payı) bu bloğun altına biner; aradaki görünür boşluk 16 pt kalır.
+                    .padding(.bottom, Self.tabsGap - Self.tabsInset - navBarBottom)
+
+                    // Sekme değişiminde kaydırma hedefi: başlığın üst kenarı, yani sabitlenme eşiği.
+                    Color.clear.frame(height: 0).id(Self.tabsAnchor)
+
+                    Section {
+                        Group {
+                            if selectedTab == .more && !moreOpen {
+                                MoreSections(trip: trip) { opened in
+                                    section = opened
+                                    moreOpen = true
+                                }
+                            } else {
+                                VStack(alignment: .leading, spacing: 12) {
+                                    if moreOpen {
+                                        Button { moreOpen = false } label: {
+                                            Label("Daha fazla", systemImage: "chevron.left")
+                                                .font(.system(.footnote, weight: .semibold))
+                                                .foregroundStyle(palette.accentText)
+                                                .frame(minHeight: 44)
+                                                .contentShape(Rectangle())
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                    sectionContent(trip)
+                                        // Görüntüleyici: düğmeler ve alanlar kapalı (anılar yalnızca okuma olduğu için açık kalır).
+                                        .disabled(!canEdit && section != .memories)
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.top, Self.tabsGap - Self.tabsInset)
+                        .padding(.bottom, 32)
+                        .transition(.opacity)
+                        .id(contentID)
+                    } header: {
+                        pinnedTabs(navBarBottom: navBarBottom)
+                    }
                 }
             }
             .ignoresSafeArea(edges: .top)
+            .onChange(of: contentID) {
+                // Sabitken içerik çubuğun hemen altından başlar; değilse konum korunur.
+                guard isTabsPinned else { return }
+                if reduceMotion {
+                    proxy.scrollTo(Self.tabsAnchor, anchor: .top)
+                } else {
+                    withAnimation(.easeInOut(duration: 0.25)) { proxy.scrollTo(Self.tabsAnchor, anchor: .top) }
+                }
+            }
+            }
             }
             .background(TintGlow(tint: tint, offsetY: 260))
             .environment(\.tripTint, tint)
@@ -135,7 +163,8 @@ struct TripDetailView: View {
             .environment(\.openReservations) { selectTab(.reservations) }
             .navigationTitle(isHeroCollapsed ? trip.name : "")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(isHeroCollapsed ? .visible : .hidden, for: .navigationBar)
+            // Sekmeler sabitken çubuğun camı sekme başlığından gelir: tek bant, tek ayraç.
+            .toolbarBackground(isHeroCollapsed && !isTabsPinned ? .visible : .hidden, for: .navigationBar)
             .toolbarColorScheme(isHeroCollapsed ? nil : .dark, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -159,9 +188,34 @@ struct TripDetailView: View {
                 Text(calendarMessage ?? "")
             }
             .animation(.easeInOut(duration: 0.2), value: isHeroCollapsed)
+            .animation(.easeInOut(duration: 0.2), value: isTabsPinned)
             .animation(.easeInOut(duration: 0.2), value: contentID)
         } else {
             ContentUnavailableView("Seyahat bulunamadı", systemImage: "suitcase")
+        }
+    }
+
+    /// Sabitlenen sekme başlığı. Üstündeki saydam pay gezinme çubuğu kadar: kaydırma görünümü üstte (durum çubuğunun
+    /// altında) sabitlediğinde sekmeler çubuğun hemen altında kalır; cam o payı da kaplar, çubukla tek bant olur.
+    private func pinnedTabs(navBarBottom: CGFloat) -> some View {
+        VStack(spacing: 0) {
+            SectionTabs(selection: selectedTab, openSection: moreOpen ? section : nil, select: selectTab)
+                .padding(.horizontal, 16)
+                .padding(.vertical, Self.tabsInset)
+            Divider().opacity(isTabsPinned ? 1 : 0)
+        }
+        .padding(.top, navBarBottom)
+        .background {
+            if isTabsPinned { Rectangle().fill(.bar) }
+        }
+        .background {
+            GeometryReader { geo in
+                let pinned = geo.frame(in: .scrollView).minY < 0.5
+                Color.clear
+                    .onAppear { isTabsPinned = pinned }
+                    .onChange(of: pinned) { _, value in isTabsPinned = value }
+            }
+            .allowsHitTesting(false)
         }
     }
 
