@@ -196,7 +196,8 @@ struct PhotoViewer: View {
     var tripID: UUID?
     @Environment(\.dismiss) private var dismiss
     @Environment(TripStore.self) private var store
-    @State private var coverToast = false
+    @State private var toast: LocalizedStringKey?
+    @State private var toastTask: Task<Void, Never>?
     private var prefs: MemoryPrefs { .shared }
 
     init(items: [Item], index: Int, tripID: UUID? = nil) {
@@ -244,8 +245,8 @@ struct PhotoViewer: View {
     private var actionBar: some View {
         if let tripID, items.indices.contains(index), case let .library(id) = items[index] {
             VStack(spacing: 10) {
-                if coverToast {
-                    Text("Kapak yapıldı")
+                if let toast {
+                    Text(toast)
                         .font(.system(.footnote, weight: .semibold))
                         .foregroundStyle(.white)
                         .padding(.horizontal, 12).padding(.vertical, 6)
@@ -257,7 +258,9 @@ struct PhotoViewer: View {
                     barButton(isFavorite ? "heart.fill" : "heart", "Favori") {
                         prefs.toggleFavorite(id, trip: tripID)
                     }
-                    barButton("photo.badge.checkmark", "Kapak yap") { setCover(id, tripID) }
+                    if store.trip(tripID).map(store.canEdit) == true {
+                        barButton("photo.badge.checkmark", "Kapak yap") { setCover(id, tripID) }
+                    }
                     barButton("eye.slash", "Gizle") {
                         prefs.setHidden(id, true, trip: tripID)
                         dismiss()
@@ -281,12 +284,17 @@ struct PhotoViewer: View {
     }
 
     private func setCover(_ photoID: String, _ tripID: UUID) {
-        Task {
-            guard let data = await PhotoLibrary.shared.albumJPEG(for: photoID),
-                  (try? store.setCoverPhoto(data, for: tripID)) != nil else { return }
-            withAnimation { coverToast = true }
+        toastTask?.cancel()
+        toastTask = Task {
+            var ok = false
+            if let data = await PhotoLibrary.shared.albumJPEG(for: photoID) {
+                ok = (try? store.setCoverPhoto(data, for: tripID)) != nil
+            }
+            guard !Task.isCancelled else { return }
+            withAnimation { toast = ok ? "Kapak yapıldı" : "Kapak değiştirilemedi" }
             try? await Task.sleep(for: .seconds(1.5))
-            withAnimation { coverToast = false }
+            guard !Task.isCancelled else { return }
+            withAnimation { toast = nil }
         }
     }
 }

@@ -10203,6 +10203,16 @@
           }
         }
       }
+    },
+    "Kapak değiştirilemedi" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't set cover"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

@@ -84,6 +84,8 @@ final class TripStore {
 
     /// Kapak fotoğrafını değiştirir; eski dosya silinir.
     func setCoverPhoto(_ data: Data, for id: Trip.ID) throws {
+        // Düzenleme yetkisi yoksa dosyalara dokunma.
+        guard let current = trip(id), canEdit(current) else { throw CocoaError(.fileWriteNoPermission) }
         let name = try CoverImageStore.shared.save(data)
         let old = trip(id)?.coverPhoto
         update(id) { $0.coverPhoto = name }
