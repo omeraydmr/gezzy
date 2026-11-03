@@ -131,8 +131,8 @@ CREATE INDEX IF NOT EXISTS trip_reports_country_city ON trip_reports (country, c
   (alan tipleri, `year` 2000–2100, `month` 1–12, `currency` 3 harf, en çok 500 harcama, tutarlar 0…10⁹, `nights` 0–90, `travellers` 1–30, en çok 200 yer / 60 gün / gün başına 30 ziyaret,
   `payload` ≤ 64 KB, yer adlarında bağlantı/e-posta/telefon yok — mevcut `validate` kuralları). Aynı `id` gelirse üzerine
   yazar (aynı contributor ise), başkasınınsa 409. Günlük kota: kişi başına 20 rapor.
-- **`DELETE /trips/report/:id`**: yalnızca aynı contributor silebilir; satırı siler. 404/403 ayrımı yapmaz (bilgi
-  sızdırmasın): her durumda 204.
+- **`POST /trips/report/withdraw`** (gövde `{id}`; imzalı gövde gerektiği için DELETE değil): yalnızca aynı contributor silebilir; satırı siler. 404/403 ayrımı yapmaz (bilgi
+  sızdırmasın): her durumda 200.
 - **`POST /places/withdraw`** (gövde `Contribution` ile aynı): yerleri mevcut eşleştirme kuralıyla bulur, bu
   contributor'ın o yerlerdeki `votes` ve `transitions` satırlarını siler. Yeri silmez.
 - **Saklama:** `trip_reports` 24 aydan eski satırlar her `contribute` çağrısında silinir (ucuz, ayrı cron yok).
