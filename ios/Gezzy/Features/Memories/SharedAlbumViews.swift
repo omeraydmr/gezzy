@@ -64,6 +64,7 @@ struct SharedAlbumCard: View {
         .tray()
         .fullScreenCover(item: $viewer) { context in
             PhotoViewer(items: context.items, index: context.index)
+                .environment(store)
         }
         .confirmationDialog("Paylaşım kapatılsın mı?", isPresented: $confirmWithdraw, titleVisibility: .visible) {
             Button("Paylaşımı kapat", role: .destructive) { sync.withdraw(trip.id, store: store) }
@@ -191,7 +192,18 @@ struct PhotoViewer: View {
 
     let items: [Item]
     @State var index: Int
+    /// Verilirse (ve öğe cihaz arşivindense) alt çubukta favori/kapak/gizle çıkar.
+    var tripID: UUID?
     @Environment(\.dismiss) private var dismiss
+    @Environment(TripStore.self) private var store
+    @State private var coverToast = false
+    private var prefs: MemoryPrefs { .shared }
+
+    init(items: [Item], index: Int, tripID: UUID? = nil) {
+        self.items = items
+        self._index = State(initialValue: index)
+        self.tripID = tripID
+    }
 
     var body: some View {
         TabView(selection: $index) {
@@ -224,7 +236,58 @@ struct PhotoViewer: View {
             }
             .padding(16)
         }
+        .overlay(alignment: .bottom) { actionBar }
         .statusBarHidden()
+    }
+
+    @ViewBuilder
+    private var actionBar: some View {
+        if let tripID, items.indices.contains(index), case let .library(id) = items[index] {
+            VStack(spacing: 10) {
+                if coverToast {
+                    Text("Kapak yapıldı")
+                        .font(.system(.footnote, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 12).padding(.vertical, 6)
+                        .background(.black.opacity(0.5), in: Capsule())
+                        .transition(.opacity)
+                }
+                HStack(spacing: 28) {
+                    let isFavorite = prefs.favorites(tripID).contains(id)
+                    barButton(isFavorite ? "heart.fill" : "heart", "Favori") {
+                        prefs.toggleFavorite(id, trip: tripID)
+                    }
+                    barButton("photo.badge.checkmark", "Kapak yap") { setCover(id, tripID) }
+                    barButton("eye.slash", "Gizle") {
+                        prefs.setHidden(id, true, trip: tripID)
+                        dismiss()
+                    }
+                }
+                .padding(.horizontal, 24).padding(.vertical, 10)
+                .background(.black.opacity(0.45), in: Capsule())
+            }
+            .padding(.bottom, 24)
+        }
+    }
+
+    private func barButton(_ symbol: String, _ label: LocalizedStringKey, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 44, height: 44)
+        }
+        .accessibilityLabel(label)
+    }
+
+    private func setCover(_ photoID: String, _ tripID: UUID) {
+        Task {
+            guard let data = await PhotoLibrary.shared.albumJPEG(for: photoID),
+                  (try? store.setCoverPhoto(data, for: tripID)) != nil else { return }
+            withAnimation { coverToast = true }
+            try? await Task.sleep(for: .seconds(1.5))
+            withAnimation { coverToast = false }
+        }
     }
 }
 

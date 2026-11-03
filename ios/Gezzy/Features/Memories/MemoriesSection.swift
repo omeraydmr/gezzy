@@ -48,7 +48,8 @@ struct MemoriesSection: View {
             await AlbumSync.shared.sync(trip.id, store: store)
         }
         .fullScreenCover(item: $viewer) { context in
-            PhotoViewer(items: context.items, index: context.index)
+            PhotoViewer(items: context.items, index: context.index, tripID: trip.id)
+                .environment(store)
         }
     }
 
