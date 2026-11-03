@@ -48,7 +48,22 @@ final class MemoryPrefs {
         save()
     }
 
+    /// Seyahatin tüm gizlilerini tek yazımda geri getirir.
+    func unhideAll(trip: UUID) {
+        guard entries[trip]?.hidden.isEmpty == false else { return }
+        entries[trip]?.hidden = []
+        save()
+    }
+
+    /// Seyahat silinince tercihleri de silinir.
+    func remove(trip: UUID) {
+        guard entries.removeValue(forKey: trip) != nil else { return }
+        save()
+    }
+
     private func save() {
+        // Boş kayıtlar tutulmaz.
+        entries = entries.filter { !$0.value.favorites.isEmpty || !$0.value.hidden.isEmpty }
         guard let data = try? JSONEncoder().encode(entries) else { return }
         defaults.set(data, forKey: Self.key)
     }

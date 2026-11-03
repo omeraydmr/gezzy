@@ -79,6 +79,7 @@ final class TripStore {
         }
         trips.removeAll { $0.id == id }
         save()
+        removeLocalMemories(id)
         CloudSync.shared.tripDeleted(id)
     }
 
@@ -167,6 +168,13 @@ final class TripStore {
         guard trips.contains(where: { $0.id == id }) else { return }
         trips.removeAll { $0.id == id }
         save()
+        removeLocalMemories(id)
+    }
+
+    /// Cihazda tutulan fotoğraf tercihleri ve kart ayarları (fotoğraf kimlikleri) seyahatle birlikte silinir.
+    private func removeLocalMemories(_ id: Trip.ID) {
+        MemoryPrefs.shared.remove(trip: id)
+        ShareStudioStore.shared.remove(trip: id)
     }
 
     // MARK: Schengen 90/180

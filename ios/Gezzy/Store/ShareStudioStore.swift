@@ -48,6 +48,16 @@ final class ShareStudioStore {
         entry.configs[config.template.rawValue] = config
         entry.lastTemplate = config.template
         entries[tripID] = entry
+        persist()
+    }
+
+    /// Seyahat silinince kart ayarları (fotoğraf kimlikleri, metinler) de silinir.
+    func remove(trip tripID: UUID) {
+        guard entries.removeValue(forKey: tripID) != nil else { return }
+        persist()
+    }
+
+    private func persist() {
         guard let data = try? JSONEncoder().encode(entries) else { return }
         defaults.set(data, forKey: Self.key)
     }
