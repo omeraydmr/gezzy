@@ -6,10 +6,12 @@ export const REPORT_DAILY_QUOTA = 20;
 export const RETENTION_MS = 730 * 24 * 3600 * 1000;
 export const MAX_PAYLOAD_BYTES = 64 * 1024;
 
+const CATEGORIES = new Set(["stays", "transport", "food", "activities", "other"]);
+
 export interface ReportPlace { ref: string; name: string; lat: number; lon: number; kind: string; category?: string; liked?: number; verified?: boolean }
 export interface ReportStop { ref: string; startMinutes?: number; durationMinutes: number }
 export interface ReportDay { index: number; stops: ReportStop[] }
-export interface ReportExpense { day: number | null; category: string; amount: number; splitCount: number }
+export interface ReportExpense { day: number | null; category: string; amount: number; splitCount: number; originalAmount?: number; originalCurrency?: string }
 
 export interface RouteReport {
   reportID: string;
@@ -35,9 +37,9 @@ export function validateReport(x: unknown): RouteReport | string {
   if (typeof r !== "object" || r === null) return "body";
   if (typeof r.reportID !== "string" || !UUID.test(r.reportID)) return "reportID";
   if (typeof r.country !== "string" || !/^[A-Z]{2}$/.test(r.country)) return "country";
-  if (typeof r.city !== "string" || r.city.length < 1 || r.city.length > 80) return "city";
+  if (typeof r.city !== "string" || !isPlausibleName(r.city) || r.city.length > 80) return "city";
   const cities = r.cities ?? [];
-  if (!Array.isArray(cities) || cities.length > 20 || cities.some((c) => typeof c !== "string" || c.length < 1 || c.length > 80)) return "cities";
+  if (!Array.isArray(cities) || cities.length > 20 || cities.some((c) => typeof c !== "string" || c.length > 80 || !isPlausibleName(c))) return "cities";
   if (!int(r.year, 2000, 2100)) return "year";
   if (!int(r.month, 1, 12)) return "month";
   if (!int(r.nights, 0, 90)) return "nights";
@@ -51,7 +53,9 @@ export function validateReport(x: unknown): RouteReport | string {
     if (typeof p.name !== "string" || !isPlausibleName(p.name)) return "name";
     if (typeof p.lat !== "number" || typeof p.lon !== "number" || !(Math.abs(p.lat) <= 90) || !(Math.abs(p.lon) <= 180)) return "coordinate";
     if (typeof p.kind !== "string" || p.kind.length > 30) return "kind";
-    if (p.category !== undefined && (typeof p.category !== "string" || p.category.length > 60)) return "category";
+    if (p.category !== undefined && (typeof p.category !== "string" || p.category.length > 40 || (p.category !== "" && !isPlausibleName(p.category)))) return "category";
+    if (p.liked !== undefined && ![1, 0, -1].includes(p.liked)) return "liked";
+    if (p.verified !== undefined && typeof p.verified !== "boolean") return "verified";
   }
   if (!Array.isArray(r.days) || r.days.length > 60) return "days";
   for (const d of r.days) {
@@ -64,16 +68,22 @@ export function validateReport(x: unknown): RouteReport | string {
   }
   const budget = r.budget ?? {};
   if (typeof budget !== "object" || Array.isArray(budget) || Object.keys(budget).length > 30) return "budget";
-  for (const [k, v] of Object.entries(budget)) if (k.length > 40 || !int(v, 0, 1e9)) return "budget";
+  for (const [k, v] of Object.entries(budget)) if (!CATEGORIES.has(k) || !int(v, 0, 1e9)) return "budget";
   const expenses = r.expenses ?? [];
   if (!Array.isArray(expenses) || expenses.length > 500) return "expenses";
   for (const e of expenses) {
-    if (typeof e?.category !== "string" || e.category.length > 40 || !int(e.amount, 0, 1e9) || !int(e.splitCount, 1, 30)) return "expense";
+    if (typeof e?.category !== "string" || !CATEGORIES.has(e.category) || !int(e.amount, 0, 1e9) || !int(e.splitCount, 1, 30)) return "expense";
     if (e.day !== null && e.day !== undefined && !int(e.day, 0, 1000)) return "expense";
+    if (e.originalAmount !== undefined && !int(e.originalAmount, 0, 1e9)) return "expense";
+    if (e.originalCurrency !== undefined && (typeof e.originalCurrency !== "string" || !/^[A-Z]{3}$/.test(e.originalCurrency))) return "expense";
   }
   const clean: RouteReport = {
     reportID: r.reportID, country: r.country, city: r.city, cities, year: r.year, month: r.month, nights: r.nights,
-    travellers: r.travellers, currency: r.currency, places: r.places, days: r.days, budget: budget as Record<string, number>, expenses,
+    travellers: r.travellers, currency: r.currency,
+    places: r.places.map((p) => ({ ref: p.ref, name: p.name, lat: p.lat, lon: p.lon, kind: p.kind, category: p.category ?? "", liked: p.liked ?? 0, verified: p.verified ?? false })),
+    days: r.days.map((d) => ({ index: d.index, stops: d.stops.map((s) => ({ ref: s.ref, startMinutes: s.startMinutes ?? undefined, durationMinutes: s.durationMinutes })) })),
+    budget: { ...(budget as Record<string, number>) },
+    expenses: expenses.map((e) => ({ day: e.day ?? null, category: e.category, amount: e.amount, splitCount: e.splitCount, originalAmount: e.originalAmount, originalCurrency: e.originalCurrency })),
   };
   if (JSON.stringify(clean).length > MAX_PAYLOAD_BYTES) return "size";
   return clean;
@@ -84,12 +94,14 @@ export async function submitReport(db: Database, contributor: string, r: RouteRe
   await db.prepare("DELETE FROM trip_reports WHERE created_at < ?").bind(now - RETENTION_MS).run();
   const existing = await db.prepare("SELECT contributor FROM trip_reports WHERE id = ?").bind(r.reportID).first<{ contributor: string }>();
   if (existing && existing.contributor !== contributor) return "conflict";
-  const day = "r:" + new Date(now).toISOString().slice(0, 10);
-  const used = await db.prepare("SELECT count FROM quotas WHERE contributor = ? AND day = ?").bind(contributor, day).first<{ count: number }>();
-  if ((used?.count ?? 0) + 1 > REPORT_DAILY_QUOTA) return "quota";
-  await db.prepare(
-    "INSERT INTO quotas (contributor, day, count) VALUES (?, ?, 1) ON CONFLICT (contributor, day) DO UPDATE SET count = count + 1",
-  ).bind(contributor, day).run();
+  if (!existing) { // aynı raporun yeniden gönderimi (yeniden deneme) kota harcamaz
+    const day = "r:" + new Date(now).toISOString().slice(0, 10);
+    const used = await db.prepare("SELECT count FROM quotas WHERE contributor = ? AND day = ?").bind(contributor, day).first<{ count: number }>();
+    if ((used?.count ?? 0) + 1 > REPORT_DAILY_QUOTA) return "quota";
+    await db.prepare(
+      "INSERT INTO quotas (contributor, day, count) VALUES (?, ?, 1) ON CONFLICT (contributor, day) DO UPDATE SET count = count + 1",
+    ).bind(contributor, day).run();
+  }
   const payload = JSON.stringify({ cities: r.cities, places: r.places, days: r.days, budget: r.budget, expenses: r.expenses });
   await db.prepare(
     `INSERT INTO trip_reports (id, contributor, country, city, year, month, nights, travellers, currency, payload, created_at)

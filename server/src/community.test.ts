@@ -1,28 +1,7 @@
 import assert from "node:assert/strict";
-import { DatabaseSync } from "node:sqlite";
-import { readFileSync } from "node:fs";
 import test from "node:test";
 import { contribute, contributorHash, DAILY_QUOTA, isPlausibleName, nearby, nextPlaces, report, validate, withdraw, type Contribution, type Database } from "./community.ts";
-
-/** node:sqlite'ı D1 arayüzüne uyduran küçük adaptör. */
-function d1(): Database {
-  const db = new DatabaseSync(":memory:");
-  for (const file of ["0001_community.sql", "0002_attest_reports.sql", "0003_trip_reports.sql"]) {
-    db.exec(readFileSync(new URL(`../migrations/${file}`, import.meta.url), "utf8"));
-  }
-  return {
-    prepare(sql: string) {
-      let values: unknown[] = [];
-      const statement = {
-        bind(...v: unknown[]) { values = v; return statement; },
-        async first<T>() { return (db.prepare(sql).get(...(values as never[])) ?? null) as T | null; },
-        async all<T>() { return { results: db.prepare(sql).all(...(values as never[])) as T[] }; },
-        async run() { return db.prepare(sql).run(...(values as never[])); },
-      };
-      return statement;
-    },
-  };
-}
+import { d1 } from "./testdb.ts";
 
 const castle = { ref: "a", name: "São Jorge Castle", lat: 38.7139, lon: -9.1335, kind: "sight", category: "Kale", liked: 1, verified: true };
 const lift = { ref: "b", name: "Santa Justa Lift", lat: 38.7121, lon: -9.1394, kind: "sight", liked: 1, verified: false };

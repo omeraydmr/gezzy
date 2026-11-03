@@ -1,29 +1,7 @@
 import assert from "node:assert/strict";
-import { DatabaseSync } from "node:sqlite";
-import { readFileSync } from "node:fs";
 import test from "node:test";
-import type { Database } from "./community.ts";
+import { d1 } from "./testdb.ts";
 import { REPORT_DAILY_QUOTA, RETENTION_MS, submitReport, validateReport, withdrawReport, type RouteReport } from "./reports.ts";
-
-/** node:sqlite'ı D1 arayüzüne uyduran küçük adaptör. */
-function d1(): Database {
-  const db = new DatabaseSync(":memory:");
-  for (const file of ["0001_community.sql", "0002_attest_reports.sql", "0003_trip_reports.sql"]) {
-    db.exec(readFileSync(new URL(`../migrations/${file}`, import.meta.url), "utf8"));
-  }
-  return {
-    prepare(sql: string) {
-      let values: unknown[] = [];
-      const statement = {
-        bind(...v: unknown[]) { values = v; return statement; },
-        async first<T>() { return (db.prepare(sql).get(...(values as never[])) ?? null) as T | null; },
-        async all<T>() { return { results: db.prepare(sql).all(...(values as never[])) as T[] }; },
-        async run() { return db.prepare(sql).run(...(values as never[])); },
-      };
-      return statement;
-    },
-  };
-}
 
 const report = (o: Record<string, unknown> = {}) => ({
   reportID: "8F0C2A4E-1B2C-4D5E-8F90-123456789ABC", country: "DK", city: "Kopenhag", cities: ["Kopenhag"],
@@ -82,4 +60,32 @@ test("reports older than 24 months are pruned on submit", async () => {
   await submitReport(db, "u2", validateReport(report({ reportID: "8F0C2A4E-1B2C-4D5E-8F90-000000000777" })) as RouteReport);
   const { results } = await db.prepare("SELECT id FROM trip_reports").all<{ id: string }>();
   assert.equal(results.length, 1);
+});
+
+test("re-submitting a stored report does not consume quota", async () => {
+  const db = d1();
+  for (let i = 0; i < REPORT_DAILY_QUOTA; i++) {
+    const id = `8F0C2A4E-1B2C-4D5E-8F90-${String(i).padStart(12, "0")}`;
+    await submitReport(db, "u1", validateReport(report({ reportID: id })) as RouteReport);
+  }
+  const again = validateReport(report({ reportID: "8F0C2A4E-1B2C-4D5E-8F90-000000000003" })) as RouteReport;
+  assert.equal(await submitReport(db, "u1", again), "ok");
+});
+
+test("stored payload is whitelisted and keeps original amounts", async () => {
+  const db = d1();
+  const r = validateReport(report({
+    note: "secret",
+    places: [{ ref: "p0", name: "Nyhavn", lat: 55.6798, lon: 12.5907, kind: "sight", category: "", liked: 0, verified: false, note: "secret" }],
+    expenses: [{ day: 0, category: "food", amount: 62000, splitCount: 3, originalAmount: 100, originalCurrency: "EUR", memo: "secret" }],
+  }));
+  assert.equal(typeof r, "object");
+  await submitReport(db, "u1", r as RouteReport);
+  const row = await db.prepare("SELECT payload FROM trip_reports").first<{ payload: string }>();
+  assert.ok(!row!.payload.includes("secret"));
+  const payload = JSON.parse(row!.payload);
+  assert.equal(payload.expenses[0].originalAmount, 100);
+  assert.equal(payload.expenses[0].originalCurrency, "EUR");
+  assert.equal(typeof validateReport(report({ budget: { weird: 1 } })), "string");
+  assert.equal(typeof validateReport(report({ expenses: [{ day: 0, category: "food", amount: 1, splitCount: 1, originalCurrency: "euro" }] })), "string");
 });

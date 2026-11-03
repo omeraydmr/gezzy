@@ -131,6 +131,7 @@ async function trips(request: Request, url: URL, env: Env): Promise<Response> {
   if (request.method !== "POST" || (url.pathname !== "/trips/report" && url.pathname !== "/trips/report/withdraw")) {
     return json({ error: "not found" }, 404);
   }
+  if (Number(request.headers.get("content-length") ?? 0) > MAX_PAYLOAD_BYTES) return json({ error: "too large" }, 413);
   const bytes = new Uint8Array(await request.arrayBuffer());
   if (bytes.length > MAX_PAYLOAD_BYTES) return json({ error: "too large" }, 413);
   const who = await sender(request, bytes, env);
