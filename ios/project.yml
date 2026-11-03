@@ -96,6 +96,7 @@ targets:
         INFOPLIST_KEY_NSCameraUsageDescription: "Harcama makbuzlarının ve belgelerin fotoğrafını çekmek için kamerayı kullanır."
         INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription: "Seyahatin uçuşlarını, otel giriş ve çıkışlarını ve saatli duraklarını Takvim'deki Gezzy takvimine ekler; tekrar aktarınca günceller."
         INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "Seyahat tarihlerindeki fotoğraflarını anlara ayırıp haritada göstermek için fotoğraf arşivini okur; fotoğraflar cihazdan çıkmaz."
+        INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription: "Paylaşım kartını Fotoğraflar'a kaydetmek için."
         DEVELOPMENT_LANGUAGE: tr
         ENABLE_PREVIEWS: YES
         SWIFT_EMIT_LOC_STRINGS: YES

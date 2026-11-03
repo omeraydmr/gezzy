@@ -1,3 +1,4 @@
+import Photos
 import SwiftUI
 import GezzyKit
 
@@ -17,13 +18,29 @@ struct ShareStudioView: View {
     /// Anlardan türetilenler; her body geçişinde değil, anlar değişince hesaplanır.
     @State private var highlights: [MemoryHighlights.Highlight]
     @State private var visible: [PhotoClusterer.Moment]
+    /// Önizleme görselleri (küçük boy) ve rota haritası.
+    @State private var previewPhotos: [UIImage] = []
+    @State private var mapImage: UIImage?
+    @State private var busy: ExportAction?
+    @State private var shareItem: ShareImage?
+    @State private var toast: LocalizedStringKey?
+    @State private var toastTask: Task<Void, Never>?
+    private let summary: TripSummary
+    private let hasRoute: Bool
     private var studioStore: ShareStudioStore { .shared }
+
+    private enum ExportAction { case save, share }
 
     init(trip: Trip, request: StudioRequest, moments: [PhotoClusterer.Moment]? = nil) {
         self.trip = trip
         self.request = request
         self.moments = moments
-        var config = ShareStudioStore.shared.config(for: trip.id, template: request.template)
+        let hasRoute = CardRenderer.hasRoute(trip)
+        self.hasRoute = hasRoute
+        self.summary = TripSummary.make(trip)
+        // Konumlu durak yoksa Rota pasif; kartpostala düşülür.
+        let template = request.template == .route && !hasRoute ? .postcard : request.template
+        var config = ShareStudioStore.shared.config(for: trip.id, template: template)
         if !request.photoIDs.isEmpty { config.photoIDs = request.photoIDs }
         // Premium bilgisi ortamdan gelir; işaret kuralı görünüm açılınca uygulanır.
         _config = State(initialValue: Self.sanitized(config, tripID: trip.id, moments: moments, isPremium: true))
@@ -86,34 +103,51 @@ struct ShareStudioView: View {
         }
         .onDisappear { studioStore.save(config, for: trip.id) }
         .task(id: config.photoIDs.first) { await loadPhotoPalette() }
+        .task(id: config.photoIDs) { await loadPreviewPhotos() }
+        .task(id: "\(config.template)-\(config.format)-\(resolvedPalette.id)-\(resolvedPalette.accent)") {
+            await loadMap()
+        }
+        .sheet(item: $shareItem) { item in
+            ActivityView(items: [item.image])
+                .presentationDetents([.medium, .large])
+                .ignoresSafeArea()
+        }
     }
 
     // MARK: Önizleme
 
-    /// Yer tutucu; şablon görünümleri Task 5'te gelir.
+    /// Kartın canlı önizlemesi: seçili biçim oranında, alana sığar.
     private var preview: some View {
-        let palette = resolvedPalette
-        return RoundedRectangle(cornerRadius: 20, style: .continuous)
-            .fill(LinearGradient(colors: [Color(hex: palette.bands[0]), Color(hex: palette.accent)],
-                                 startPoint: .top, endPoint: .bottom))
-            .overlay {
-                VStack(spacing: 8) {
-                    Image(systemName: config.template.symbol)
-                        .font(.system(size: 28, weight: .semibold))
-                    Text(config.template.title).font(.tBodyStrong)
-                    Text(config.format.title).font(.caption)
+        GeometryReader { geometry in
+            let aspect = config.format.aspect
+            let width = max(1, min(geometry.size.width - 32, geometry.size.height * aspect))
+            CardTemplateView(trip: trip, summary: summary, config: previewConfig, photos: previewPhotos,
+                             mapImage: mapImage, palette: resolvedPalette, width: width)
+                .clipShape(RoundedRectangle(cornerRadius: 12 * width / 360 + 4, style: .continuous))
+                .shadow(color: .black.opacity(0.18), radius: 16, y: 8)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text("\(config.template.title) önizlemesi"))
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .overlay(alignment: .bottom) {
+                    if let toast {
+                        Text(toast)
+                            .font(.system(.footnote, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 12).padding(.vertical, 6)
+                            .background(.black.opacity(0.6), in: Capsule())
+                            .padding(.bottom, 8)
+                            .transition(.opacity)
+                    }
                 }
-                .foregroundStyle(.white)
-            }
-            .overlay(alignment: .bottom) {
-                if config.effectiveShowsBrand(isPremium: entitlements.isPremium) {
-                    GezzyMark(onDark: true).padding(.bottom, 12)
-                }
-            }
-            .aspectRatio(config.format.aspect, contentMode: .fit)
-            .shadow(color: .black.opacity(0.18), radius: 16, y: 8)
-            .frame(maxWidth: .infinity)
-            .animation(.spring(duration: 0.3), value: config.format)
+        }
+        .animation(.spring(duration: 0.3), value: config.format)
+    }
+
+    /// İşaret kuralı uygulanmış config (ücretsizde hep açık).
+    private var previewConfig: ShareCardConfig {
+        var config = config
+        config.showsBrand = config.effectiveShowsBrand(isPremium: entitlements.isPremium)
+        return config
     }
 
     /// Seçili palet: seyahat, fotoğraftan ya da hazır palet.
@@ -128,7 +162,8 @@ struct ShareStudioView: View {
     // MARK: Şablon şeridi
 
     private var templateStrip: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
+        VStack(alignment: .leading, spacing: 8) {
+            ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
                 ForEach(ShareCardConfig.Template.allCases, id: \.self) { template in
                     let isSelected = template == config.template
@@ -143,10 +178,18 @@ struct ShareStudioView: View {
                             .background(isSelected ? Color.ink : Color.tray, in: Capsule())
                     }
                     .buttonStyle(.plain)
+                    .disabled(template == .route && !hasRoute)
+                    .opacity(template == .route && !hasRoute ? 0.4 : 1)
                     .accessibilityAddTraits(isSelected ? .isSelected : [])
                 }
             }
             .padding(.horizontal, 2)
+            }
+            if !hasRoute {
+                Text("Rota için konumlu durak gerekli")
+                    .font(.caption)
+                    .foregroundStyle(Color.ink3)
+            }
         }
     }
 
@@ -162,32 +205,114 @@ struct ShareStudioView: View {
 
     // MARK: Alt çubuk
 
-    /// Kaydet ve Paylaş; Task 5'te görsel üretimine bağlanır.
+    /// Kaydet (Fotoğraflar'a) ve Paylaş (sistem paylaşım sayfası); üretim sırasında düğmede ilerleme.
     private var actionBar: some View {
         HStack(spacing: 12) {
             Button {
+                export(.save)
             } label: {
-                Label("Kaydet", systemImage: "square.and.arrow.down")
-                    .font(.system(.body, weight: .medium))
-                    .foregroundStyle(Color.ink)
-                    .frame(maxWidth: .infinity, minHeight: 56)
-                    .background(Color.tray, in: Capsule())
+                Group {
+                    if busy == .save {
+                        ProgressView()
+                    } else {
+                        Label("Kaydet", systemImage: "square.and.arrow.down")
+                    }
+                }
+                .font(.system(.body, weight: .medium))
+                .foregroundStyle(Color.ink)
+                .frame(maxWidth: .infinity, minHeight: 56)
+                .background(Color.tray, in: Capsule())
             }
             .buttonStyle(.plain)
             Button {
+                export(.share)
             } label: {
-                Label("Paylaş", systemImage: "square.and.arrow.up")
+                if busy == .share {
+                    ProgressView().tint(Color.onInk)
+                } else {
+                    Label("Paylaş", systemImage: "square.and.arrow.up")
+                }
             }
             .buttonStyle(.primary)
         }
-        .disabled(true)
+        .disabled(!canExport || busy != nil)
         .padding(.horizontal, 16)
         .padding(.top, 8)
         .padding(.bottom, 8)
         .background(Color.canvas)
     }
 
+    /// Kolajda en az 2 fotoğraf; rota konumlu durak ister.
+    private var canExport: Bool {
+        switch config.template {
+        case .route: hasRoute
+        case .collage: config.photoIDs.count >= ShareCardConfig.photoLimit(.collage).lowerBound
+        case .postcard, .stats, .ticket: true
+        }
+    }
+
+    private func export(_ action: ExportAction) {
+        guard busy == nil else { return }
+        busy = action
+        let config = config, palette = resolvedPalette, isPremium = entitlements.isPremium
+        Task {
+            let image = await CardRenderer.render(trip: trip, config: config, palette: palette, isPremium: isPremium)
+            defer { busy = nil }
+            guard let image else {
+                showToast("Kart oluşturulamadı")
+                return
+            }
+            switch action {
+            case .share: shareItem = ShareImage(image: image)
+            case .save: showToast(await save(image) ? "Fotoğraflar'a kaydedildi" : "Fotoğraflar'a kaydedilemedi")
+            }
+        }
+    }
+
+    /// Yalnızca ekleme izniyle Fotoğraflar'a yazar.
+    private func save(_ image: UIImage) async -> Bool {
+        let status = await PHPhotoLibrary.requestAuthorization(for: .addOnly)
+        guard status == .authorized || status == .limited else { return false }
+        do {
+            try await PHPhotoLibrary.shared().performChanges {
+                PHAssetChangeRequest.creationRequestForAsset(from: image)
+            }
+            return true
+        } catch {
+            return false
+        }
+    }
+
+    private func showToast(_ text: LocalizedStringKey) {
+        toastTask?.cancel()
+        toastTask = Task {
+            withAnimation { toast = text }
+            try? await Task.sleep(for: .seconds(1.8))
+            guard !Task.isCancelled else { return }
+            withAnimation { toast = nil }
+        }
+    }
+
     // MARK: Yardımcılar
+
+    /// Önizleme fotoğrafları küçük boyda (600 px).
+    private func loadPreviewPhotos() async {
+        var images: [UIImage] = []
+        for id in config.photoIDs {
+            if let image = await PhotoLibrary.shared.thumbnail(for: id, side: 600) { images.append(image) }
+        }
+        guard !Task.isCancelled else { return }
+        previewPhotos = images
+    }
+
+    /// Rota şablonunda harita; çıktıyla aynı boyutta üretilir ve önbelleğe alınır.
+    private func loadMap() async {
+        guard config.template == .route, hasRoute else { return }
+        let image = await CardRenderer.mapSnapshot(trip: trip, palette: resolvedPalette,
+                                                   size: CardRenderer.mapSize(format: config.format))
+        guard !Task.isCancelled else { return }
+        mapImage = image
+    }
 
     private func loadPhotoPalette() async {
         guard let id = config.photoIDs.first,
@@ -223,4 +348,21 @@ struct ShareStudioView: View {
         }
         return (MemoryHighlights.pick(moments: moments, favorites: favorites, hidden: hidden), visible)
     }
+}
+
+/// Paylaşım sayfasına verilen görsel.
+private struct ShareImage: Identifiable {
+    let id = UUID()
+    let image: UIImage
+}
+
+/// Sistem paylaşım sayfası.
+struct ActivityView: UIViewControllerRepresentable {
+    let items: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: items, applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}
 }

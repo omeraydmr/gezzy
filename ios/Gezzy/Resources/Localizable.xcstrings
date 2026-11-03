@@ -123,6 +123,16 @@
         }
       }
     },
+    "%@ önizlemesi" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ preview"
+          }
+        }
+      }
+    },
     "%lld gizli fotoğraf" : {
       "localizations" : {
         "en" : {
@@ -363,6 +373,36 @@
         }
       }
     },
+    "Fotoğraflar'a kaydedildi" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saved to Photos"
+          }
+        }
+      }
+    },
+    "Fotoğraflar'a kaydedilemedi" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't save to Photos"
+          }
+        }
+      }
+    },
+    "Gece" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nights"
+          }
+        }
+      }
+    },
     "Geri yüklenecek satın alma bulunamadı." : {
       "localizations" : {
         "en" : {
@@ -459,6 +499,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Create card"
+          }
+        }
+      }
+    },
+    "Kart oluşturulamadı" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't create the card"
           }
         }
       }
@@ -599,6 +649,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Route"
+          }
+        }
+      }
+    },
+    "Rota için konumlu durak gerekli" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Route needs stops with a location"
           }
         }
       }
@@ -749,6 +809,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Be at the airport by %@"
+          }
+        }
+      }
+    },
+    "km" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "km"
           }
         }
       }
