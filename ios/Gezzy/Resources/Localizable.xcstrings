@@ -243,6 +243,16 @@
         }
       }
     },
+    "Ayarlar'dan Fotoğraflar iznini aç" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Allow Photos access in Settings"
+          }
+        }
+      }
+    },
     "Bilgiler" : {
       "localizations" : {
         "en" : {
@@ -479,6 +489,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Spent"
+          }
+        }
+      }
+    },
+    "Harita oluşturulamadı" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't create the map"
+          }
+        }
+      }
+    },
+    "Harita oluşturulamadı, internet bağlantını kontrol et." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't create the map, check your connection."
           }
         }
       }

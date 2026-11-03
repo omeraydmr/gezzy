@@ -12,6 +12,8 @@ struct CardTemplateView: View {
     let mapImage: UIImage?
     let palette: TripPalette
     let width: CGFloat
+    /// Önizlemede harita alınamadıysa (çevrimdışı); nil harita bu durumda yükleniyor sayılmaz.
+    var mapFailed = false
 
     private var u: CGFloat { width / 360 }
     private var height: CGFloat { width / config.format.aspect }
@@ -215,9 +217,14 @@ struct CardTemplateView: View {
                 if let mapImage {
                     photoFill(mapImage)
                 } else {
-                    VStack(spacing: 8 * u) {
-                        Image(systemName: "map").font(font(34))
-                        Text("Rota için konumlu durak gerekli").font(font(13, .medium))
+                    Group {
+                        if !CardRenderer.hasRoute(trip) {
+                            mapNote(String(localized: "Rota için konumlu durak gerekli"))
+                        } else if mapFailed {
+                            mapNote(String(localized: "Harita oluşturulamadı"))
+                        } else {
+                            ProgressView().controlSize(.large)
+                        }
                     }
                     .foregroundStyle(Color.ink.opacity(0.55))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -236,8 +243,10 @@ struct CardTemplateView: View {
                     .lineLimit(1)
                 if !legend.isEmpty {
                     Grid(alignment: .leading, horizontalSpacing: 12 * u, verticalSpacing: 6 * u) {
-                        let rows = legend.chunked(5).prefix(isStory ? 3 : 1)
-                        ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
+                        let rows = Array(legend.chunked(5).prefix(isStory ? 3 : 1))
+                        // Sığmayan günler "+N" ile.
+                        let hiddenDays = legend.count - rows.reduce(0) { $0 + $1.count }
+                        ForEach(Array(rows.enumerated()), id: \.offset) { rowIndex, row in
                             GridRow {
                                 ForEach(row, id: \.self) { day in
                                     HStack(spacing: 4 * u) {
@@ -247,6 +256,11 @@ struct CardTemplateView: View {
                                             .foregroundStyle(Color.ink2)
                                             .lineLimit(1)
                                     }
+                                }
+                                if rowIndex == rows.count - 1 && hiddenDays > 0 {
+                                    Text(verbatim: "+\(hiddenDays)")
+                                        .font(font(10, .bold))
+                                        .foregroundStyle(Color.ink2)
                                 }
                             }
                         }
@@ -263,6 +277,14 @@ struct CardTemplateView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .background(Color(hex: palette.softLight))
         }
+    }
+
+    private func mapNote(_ text: String) -> some View {
+        VStack(spacing: 8 * u) {
+            Image(systemName: "map").font(font(34))
+            Text(text).font(font(13, .medium)).multilineTextAlignment(.center)
+        }
+        .padding(.horizontal, 24 * u)
     }
 
     // MARK: Kolaj
@@ -430,11 +452,13 @@ struct CardTemplateView: View {
         var fixed = [
             CardStat(id: nil, value: AppFormat.dateRange(trip.startDate, trip.endDate), label: String(localized: "Tarih")),
             CardStat(id: nil, value: "\(summary.nights)", label: String(localized: "Gece")),
+            CardStat(id: nil, value: "\(summary.travellers)", label: String(localized: "Kişi")),
         ]
         if let seat = trip.primaryFlight?.seat, !seat.isEmpty {
             fixed.append(CardStat(id: nil, value: seat, label: String(localized: "Koltuk")))
         }
-        let extra = statItems.chunked(3).prefix(isSquare ? 1 : 2)
+        // Kişi her zaman sabit alanda; anahtarlardan tekrar gelmez.
+        let extra = statItems.filter { $0.stat != .travellers }.chunked(3).prefix(isSquare ? 1 : 2)
         let rows = [fixed] + extra
         return Grid(alignment: .leading, horizontalSpacing: 12 * u, verticalSpacing: 10 * u) {
             ForEach(rows.indices, id: \.self) { index in

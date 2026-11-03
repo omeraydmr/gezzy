@@ -23,13 +23,21 @@ struct ShareStudioView: View {
     @State private var mapImage: UIImage?
     @State private var busy: ExportAction?
     @State private var shareItem: ShareImage?
-    @State private var toast: LocalizedStringKey?
+    @State private var mapFailed = false
+    @State private var toast: Toast?
+    @State private var exportTask: Task<Void, Never>?
     @State private var toastTask: Task<Void, Never>?
     private let summary: TripSummary
     private let hasRoute: Bool
     private var studioStore: ShareStudioStore { .shared }
 
     private enum ExportAction { case save, share }
+
+    /// Kısa bilgi; izin reddinde Ayarlar'ı açar.
+    private struct Toast {
+        let text: LocalizedStringKey
+        var opensSettings = false
+    }
 
     init(trip: Trip, request: StudioRequest, moments: [PhotoClusterer.Moment]? = nil) {
         self.trip = trip
@@ -101,9 +109,12 @@ struct ShareStudioView: View {
             guard !Task.isCancelled else { return }
             studioStore.save(config, for: trip.id)
         }
-        .onDisappear { studioStore.save(config, for: trip.id) }
+        .onDisappear {
+            studioStore.save(config, for: trip.id)
+            exportTask?.cancel()
+        }
         .task(id: config.photoIDs.first) { await loadPhotoPalette() }
-        .task(id: config.photoIDs) { await loadPreviewPhotos() }
+        .task(id: "\(config.template)-\(config.photoIDs)") { await loadPreviewPhotos() }
         .task(id: "\(config.template)-\(config.format)-\(resolvedPalette.id)-\(resolvedPalette.accent)") {
             await loadMap()
         }
@@ -122,7 +133,7 @@ struct ShareStudioView: View {
             let aspect = config.format.aspect
             let width = max(1, min(geometry.size.width - 32, geometry.size.height * aspect))
             CardTemplateView(trip: trip, summary: summary, config: previewConfig, photos: previewPhotos,
-                             mapImage: mapImage, palette: resolvedPalette, width: width)
+                             mapImage: mapImage, palette: resolvedPalette, width: width, mapFailed: mapFailed)
                 .clipShape(RoundedRectangle(cornerRadius: 12 * width / 360 + 4, style: .continuous))
                 .shadow(color: .black.opacity(0.18), radius: 16, y: 8)
                 .accessibilityElement(children: .ignore)
@@ -130,13 +141,28 @@ struct ShareStudioView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .overlay(alignment: .bottom) {
                     if let toast {
-                        Text(toast)
-                            .font(.system(.footnote, weight: .semibold))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 12).padding(.vertical, 6)
-                            .background(.black.opacity(0.6), in: Capsule())
-                            .padding(.bottom, 8)
-                            .transition(.opacity)
+                        Group {
+                            if toast.opensSettings {
+                                Button {
+                                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                                        UIApplication.shared.open(url)
+                                    }
+                                } label: {
+                                    Label(toast.text, systemImage: "gearshape")
+                                }
+                                .buttonStyle(.plain)
+                            } else {
+                                Text(toast.text)
+                            }
+                        }
+                        .font(.system(.footnote, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 12).padding(.vertical, 6)
+                        .background(.black.opacity(0.6), in: Capsule())
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 8)
+                        .transition(.opacity)
                     }
                 }
         }
@@ -252,42 +278,58 @@ struct ShareStudioView: View {
     }
 
     private func export(_ action: ExportAction) {
-        guard busy == nil else { return }
+        exportTask?.cancel()
         busy = action
         let config = config, palette = resolvedPalette, isPremium = entitlements.isPremium
-        Task {
-            let image = await CardRenderer.render(trip: trip, config: config, palette: palette, isPremium: isPremium)
-            defer { busy = nil }
-            guard let image else {
-                showToast("Kart oluşturulamadı")
+        exportTask = Task {
+            defer { if !Task.isCancelled { busy = nil } }
+            let image: UIImage
+            do {
+                image = try await CardRenderer.render(trip: trip, config: config, palette: palette, isPremium: isPremium)
+            } catch CardRenderer.RenderError.map {
+                showToast(Toast(text: "Harita oluşturulamadı, internet bağlantını kontrol et."))
+                return
+            } catch is CancellationError {
+                return
+            } catch {
+                showToast(Toast(text: "Kart oluşturulamadı"))
                 return
             }
+            guard !Task.isCancelled else { return }
             switch action {
-            case .share: shareItem = ShareImage(image: image)
-            case .save: showToast(await save(image) ? "Fotoğraflar'a kaydedildi" : "Fotoğraflar'a kaydedilemedi")
+            case .share:
+                shareItem = ShareImage(image: image)
+            case .save:
+                switch await save(image) {
+                case .saved: showToast(Toast(text: "Fotoğraflar'a kaydedildi"))
+                case .denied: showToast(Toast(text: "Ayarlar'dan Fotoğraflar iznini aç", opensSettings: true), seconds: 4)
+                case .failed: showToast(Toast(text: "Fotoğraflar'a kaydedilemedi"))
+                }
             }
         }
     }
 
+    private enum SaveResult { case saved, denied, failed }
+
     /// Yalnızca ekleme izniyle Fotoğraflar'a yazar.
-    private func save(_ image: UIImage) async -> Bool {
+    private func save(_ image: UIImage) async -> SaveResult {
         let status = await PHPhotoLibrary.requestAuthorization(for: .addOnly)
-        guard status == .authorized || status == .limited else { return false }
+        guard status == .authorized || status == .limited else { return .denied }
         do {
             try await PHPhotoLibrary.shared().performChanges {
                 PHAssetChangeRequest.creationRequestForAsset(from: image)
             }
-            return true
+            return .saved
         } catch {
-            return false
+            return .failed
         }
     }
 
-    private func showToast(_ text: LocalizedStringKey) {
+    private func showToast(_ next: Toast, seconds: Double = 1.8) {
         toastTask?.cancel()
         toastTask = Task {
-            withAnimation { toast = text }
-            try? await Task.sleep(for: .seconds(1.8))
+            withAnimation { toast = next }
+            try? await Task.sleep(for: .seconds(seconds))
             guard !Task.isCancelled else { return }
             withAnimation { toast = nil }
         }
@@ -298,7 +340,7 @@ struct ShareStudioView: View {
     /// Önizleme fotoğrafları küçük boyda (600 px).
     private func loadPreviewPhotos() async {
         var images: [UIImage] = []
-        for id in config.photoIDs {
+        for id in config.photoIDs.prefix(ShareCardConfig.photoLimit(config.template).upperBound) {
             if let image = await PhotoLibrary.shared.thumbnail(for: id, side: 600) { images.append(image) }
         }
         guard !Task.isCancelled else { return }
@@ -308,10 +350,11 @@ struct ShareStudioView: View {
     /// Rota şablonunda harita; çıktıyla aynı boyutta üretilir ve önbelleğe alınır.
     private func loadMap() async {
         guard config.template == .route, hasRoute else { return }
+        mapFailed = false
         let image = await CardRenderer.mapSnapshot(trip: trip, palette: resolvedPalette,
                                                    size: CardRenderer.mapSize(format: config.format))
         guard !Task.isCancelled else { return }
-        mapImage = image
+        if let image { mapImage = image } else { mapImage = nil; mapFailed = true }
     }
 
     private func loadPhotoPalette() async {

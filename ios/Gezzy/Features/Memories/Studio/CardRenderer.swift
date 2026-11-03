@@ -6,33 +6,54 @@ import GezzyKit
 /// Paylaşım kartını görsele çevirir: fotoğrafları ve rota haritasını yükler, `ImageRenderer` ile 1080 px çizer.
 @MainActor
 enum CardRenderer {
+    enum RenderError: Error {
+        /// Harita görüntüsü alınamadı (çevrimdışı, MapKit hatası).
+        case map
+        case image
+    }
+
     /// Kartın görseli. Gezzy işareti `effectiveShowsBrand` ile belirlenir: ücretsiz kullanıcıda hep çizilir.
+    /// Rota şablonunda harita alınamazsa `RenderError.map` (yer tutuculu kart dışa verilmez).
     static func render(trip: Trip, config: ShareCardConfig, palette: TripPalette, isPremium: Bool,
-                       width: CGFloat = 1080) async -> UIImage? {
+                       width: CGFloat = 1080) async throws -> UIImage {
         var config = config
         config.showsBrand = config.effectiveShowsBrand(isPremium: isPremium)
         let ids = Array(config.photoIDs.prefix(ShareCardConfig.photoLimit(config.template).upperBound))
+        // Kartpostal tam kaplar (story'de yumuşamasın); kolajda hücre başına 2 kat yeter.
+        let maxPixelSize: CGFloat = config.template == .collage
+            ? (width / CGFloat(ShareCardConfig.collageColumns(count: ids.count, format: config.format)) * 2).rounded()
+            : 2400
         var photos: [UIImage] = []
         for id in ids {
-            if let image = await PhotoLibrary.shared.fullImage(for: id, maxPixelSize: 1600) { photos.append(image) }
+            try Task.checkCancellation()
+            if let image = await PhotoLibrary.shared.fullImage(for: id, maxPixelSize: maxPixelSize) {
+                photos.append(image)
+            }
         }
         let height = (width / config.format.aspect).rounded()
         var mapImage: UIImage?
         if config.template == .route {
-            mapImage = await mapSnapshot(trip: trip, palette: palette, size: mapSize(format: config.format, width: width))
+            guard let image = await mapSnapshot(trip: trip, palette: palette, size: mapSize(format: config.format))
+            else { throw RenderError.map }
+            mapImage = image
         }
+        try Task.checkCancellation()
         let content = CardTemplateView(trip: trip, summary: TripSummary.make(trip), config: config, photos: photos,
                                        mapImage: mapImage, palette: palette, width: width)
         let renderer = ImageRenderer(content: content)
         renderer.scale = 1
         renderer.proposedSize = ProposedViewSize(width: width, height: height)
         renderer.isOpaque = true
-        return renderer.uiImage
+        guard let image = renderer.uiImage else { throw RenderError.image }
+        return image
     }
 
-    /// Rota şablonundaki harita alanının boyutu (kartın üst %70'i), piksel.
-    static func mapSize(format: ShareCardConfig.Format, width: CGFloat = 1080) -> CGSize {
-        CGSize(width: width, height: ((width / format.aspect) * 0.7).rounded())
+    /// Harita görüntüsünün ölçeği: 360 pt × 3 = 1080 px; harita etiketleri çıktıda okunur kalır.
+    static let mapScale: CGFloat = 3
+
+    /// Rota şablonundaki harita alanının boyutu (kartın üst %70'i), nokta; piksel = nokta × `mapScale`.
+    static func mapSize(format: ShareCardConfig.Format) -> CGSize {
+        CGSize(width: 360, height: ((360 / format.aspect) * 0.7).rounded())
     }
 
     // MARK: Rota
@@ -52,7 +73,7 @@ enum CardRenderer {
     private static var snapshots: [String: UIImage] = [:]
 
     /// Tüm konumlu durakları kapsayan harita (%20 pay); üzerine gün gün palet renginde rota ve numaralı daireler.
-    /// `size` piksel; sonuç seyahat + palet + boyut + durak konumlarına göre önbelleğe alınır.
+    /// `size` nokta (`mapScale` ile çizilir); sonuç seyahat + palet + boyut + durak konumlarına göre önbelleğe alınır.
     static func mapSnapshot(trip: Trip, palette: TripPalette, size: CGSize) async -> UIImage? {
         let days = routeDays(trip)
         let all = days.flatMap(\.coordinates)
@@ -68,12 +89,13 @@ enum CardRenderer {
         let options = MKMapSnapshotter.Options()
         options.region = region(for: all)
         options.size = size
-        options.scale = 1
+        options.scale = mapScale
         options.mapType = .mutedStandard
         options.pointOfInterestFilter = .excludingAll
         options.traitCollection = UITraitCollection(userInterfaceStyle: .light)
         guard let snapshot = try? await MKMapSnapshotter(options: options).start() else { return nil }
 
+        // Çizim nokta uzayında; ölçüler kart birimine (`u`) göre.
         let u = size.width / 360
         let format = UIGraphicsImageRendererFormat()
         format.scale = snapshot.image.scale
