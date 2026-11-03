@@ -69,6 +69,7 @@ targets:
         com.apple.developer.icloud-services:
           - CloudKit
         aps-environment: development
+        com.apple.developer.devicecheck.appattest-environment: production
         com.apple.security.application-groups:
           - group.com.omeraydemir.gezzy
     dependencies:
