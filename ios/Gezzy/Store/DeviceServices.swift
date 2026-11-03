@@ -157,11 +157,14 @@ final class OfflineMapStore {
 
     /// Tüm günlerin haritalarını oluşturur (durak konumu olan günler).
     func save(_ trip: Trip) async {
+        // Aynı seyahat için süren kayıt varsa ikinciyi başlatma; klasörü altından silerdi.
+        if case .saving = states[trip.id] { return }
         let days = trip.days().filter { day in trip.stops(on: day).contains { $0.coordinate != nil } }
         guard !days.isEmpty else {
             states[trip.id] = .failed(String(localized: "Konumu olan durak yok."))
             return
         }
+        let palette = trip.palette
         let folder = directory.appendingPathComponent(trip.id.uuidString, isDirectory: true)
         images.removeAllObjects()
         savedDates[trip.id] = nil
@@ -171,7 +174,7 @@ final class OfflineMapStore {
         for (index, day) in days.enumerated() {
             states[trip.id] = .saving(done: index, total: days.count)
             do {
-                let image = try await Self.render(stops: trip.stops(on: day))
+                let image = try await Self.render(stops: trip.stops(on: day), palette: palette)
                 try image.jpegData(compressionQuality: 0.82)?.write(to: fileURL(tripID: trip.id, day: day), options: .atomic)
             } catch {
                 states[trip.id] = .failed("Harita kaydedilemedi: \(error.localizedDescription)")
@@ -205,7 +208,7 @@ final class OfflineMapStore {
     /// MKMapSnapshotter ile haritayı çizer, üstüne rota ve numaralı pinleri ekler.
     /// Görüntü, yakınlaştırınca sokak adları okunabilsin diye geniş (1800 pt, 2x) çizilir;
     /// MapKit büyük boyutta daha ayrıntılı bir yakınlık seviyesi kullanır.
-    private static func render(stops: [Stop]) async throws -> UIImage {
+    private static func render(stops: [Stop], palette: TripPalette) async throws -> UIImage {
         let points = stops.compactMap { stop in stop.coordinate.map { (stop, $0) } }
         let coordinates = points.map { CLLocationCoordinate2D(latitude: $0.1.latitude, longitude: $0.1.longitude) }
         let options = MKMapSnapshotter.Options()
@@ -231,7 +234,7 @@ final class OfflineMapStore {
                 path.lineWidth = 4 * unit
                 path.lineCapStyle = .round
                 path.setLineDash([1 * unit, 10 * unit], count: 2, phase: 0)
-                UIColor(Color.ink).setStroke()
+                UIColor(Color(hex: palette.accent)).setStroke()
                 path.stroke()
             }
 
@@ -241,7 +244,7 @@ final class OfflineMapStore {
                 let circle = CGRect(x: position.x - radius, y: position.y - radius, width: radius * 2, height: radius * 2)
                 UIColor.white.setFill()
                 UIBezierPath(ovalIn: circle.insetBy(dx: -3 * unit, dy: -3 * unit)).fill()
-                UIColor(Accent.cycle(index).base).setFill()
+                UIColor(palette.pin(index)).setFill()
                 UIBezierPath(ovalIn: circle).fill()
                 let label = "\(index + 1)" as NSString
                 let attributes: [NSAttributedString.Key: Any] = [

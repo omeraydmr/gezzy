@@ -1,4 +1,5 @@
 import ActivityKit
+import GezzyKit
 import SwiftUI
 import WidgetKit
 
@@ -15,6 +16,15 @@ extension Color {
         self.init(.sRGB, red: Double((hex >> 16) & 0xFF) / 255, green: Double((hex >> 8) & 0xFF) / 255,
                   blue: Double(hex & 0xFF) / 255)
     }
+
+    /// Seyahat rengi metin/ikon olarak: koyu temada okunur açık ton.
+    init(tripText hex: UInt32) {
+        self.init(uiColor: UIColor { traits in
+            let value = traits.userInterfaceStyle == .dark ? TripPalette.textOnDark(hex) : hex
+            return UIColor(red: CGFloat((value >> 16) & 0xFF) / 255, green: CGFloat((value >> 8) & 0xFF) / 255,
+                           blue: CGFloat(value & 0xFF) / 255, alpha: 1)
+        })
+    }
 }
 
 /// Seyahat günü kilit ekranında ve Dynamic Island'da biniş kartı.
@@ -26,7 +36,7 @@ struct FlightLiveActivity: Widget {
                 .activitySystemActionForegroundColor(.primary)
                 .widgetURL(tripURL(context.attributes))
         } dynamicIsland: { context in
-            let tint = Color(hex: context.attributes.tint)
+            let tint = Color(tripText: context.attributes.tint)
             return DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
                     VStack(alignment: .leading, spacing: 2) {
@@ -85,7 +95,7 @@ struct LockScreenTicket: View {
     let state: FlightActivityAttributes.ContentState
 
     var body: some View {
-        let tint = Color(hex: attributes.tint)
+        let tint = Color(tripText: attributes.tint)
         VStack(spacing: 10) {
             HStack {
                 Text(attributes.tripName).font(.caption.weight(.semibold)).foregroundStyle(.secondary)

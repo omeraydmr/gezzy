@@ -35,10 +35,30 @@ final class CommunityService {
         UserDefaults.standard.set(choices, forKey: Self.choicesKey)
     }
 
+    /// Seyahatin topluluk tercihini siler; kart yeniden sorar.
+    func clearChoice(for trip: Trip) {
+        var choices = UserDefaults.standard.dictionary(forKey: Self.choicesKey) as? [String: String] ?? [:]
+        choices[trip.id.uuidString] = nil
+        UserDefaults.standard.set(choices, forKey: Self.choicesKey)
+    }
+
     enum Failure: Error { case notConfigured, rejected(Int) }
 
     func contribute(_ contribution: CommunityPlaces.Contribution) async throws {
         try await send("places/contribute", body: JSONEncoder().encode(contribution))
+    }
+
+    /// Biten seyahatin anonim rota raporunu gönderir.
+    func sendReport(_ report: RouteReport) async throws {
+        try await send("trips/report", body: JSONEncoder().encode(report))
+    }
+
+    func withdrawReport(id: String) async throws {
+        try await send("trips/report/withdraw", body: JSONEncoder().encode(["id": id]))
+    }
+
+    func withdraw(_ contribution: CommunityPlaces.Contribution) async throws {
+        try await send("places/withdraw", body: JSONEncoder().encode(contribution))
     }
 
     enum ReportReason: String, CaseIterable, Identifiable {

@@ -9,6 +9,9 @@ struct TripRoute: Hashable {
 
 struct TripsView: View {
     @Environment(TripStore.self) private var store
+    @Environment(Entitlements.self) private var entitlements
+    @State private var isShowingPaywall = false
+    @State private var createAfterPaywall = false
     @State private var scope: Scope = .upcoming
     @State private var isOnboarding = false
     @State private var index = 0
@@ -20,8 +23,21 @@ struct TripsView: View {
     @State private var pendingDelete: Trip?
     @State private var isShowingProfile = false
     @State private var arrivingID: Trip.ID?
+    /// Rota paylaşımı mevcut / anketi atlayan kullanıcılara bir kez sorulur.
+    @AppStorage("gezzy.routeSharing.prompted") private var routeSharingPrompted = false
+    @State private var isAskingRouteSharing = false
+    @State private var paywallAfterRoutePrompt = false
+    @State private var isShowingSharingPaywall = false
+    /// Oluşturulan seyahat sayacı; anahtar zinciri her çizimde okunmasın diye saklanır.
+    @State private var tripsCreated: Int?
 
     enum Scope: Hashable { case upcoming, past }
+
+    private var shouldAskRouteSharing: Bool {
+        store.hasCompletedOnboarding && !isOnboarding && !routeSharingPrompted
+            && RouteReporter.shared.choice == nil && !entitlements.isPremium
+            && AppRouter.shared.pendingImport == nil && !isCreating && !isShowingProfile
+    }
 
     private var trips: [Trip] { scope == .upcoming ? store.upcoming : store.past }
     private var focusedIndex: Int { min(max(index, 0), max(trips.count - 1, 0)) }
@@ -68,13 +84,19 @@ struct TripsView: View {
                 Spacer(minLength: 12)
 
                 Button {
-                    isCreating = true
+                    startTripCreation()
                 } label: {
                     Label("Seyahat planla", systemImage: "plus")
                 }
                 .buttonStyle(.primary)
                 .padding(.horizontal, 16)
-                .padding(.bottom, 8)
+                .padding(.bottom, allowanceCaption == nil ? 8 : 0)
+                if let caption = allowanceCaption {
+                    Text(caption)
+                        .font(.caption)
+                        .foregroundStyle(Color.ink2)
+                        .padding(.bottom, 8)
+                }
             }
             .background { background }
             .toolbar(.hidden, for: .navigationBar)
@@ -88,6 +110,7 @@ struct TripsView: View {
                     withAnimation(.spring(response: 0.6, dampingFraction: 0.78)) {
                         scope = .upcoming
                         store.add(trip)
+                        TripAllowance.recordCreation(store: store)
                         index = store.upcoming.firstIndex { $0.id == trip.id } ?? 0
                     }
                     Task {
@@ -95,6 +118,15 @@ struct TripsView: View {
                         withAnimation(.easeOut(duration: 0.5)) { arrivingID = nil }
                     }
                 }
+            }
+            .sheet(isPresented: $isShowingPaywall, onDismiss: {
+                // İkinci sheet'i ilki kapanırken açmak güvenilmez; kapandıktan sonra aç.
+                if createAfterPaywall {
+                    createAfterPaywall = false
+                    isCreating = true
+                }
+            }) {
+                PaywallSheet(reason: .tripLimit) { createAfterPaywall = true }
             }
             .coverPhotoPicker(for: $coverTarget)
             .sheet(isPresented: $isShowingProfile) { ProfileView() }
@@ -109,14 +141,41 @@ struct TripsView: View {
                     if planFirstTrip {
                         Task {
                             try? await Task.sleep(for: .milliseconds(450))
-                            isCreating = true
+                            startTripCreation()
                         }
                     }
                 }
             }
             .onAppear {
                 if !store.hasCompletedOnboarding { isOnboarding = true }
+                refreshTripsCreated()
             }
+            // Oluşturma, silme ve eşitleme sayıyı değiştirir.
+            .onChange(of: store.trips.count) { _, _ in refreshTripsCreated() }
+            .task {
+                // Açılıştaki diğer sunumlar otursun.
+                try? await Task.sleep(for: .seconds(1))
+                if shouldAskRouteSharing { isAskingRouteSharing = true }
+            }
+            .sheet(isPresented: $isAskingRouteSharing, onDismiss: {
+                // Aşağı kaydırılarak kapatılsa da bir daha sorulmaz.
+                routeSharingPrompted = true
+                if paywallAfterRoutePrompt {
+                    paywallAfterRoutePrompt = false
+                    isShowingSharingPaywall = true
+                }
+            }) {
+                RouteSharingPromptSheet { choice in
+                    RouteReporter.shared.setChoice(choice)
+                    routeSharingPrompted = true
+                    if choice == .yes {
+                        Task { await RouteReporter.shared.run(store: store) }
+                    } else {
+                        paywallAfterRoutePrompt = true
+                    }
+                }
+            }
+            .sheet(isPresented: $isShowingSharingPaywall) { PaywallSheet(reason: .dataSharingDeclined) }
             .onChange(of: store.hasCompletedOnboarding) { _, completed in
                 // Profilden "tanıtımı yeniden göster": önce profil sayfası kapansın.
                 guard !completed, !isOnboarding else { return }
@@ -144,6 +203,30 @@ struct TripsView: View {
             .onAppear { openPendingLink() }
             .animation(.easeInOut(duration: 0.25), value: focused?.id)
         }
+    }
+
+    /// Ücretsiz hak varsa (ya da premium ise) oluşturmayı açar; yoksa paywall gösterir.
+    private func startTripCreation() {
+        let created = TripAllowance.created(store: store)
+        tripsCreated = created
+        if PremiumRules.canCreateTrip(created: created, isPremium: entitlements.isPremium) {
+            isCreating = true
+        } else {
+            isShowingPaywall = true
+        }
+    }
+
+    private var allowanceCaption: String? {
+        guard !entitlements.isPremium, let tripsCreated else { return nil }
+        switch PremiumRules.remainingFreeTrips(created: tripsCreated) {
+        case 1: return String(localized: "Ücretsiz: 1 seyahat hakkın kaldı")
+        case ...0: return String(localized: "Ücretsiz seyahat hakkın doldu")
+        default: return nil
+        }
+    }
+
+    private func refreshTripsCreated() {
+        tripsCreated = TripAllowance.created(store: store)
     }
 
     /// Bildirim ya da widget'tan gelen bağlantı: seyahati destede öne al ve sekmesini aç.

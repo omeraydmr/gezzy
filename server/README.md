@@ -45,6 +45,9 @@ Veritabanı gizlidir (yalnızca Worker erişir); uç noktalar `X-Gezzy-Key` iste
 | Uç nokta | İş |
 |---|---|
 | `POST /places/contribute` | `X-Gezzy-Contributor: <cihaz UUID'si>`; gövde `{country, places[], transitions[[ref, ref]]}`. Günde 300 yer sınırı (429) |
+| `POST /places/withdraw` | Gövde `Contribution`; o kişinin bu yerlerdeki oyları ve geçişleri silinir (her durumda 200) |
+| `POST /trips/report` | Gövde `RouteReport` (en çok 64 KB, aşarsa 413). Geçersizse 400, başkasının rapor id'siyse 409, günde 20 rapor aşılırsa 429 |
+| `POST /trips/report/withdraw` | Gövde `{id}`; yalnızca kendi raporu silinir, her durumda 200 (sahiplik sızdırılmaz) |
 | `GET /places/nearby?lat&lon` | 8 km içinde en az 3 farklı gezginin gittiği, beğenisi beğenmemesinden az olmayan yerler |
 | `GET /places/next?lat&lon` | Bu yerden sonra aynı gün en az 3 gezginin gittiği yerler |
 
@@ -56,6 +59,17 @@ Veritabanı gizlidir (yalnızca Worker erişir); uç noktalar `X-Gezzy-Key` iste
 - Yanlış/spam yer bildirimi: `POST /places/report {placeId, reason}` (wrong, closed, spam, offensive). En az 3 farklı
   kişi bildirdiğinde ya da bildirenler katkı verenlerin yarısına ulaştığında yer önerilerden düşer. Bağlantı, e-posta,
   telefon numarası içeren yer adları katkıda reddedilir.
+
+### Rota raporları
+
+Kullanıcı izin verirse biten seyahatin rotası `trip_reports` tablosuna yazılır. İmzalı gövde gerektiği için `DELETE` yerine
+`POST /trips/report/withdraw` kullanılır.
+
+- Saklanan: rapor id'si, özetlenmiş katkı kimliği, ülke, şehir, yıl, ay, gece ve yolcu sayısı, para birimi ve `payload`
+  (şehirler, yerler, günlere göre ziyaret sırası/süresi, bütçe kalemleri, harcamalar).
+- Saklanmayan: kişi adı, günlerin gerçek tarihi, notlar, otel, uçuş.
+- Aynı kişi aynı rapor id'siyle tekrar gönderirse rapor üzerine yazılır; başka kişi aynı id'yi kullanamaz (409).
+- 24 ay sonra raporlar silinir (her gönderimde temizlenir). Kullanıcı istediği zaman geri çekebilir.
 
 ### App Attest
 

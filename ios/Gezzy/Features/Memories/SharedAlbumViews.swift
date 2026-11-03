@@ -4,6 +4,9 @@ import GezzyKit
 /// Anılar sekmesinde ortak albüm: karşılıklı onay, yükleme durumu, kişi filtresi ve fotoğraf ızgarası.
 struct SharedAlbumCard: View {
     @Environment(TripStore.self) private var store
+    @Environment(\.tripTint) private var tint
+    @Environment(\.tripText) private var tintText
+    @Environment(\.tripPalette) private var palette
     let trip: Trip
     @State private var owner: UUID?
     @State private var viewer: PhotoViewerContext?
@@ -47,7 +50,7 @@ struct SharedAlbumCard: View {
                 } label: {
                     Label("Fotoğraflarımı paylaş", systemImage: "person.2.badge.plus")
                 }
-                .buttonStyle(.primary)
+                .buttonStyle(PillButtonStyle(tint: tintText, soft: .soft(palette)))
                 .disabled(!store.canEdit(trip))
                 Text("Ekran görüntüleri hariç; 2048 px'e küçültülmüş kopya iCloud'a yüklenir. İstediğin fotoğrafı sonra çıkarabilirsin.")
                     .font(.caption).foregroundStyle(Color.ink3)
@@ -61,6 +64,7 @@ struct SharedAlbumCard: View {
         .tray()
         .fullScreenCover(item: $viewer) { context in
             PhotoViewer(items: context.items, index: context.index)
+                .environment(store)
         }
         .confirmationDialog("Paylaşım kapatılsın mı?", isPresented: $confirmWithdraw, titleVisibility: .visible) {
             Button("Paylaşımı kapat", role: .destructive) { sync.withdraw(trip.id, store: store) }
@@ -126,10 +130,10 @@ struct SharedAlbumCard: View {
                 Text(title)
             }
             .font(.system(.footnote, weight: .semibold))
-            .foregroundStyle(isOn ? Color.onInk : Color.ink2)
+            .foregroundStyle(isOn ? Color.white : Color.ink2)
             .padding(.horizontal, 12)
             .frame(height: 32)
-            .background(isOn ? Color.ink : Color.track, in: Capsule())
+            .background(isOn ? tint : Color.track, in: Capsule())
         }
         .buttonStyle(.plain)
     }
@@ -188,7 +192,19 @@ struct PhotoViewer: View {
 
     let items: [Item]
     @State var index: Int
+    /// Verilirse (ve öğe cihaz arşivindense) alt çubukta favori/kapak/gizle çıkar.
+    var tripID: UUID?
     @Environment(\.dismiss) private var dismiss
+    @Environment(TripStore.self) private var store
+    @State private var toast: String?
+    @State private var toastTask: Task<Void, Never>?
+    private var prefs: MemoryPrefs { .shared }
+
+    init(items: [Item], index: Int, tripID: UUID? = nil) {
+        self.items = items
+        self._index = State(initialValue: index)
+        self.tripID = tripID
+    }
 
     var body: some View {
         TabView(selection: $index) {
@@ -221,7 +237,70 @@ struct PhotoViewer: View {
             }
             .padding(16)
         }
+        .overlay(alignment: .bottom) { actionBar }
         .statusBarHidden()
+    }
+
+    @ViewBuilder
+    private var actionBar: some View {
+        if let tripID, items.indices.contains(index), case let .library(id) = items[index] {
+            VStack(spacing: 10) {
+                if let toast {
+                    Text(toast)
+                        .font(.system(.footnote, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 12).padding(.vertical, 6)
+                        .background(.black.opacity(0.5), in: Capsule())
+                        .transition(.opacity)
+                }
+                HStack(spacing: 28) {
+                    let isFavorite = prefs.favorites(tripID).contains(id)
+                    barButton(isFavorite ? "heart.fill" : "heart", "Favori",
+                              value: isFavorite ? String(localized: "Favoride") : "") {
+                        prefs.toggleFavorite(id, trip: tripID)
+                    }
+                    if store.trip(tripID).map(store.canEdit) == true {
+                        barButton("photo.badge.checkmark", "Kapak yap") { setCover(id, tripID) }
+                    }
+                    barButton("eye.slash", "Gizle") {
+                        prefs.setHidden(id, true, trip: tripID)
+                        dismiss()
+                    }
+                }
+                .padding(.horizontal, 24).padding(.vertical, 10)
+                .background(.black.opacity(0.45), in: Capsule())
+            }
+            .padding(.bottom, 24)
+        }
+    }
+
+    private func barButton(_ symbol: String, _ label: LocalizedStringKey, value: String = "",
+                           action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 44, height: 44)
+        }
+        .accessibilityLabel(label)
+        .accessibilityValue(Text(value))
+    }
+
+    private func setCover(_ photoID: String, _ tripID: UUID) {
+        toastTask?.cancel()
+        toastTask = Task {
+            var ok = false
+            if let data = await PhotoLibrary.shared.albumJPEG(for: photoID) {
+                ok = (try? store.setCoverPhoto(data, for: tripID)) != nil
+            }
+            guard !Task.isCancelled else { return }
+            let text = ok ? String(localized: "Kapak yapıldı") : String(localized: "Kapak değiştirilemedi")
+            UIAccessibility.post(notification: .announcement, argument: text)
+            withAnimation { toast = text }
+            try? await Task.sleep(for: .seconds(1.5))
+            guard !Task.isCancelled else { return }
+            withAnimation { toast = nil }
+        }
     }
 }
 

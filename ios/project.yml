@@ -20,6 +20,9 @@ targets:
     platform: iOS
     sources:
       - path: Gezzy
+        # StoreKit test yapılandırması bundle'a girmez; yalnızca scheme'den kullanılır.
+        excludes:
+          - "Support/Gezzy.storekit"
       - path: Shared
     info:
       path: Support/Info.plist
@@ -79,7 +82,7 @@ targets:
         CODE_SIGN_STYLE: Automatic
         PRODUCT_NAME: Gezzy
         MARKETING_VERSION: "0.1.0"
-        CURRENT_PROJECT_VERSION: "1"
+        CURRENT_PROJECT_VERSION: "2"
         SWIFT_VERSION: "5.0"
         TARGETED_DEVICE_FAMILY: "1"
         GENERATE_INFOPLIST_FILE: YES
@@ -93,6 +96,7 @@ targets:
         INFOPLIST_KEY_NSCameraUsageDescription: "Harcama makbuzlarının ve belgelerin fotoğrafını çekmek için kamerayı kullanır."
         INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription: "Seyahatin uçuşlarını, otel giriş ve çıkışlarını ve saatli duraklarını Takvim'deki Gezzy takvimine ekler; tekrar aktarınca günceller."
         INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "Seyahat tarihlerindeki fotoğraflarını anlara ayırıp haritada göstermek için fotoğraf arşivini okur; fotoğraflar cihazdan çıkmaz."
+        INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription: "Paylaşım kartını Fotoğraflar'a kaydetmek için."
         DEVELOPMENT_LANGUAGE: tr
         ENABLE_PREVIEWS: YES
         SWIFT_EMIT_LOC_STRINGS: YES
@@ -126,7 +130,7 @@ targets:
         SWIFT_EMIT_LOC_STRINGS: YES
         LOCALIZATION_PREFERS_STRING_CATALOGS: YES
         MARKETING_VERSION: "0.1.0"
-        CURRENT_PROJECT_VERSION: "1"
+        CURRENT_PROJECT_VERSION: "2"
         SWIFT_VERSION: "5.0"
         TARGETED_DEVICE_FAMILY: "1"
         GENERATE_INFOPLIST_FILE: YES
@@ -139,5 +143,6 @@ schemes:
         Gezzy: all
     run:
       config: Debug
+      storeKitConfiguration: Gezzy/Support/Gezzy.storekit
     archive:
       config: Release

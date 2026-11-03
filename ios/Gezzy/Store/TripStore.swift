@@ -79,11 +79,14 @@ final class TripStore {
         }
         trips.removeAll { $0.id == id }
         save()
+        removeLocalMemories(id)
         CloudSync.shared.tripDeleted(id)
     }
 
     /// Kapak fotoğrafını değiştirir; eski dosya silinir.
     func setCoverPhoto(_ data: Data, for id: Trip.ID) throws {
+        // Düzenleme yetkisi yoksa dosyalara dokunma.
+        guard let current = trip(id), canEdit(current) else { throw CocoaError(.fileWriteNoPermission) }
         let name = try CoverImageStore.shared.save(data)
         let old = trip(id)?.coverPhoto
         update(id) { $0.coverPhoto = name }
@@ -165,6 +168,13 @@ final class TripStore {
         guard trips.contains(where: { $0.id == id }) else { return }
         trips.removeAll { $0.id == id }
         save()
+        removeLocalMemories(id)
+    }
+
+    /// Cihazda tutulan fotoğraf tercihleri ve kart ayarları (fotoğraf kimlikleri) seyahatle birlikte silinir.
+    private func removeLocalMemories(_ id: Trip.ID) {
+        MemoryPrefs.shared.remove(trip: id)
+        ShareStudioStore.shared.remove(trip: id)
     }
 
     // MARK: Schengen 90/180

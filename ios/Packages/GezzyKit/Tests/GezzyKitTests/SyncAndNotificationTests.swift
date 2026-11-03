@@ -74,6 +74,20 @@ final class NotificationPlannerTests: XCTestCase {
         XCTAssertEqual(cal.component(.minute, from: plan[3].date), 15)
     }
 
+    func testLodgingRemindersOpenReservationsAndMorningSkipsHotelVisit() {
+        let start = cal.startOfDay(for: TestCalendar.date(2026, 10, 12))
+        var trip = Trip(name: "Lizbon", destination: Destination(countryCode: "PT", city: "Lizbon"),
+                        startDate: start, endDate: TestCalendar.date(2026, 10, 13))
+        trip.lodgings = [Lodging(name: "Otel", checkIn: TestCalendar.date(2026, 10, 12, 15),
+                                 checkOut: TestCalendar.date(2026, 10, 13, 11))]
+        trip.stops = [Stop(day: start, order: 0, name: "Otel", kind: .stay),
+                      Stop(day: start, order: 1, name: "Pena Sarayı", kind: .sight, startMinutes: 600)]
+        let plan = NotificationPlanner.plan(for: trip, now: TestCalendar.date(2026, 10, 1), calendar: cal)
+        XCTAssertEqual(plan.first { $0.id.contains("-checkin-") }?.link?.section, "reservations")
+        XCTAssertEqual(plan.first { $0.id.contains("-checkout-") }?.link?.section, "reservations")
+        XCTAssertEqual(plan.first { $0.id.hasSuffix("-day0") }?.body, "2 durak · ilk durak Pena Sarayı, 10:00")
+    }
+
     func testPastAndDraftTripsAreSkipped() {
         var trip = Trip(name: "T", destination: Destination(countryCode: "PT", city: "Lizbon"),
                         startDate: TestCalendar.date(2026, 10, 12), endDate: TestCalendar.date(2026, 10, 13))

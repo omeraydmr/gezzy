@@ -89,12 +89,21 @@ struct TripEditSheet: View {
                     }
                     Toggle("Taslak", isOn: $isDraft)
                     Button {
-                        withAnimation { coverSeed = (coverSeed + 1) % 100 }
+                        withAnimation { coverSeed = (coverSeed + 1) % 120 }
                     } label: {
                         HStack {
                             Text("Kart rengini değiştir").foregroundStyle(Color.ink)
                             Spacer()
-                            Circle().fill(Accent.cycle(coverSeed).base).frame(width: 22, height: 22)
+                            let palette = TripPalette.forSeed(coverSeed)
+                            ZStack {
+                                ForEach(0..<4, id: \.self) { index in
+                                    Circle().inset(by: 5.5)
+                                        .trim(from: Double(index) / 4, to: Double(index + 1) / 4)
+                                        .stroke(palette.pin(index), lineWidth: 11)
+                                }
+                            }
+                            .frame(width: 22, height: 22)
+                            .rotationEffect(.degrees(-90))
                         }
                     }
                 } footer: {

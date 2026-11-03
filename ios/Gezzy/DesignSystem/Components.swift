@@ -89,13 +89,16 @@ struct StoryHeadline: View {
 // MARK: - Buttons
 
 struct PrimaryButtonStyle: ButtonStyle {
+    var fill: Color = .ink
+    var label: Color = .onInk
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(.body, weight: .medium))
-            .foregroundStyle(Color.onInk)
+            .foregroundStyle(label)
             .frame(maxWidth: .infinity, minHeight: 56)
             .padding(.horizontal, 20)
-            .cardBackground(Color.ink, in: Capsule())
+            .cardBackground(fill, in: Capsule())
             .opacity(configuration.isPressed ? 0.85 : 1)
             .scaleEffect(configuration.isPressed ? 0.98 : 1)
             .animation(.spring(duration: 0.2), value: configuration.isPressed)
@@ -118,6 +121,8 @@ struct CircleIconButtonStyle: ButtonStyle {
 
 extension ButtonStyle where Self == PrimaryButtonStyle {
     static var primary: PrimaryButtonStyle { PrimaryButtonStyle() }
+    /// Seyahat ekranı: palet rengi zemin, beyaz metin.
+    static func primary(_ fill: Color) -> PrimaryButtonStyle { PrimaryButtonStyle(fill: fill, label: .white) }
 }
 
 extension ButtonStyle where Self == CircleIconButtonStyle {
@@ -129,16 +134,29 @@ extension ButtonStyle where Self == CircleIconButtonStyle {
 
 struct Tag: View {
     let text: String
-    var accent: Accent = .gray
+    let foreground: Color
+    let background: Color
+
+    init(text: String, accent: Accent = .gray) {
+        self.text = text
+        self.foreground = accent.base
+        self.background = accent.tint
+    }
+
+    init(text: String, color: Color, soft: Color) {
+        self.text = text
+        self.foreground = color
+        self.background = soft
+    }
 
     var body: some View {
         Text(text)
             .font(.system(.subheadline, weight: .medium))
-            .foregroundStyle(accent.base)
+            .foregroundStyle(foreground)
             .lineLimit(1)
             .padding(.horizontal, 12)
             .padding(.vertical, 5)
-            .background(accent.tint, in: Capsule())
+            .background(background, in: Capsule())
     }
 }
 
@@ -275,23 +293,15 @@ struct AvatarStack: View {
 /// Kapak illüstrasyonu yer tutucusu: pastel yatay bantlar + vuruş dokusu.
 /// Nihai sürümde el çizimi pastel boya görseller bunun yerini alacak.
 struct CoverArt: View {
-    let seed: Int
-
-    private static let palettes: [[UInt32]] = [
-        [0x6FA6E6, 0xE7B48E, 0xE58C6B, 0xF4D7A1, 0x3F6FC4],
-        [0xF2B9A6, 0xE58C6B, 0xD9644C, 0xA7B98A, 0x7A9A6B],
-        [0x9DB7E8, 0xBFD3EE, 0x6E9F7E, 0xC8B6E8, 0xE9D9F7],
-        [0xF5D5B8, 0xE6BE96, 0xC9A27A, 0xB9CFA8, 0x9AB89A],
-        [0xF4D04E, 0xF0B54A, 0xE3A23B, 0xB6CDEB, 0x8FB3E8],
-    ]
+    let palette: TripPalette
 
     var body: some View {
-        let palette = Self.palettes[abs(seed) % Self.palettes.count]
+        let colors = palette.bands
         let weights: [CGFloat] = [0.34, 0.16, 0.16, 0.1, 0.24]
         GeometryReader { proxy in
             VStack(spacing: 0) {
-                ForEach(palette.indices, id: \.self) { index in
-                    Color(hex: palette[index]).frame(height: proxy.size.height * weights[index])
+                ForEach(colors.indices, id: \.self) { index in
+                    Color(hex: colors[index]).frame(height: proxy.size.height * weights[index])
                 }
             }
             .overlay(Hatch(spacing: 6).stroke(Color.white.opacity(0.3), lineWidth: 1.5))
@@ -318,13 +328,13 @@ struct FlagBadge: View {
 /// Numaralı damla pin.
 struct NumberedPin: View {
     let number: Int
-    let accent: Accent
+    let color: Color
     var size: CGFloat = 30
 
     var body: some View {
         ZStack(alignment: .top) {
             PinShape()
-                .fill(accent.base)
+                .fill(color)
                 .overlay(PinShape().stroke(Color.white, lineWidth: 2.5))
             Text("\(number)")
                 .font(.system(size: size * 0.44, weight: .semibold))

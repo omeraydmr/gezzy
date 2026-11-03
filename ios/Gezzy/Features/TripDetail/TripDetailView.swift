@@ -1,12 +1,27 @@
 import SwiftUI
 import GezzyKit
 
+private struct OpenReservationsKey: EnvironmentKey {
+    static let defaultValue: () -> Void = {}
+}
+
+extension EnvironmentValues {
+    /// Plan'daki otel/uçuş satırından Rezervasyon sekmesine geçiş.
+    var openReservations: () -> Void {
+        get { self[OpenReservationsKey.self] }
+        set { self[OpenReservationsKey.self] = newValue }
+    }
+}
+
 struct TripDetailView: View {
     @Environment(TripStore.self) private var store
     let tripID: Trip.ID
     @State private var section: TripSection
     @State private var coverTarget: Trip.ID?
     @State private var isEditingTrip = false
+    @Environment(Entitlements.self) private var entitlements
+    @State private var isShowingPaywall = false
+    @State private var saveMapsAfterPaywall = false
     @State private var calendarMessage: String?
     @State private var isHeroCollapsed = false
 
@@ -16,11 +31,12 @@ struct TripDetailView: View {
     }
 
     enum TripSection: String, CaseIterable, Hashable {
-        case plan, money, packing, visa, crew, memories
+        case plan, reservations, money, packing, visa, crew, memories
 
         var title: String {
             switch self {
             case .plan: String(localized: "Plan")
+            case .reservations: String(localized: "Rezervasyon")
             case .money: String(localized: "Bütçe")
             case .packing: String(localized: "Valiz")
             case .visa: String(localized: "Vize")
@@ -32,6 +48,7 @@ struct TripDetailView: View {
         var symbol: String {
             switch self {
             case .plan: "map.fill"
+            case .reservations: "suitcase.rolling.fill"
             case .money: "chart.pie.fill"
             case .packing: "bag.fill"
             case .visa: "person.text.rectangle.fill"
@@ -45,7 +62,8 @@ struct TripDetailView: View {
 
     var body: some View {
         if let trip = store.trip(tripID) {
-            let tint = trip.tint
+            let palette = trip.palette
+            let tint = Color(hex: palette.accent)
             let canEdit = store.canEdit(trip)
             ScrollView {
                 VStack(spacing: 0) {
@@ -71,6 +89,7 @@ struct TripDetailView: View {
                     Group {
                         switch section {
                         case .plan: PlanSection(trip: trip)
+                        case .reservations: ReservationsSection(trip: trip)
                         case .money: MoneySection(trip: trip)
                         case .packing: PackingSection(trip: trip)
                         case .visa: VisaSection(trip: trip)
@@ -90,6 +109,9 @@ struct TripDetailView: View {
             .ignoresSafeArea(edges: .top)
             .background(TintGlow(tint: tint, offsetY: 260))
             .environment(\.tripTint, tint)
+            .environment(\.tripPalette, palette)
+            .environment(\.tripText, palette.accentText)
+            .environment(\.openReservations) { section = .reservations }
             .navigationTitle(isHeroCollapsed ? trip.name : "")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(isHeroCollapsed ? .visible : .hidden, for: .navigationBar)
@@ -101,6 +123,14 @@ struct TripDetailView: View {
             }
             .coverPhotoPicker(for: $coverTarget)
             .sheet(isPresented: $isEditingTrip) { TripEditSheet(trip: trip) }
+            .sheet(isPresented: $isShowingPaywall, onDismiss: {
+                if saveMapsAfterPaywall {
+                    saveMapsAfterPaywall = false
+                    Task { await OfflineMapStore.shared.save(trip) }
+                }
+            }) {
+                PaywallSheet(reason: .offlineMaps) { saveMapsAfterPaywall = true }
+            }
             .alert("Takvim", isPresented: Binding(get: { calendarMessage != nil }, set: { if !$0 { calendarMessage = nil } })) {
                 Button("Tamam", role: .cancel) {}
             } message: {
@@ -128,6 +158,13 @@ struct TripDetailView: View {
                     }
                 }
             }
+            Button("Haritaları internetsiz kaydet", systemImage: entitlements.isPremium ? "arrow.down.circle" : "lock") {
+                if entitlements.isPremium {
+                    Task { await OfflineMapStore.shared.save(trip) }
+                } else {
+                    isShowingPaywall = true
+                }
+            }
             Button("Kapak fotoğrafı seç", systemImage: "photo") { coverTarget = trip.id }
             if trip.coverPhoto != nil {
                 Button("Fotoğrafı kaldır", systemImage: "photo.badge.minus", role: .destructive) {
@@ -146,6 +183,7 @@ struct TripDetailView: View {
 
 /// Aşağı çekince esneyen, yukarı kayınca gezinme çubuğuna devreden kapak.
 struct TripHero: View {
+    @Environment(\.tripText) private var tintText
     let trip: Trip
     let height: CGFloat
     @Binding var isCollapsed: Bool
@@ -164,7 +202,8 @@ struct TripHero: View {
                     let tag = trip.countdownTag
                     Text(tag.text)
                         .font(.system(.footnote, weight: .semibold))
-                        .foregroundStyle(tag.accent == .gray ? Color.ink2 : tag.accent.base)
+                        // Geri sayım seyahat renginde; taslak (turuncu) ve geçmiş (gri) durum rengi kalır.
+                        .foregroundStyle(tag.accent == .gray ? Color.ink2 : tag.accent == .orange ? tag.accent.base : tintText)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 5)
                         .background(.regularMaterial, in: Capsule())
@@ -238,8 +277,8 @@ struct TripStub: View {
                         .font(.system(.subheadline, weight: .semibold))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
-                        .foregroundStyle(running ? Color.ink : Color.onInk)
-                        .background(running ? Color.track : Color.ink, in: Capsule())
+                        .foregroundStyle(running ? Color.ink : Color.white)
+                        .background(running ? Color.track : tint, in: Capsule())
                 }
                 .buttonStyle(.plain)
             }
@@ -273,7 +312,7 @@ struct TripStub: View {
 /// İkonlu sekme hapları; seçili sekmenin ikonu seyahat rengini alır.
 struct SectionTabs: View {
     @Binding var selection: TripDetailView.TripSection
-    @Environment(\.tripTint) private var tint
+    @Environment(\.tripText) private var tintText
     @Namespace private var namespace
 
     var body: some View {
@@ -291,7 +330,7 @@ struct SectionTabs: View {
                             Label(section.title, systemImage: section.symbol)
                                 .font(.system(.subheadline, weight: .semibold))
                                 .foregroundStyle(isSelected ? Color.ink : Color.ink2)
-                                .labelStyle(TintedIconLabelStyle(iconColor: isSelected ? tint : Color.ink3))
+                                .labelStyle(TintedIconLabelStyle(iconColor: isSelected ? tintText : Color.ink3))
                                 .padding(.horizontal, 14)
                                 .padding(.vertical, 10)
                                 .background {

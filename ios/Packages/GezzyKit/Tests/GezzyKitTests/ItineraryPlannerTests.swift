@@ -51,18 +51,73 @@ final class ItineraryPlannerTests: XCTestCase {
         XCTAssertLessThanOrEqual(plan.days[0].endMinutes, 19 * 60 + 30)
     }
 
-    func testArrivalFlightShortensFirstDay() {
-        var value = trip()
-        var istanbul = Calendar(identifier: .gregorian)
-        istanbul.timeZone = cal.timeZone
-        let arrival = istanbul.date(from: DateComponents(year: 2026, month: 10, day: 20, hour: 15))!
-        value.flights = [FlightSegment(flightNumber: "TK1", fromCode: "IST", fromCity: "İstanbul", toCode: "LIS",
-                                       toCity: "Lizbon", departure: arrival.addingTimeInterval(-4 * 3600), arrival: arrival)]
-        let window = ItineraryPlanner.window(for: TestCalendar.date(2026, 10, 20), trip: value,
-                                             settings: .init(), calendar: cal)
-        XCTAssertEqual(window.start, 17 * 60)
+    func lisbonDate(_ day: Int, _ hour: Int) -> Date {
+        var lisbon = Calendar(identifier: .gregorian)
+        lisbon.timeZone = TimeZone(identifier: "Europe/Lisbon")!
+        return lisbon.date(from: DateComponents(year: 2026, month: 10, day: day, hour: hour))!
+    }
+
+    func flight(_ from: String, _ to: String, departure: Date, arrival: Date) -> FlightSegment {
+        FlightSegment(flightNumber: "TK1", fromCode: from, fromCity: from, toCode: to, toCity: to,
+                      departure: departure, arrival: arrival)
+    }
+
+    func testWindowFollowsFlightDayTiming() {
+        var value = trip(days: 3)
+        let hotel = near(east, 0)
+        value.lodgings = [Lodging(name: "Otel", coordinate: hotel, checkIn: TestCalendar.date(2026, 10, 20, 15),
+                                  checkOut: TestCalendar.date(2026, 10, 22, 11))]
+        // 21 Ekim'de iniş (seyahatin ilk günü değil), 22 Ekim'de kalkış.
+        let landing = flight("IST", "LIS", departure: lisbonDate(21, 9), arrival: lisbonDate(21, 13))
+        let takeoff = flight("LIS", "IST", departure: lisbonDate(22, 16), arrival: lisbonDate(22, 21))
+        value.flights = [landing, takeoff]
+        let ready = FlightDayTiming.arrival(landing, firstPoint: hotel, nationality: "TR", fallback: cal.timeZone)!.readyAt
+        let leave = FlightDayTiming.departure(takeoff, lastPoint: hotel, nationality: "TR", fallback: cal.timeZone)!.leaveBy
         XCTAssertEqual(ItineraryPlanner.window(for: TestCalendar.date(2026, 10, 21), trip: value, settings: .init(),
+                                               calendar: cal).start, ready)
+        XCTAssertEqual(ItineraryPlanner.window(for: TestCalendar.date(2026, 10, 22), trip: value, settings: .init(),
+                                               calendar: cal).end, leave)
+        XCTAssertEqual(ItineraryPlanner.window(for: TestCalendar.date(2026, 10, 20), trip: value, settings: .init(),
                                                calendar: cal).start, 9 * 60)
+        // AB vatandaşı EES kuyruğuna girmez: daha erken hazır.
+        let eu = ItineraryPlanner.window(for: TestCalendar.date(2026, 10, 21), trip: value,
+                                         settings: .init(nationality: "DE"), calendar: cal).start
+        XCTAssertLessThan(eu, ready)
+    }
+
+    func testArrivalDayRouteStartsAtHotelNotAirport() throws {
+        // LIS havalimanından ~20 km uzakta otel, yanında tek fikir.
+        var value = trip(days: 1)
+        let hotel = Coordinate(latitude: 38.6013, longitude: -9.1359)
+        let sight = Coordinate(latitude: 38.6063, longitude: -9.1359)
+        value.lodgings = [Lodging(name: "Otel", coordinate: hotel, checkIn: TestCalendar.date(2026, 10, 20, 15),
+                                  checkOut: TestCalendar.date(2026, 10, 21, 11))]
+        let landing = flight("IST", "LIS", departure: lisbonDate(20, 8), arrival: lisbonDate(20, 12))
+        value.flights = [landing]
+        value.ideas = [idea("Bakış", sight)]
+        let ready = FlightDayTiming.arrival(landing, firstPoint: hotel, nationality: "TR", fallback: cal.timeZone)!.readyAt
+        let plan = ItineraryPlanner.plan(value, calendar: cal)
+        let day = plan.days[0]
+        let id = value.ideas![0].id
+        XCTAssertEqual(day.added, [id])
+        XCTAssertGreaterThanOrEqual(try XCTUnwrap(day.starts[id]), ready)
+        XCTAssertEqual(day.walkingMeters, 2 * Geo.distance(hotel, sight), accuracy: 1)
+    }
+
+    func testDepartureDayIdeasEndBeforeLeaveBy() {
+        var value = trip(days: 1)
+        let hotel = near(east, 0)
+        value.lodgings = [Lodging(name: "Otel", coordinate: hotel, checkIn: TestCalendar.date(2026, 10, 19, 15),
+                                  checkOut: TestCalendar.date(2026, 10, 20, 11))]
+        let takeoff = flight("LIS", "IST", departure: lisbonDate(20, 16), arrival: lisbonDate(20, 21))
+        value.flights = [takeoff]
+        value.ideas = (1...4).map { idea("Yer \($0)", near(east, Double($0))) }
+        let leave = FlightDayTiming.departure(takeoff, lastPoint: hotel, nationality: "TR", fallback: cal.timeZone)!.leaveBy
+        let plan = ItineraryPlanner.plan(value, calendar: cal)
+        XCTAssertFalse(plan.days[0].added.isEmpty)
+        for id in plan.days[0].added {
+            XCTAssertLessThanOrEqual(plan.days[0].starts[id]! + 60, leave)
+        }
     }
 
     func testApplyMovesIdeasIntoDaysKeepingExisting() {

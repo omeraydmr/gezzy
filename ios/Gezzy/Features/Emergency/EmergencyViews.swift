@@ -5,6 +5,7 @@ import GezzyKit
 /// Hepsi cihazda; internet olmadan da açılır.
 struct EmergencyCard: View {
     @Environment(TripStore.self) private var store
+    @Environment(\.tripTint) private var tint
     let trip: Trip
     @State private var isEditing = false
     @State private var isShowingAllergyCard = false
@@ -86,7 +87,7 @@ struct EmergencyCard: View {
             } label: {
                 Label("Alerji kartını göster", systemImage: "rectangle.portrait.on.rectangle.portrait")
             }
-            .buttonStyle(.primary)
+            .buttonStyle(.primary(tint))
         }
     }
 

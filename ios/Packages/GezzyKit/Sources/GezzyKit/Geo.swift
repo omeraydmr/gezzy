@@ -58,6 +58,41 @@ public enum RouteOptimizer {
         return order([start] + points).dropFirst().map { $0 - 1 }
     }
 
+    /// Başlangıç ve bitiş (ör. sabah ve gece oteli) sabitken noktaları sıralar. Bitiş nil ise `order(_:from:)`.
+    public static func order(_ points: [Coordinate], from start: Coordinate, to end: Coordinate?) -> [Int] {
+        guard let end else { return order(points, from: start) }
+        guard !points.isEmpty else { return [] }
+        let all = [start] + points + [end]
+        let last = all.count - 1
+        var route = [0]
+        var remaining = Set(1..<last)
+        while let current = route.last, !remaining.isEmpty {
+            let next = remaining.min { lhs, rhs in
+                let l = Geo.distance(all[current], all[lhs]), r = Geo.distance(all[current], all[rhs])
+                return l != r ? l < r : lhs < rhs
+            }!
+            route.append(next)
+            remaining.remove(next)
+        }
+        route.append(last)
+        // 2-opt: iki uç sabit.
+        var improved = route.count > 3
+        while improved {
+            improved = false
+            for i in 1..<(route.count - 2) {
+                for j in (i + 1)..<(route.count - 1) {
+                    var candidate = route
+                    candidate[i...j].reverse()
+                    if length(candidate, all) + 0.5 < length(route, all) {
+                        route = candidate
+                        improved = true
+                    }
+                }
+            }
+        }
+        return route.dropFirst().dropLast().map { $0 - 1 }
+    }
+
     /// İlk noktayı sabit tutarak en yakın komşu sezgiseli + 2-opt iyileştirmesiyle ziyaret sırası döndürür.
     /// Dönen dizi, giriş dizisinin indekslerinden oluşur.
     public static func order(_ points: [Coordinate]) -> [Int] {
@@ -131,16 +166,18 @@ extension RouteOptimizer {
     /// Önce açılış saatlerine uyan (çakışması en az), sonra en kısa yürüyüş sırasını döndürür.
     /// - Parameters:
     ///   - start: sabah çıkılan yer (ör. otel); nil ise ilk durak sabit kalmaz, rota ilk duraktan başlar.
+    ///   - end: gün sonunda varılacak yer (ör. gece oteli); yalnızca `start` varken kullanılır.
     ///   - dayStart: günün başladığı dakika (ör. 09:00 = 540).
-    public static func order(_ visits: [Visit], from start: Coordinate?, dayStart: Int) -> [Int] {
+    public static func order(_ visits: [Visit], from start: Coordinate?, to end: Coordinate? = nil, dayStart: Int) -> [Int] {
         guard !visits.isEmpty else { return [] }
         let points = visits.map(\.coordinate)
-        var best = start.map { order(points, from: $0) } ?? order(points)
+        // Bitiş yalnızca başlangıç varken kullanılır.
+        var best = start.map { order(points, from: $0, to: end) } ?? order(points)
         guard visits.contains(where: { $0.open != nil || $0.fixedStart != nil }), visits.count > 1 else { return best }
 
         func cost(_ route: [Int]) -> (Int, Double) {
             let conflicts = schedule(route, visits: visits, from: start, dayStart: dayStart).conflicts
-            let path = (start.map { [$0] } ?? []) + route.map { points[$0] }
+            let path = (start.map { [$0] } ?? []) + route.map { points[$0] } + (start != nil ? (end.map { [$0] } ?? []) : [])
             return (conflicts, Geo.routeDistance(path))
         }
         func better(_ a: (Int, Double), than b: (Int, Double)) -> Bool {

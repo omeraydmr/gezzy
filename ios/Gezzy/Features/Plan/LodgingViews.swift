@@ -2,7 +2,7 @@ import MapKit
 import SwiftUI
 import GezzyKit
 
-/// Plan sekmesindeki konaklama kartı: oteller, gece sayıları, konaklaması olmayan geceler; elle ekleme ya da
+/// Rezervasyon sekmesindeki konaklama kartı: oteller, gece sayıları, konaklaması olmayan geceler; elle ekleme ya da
 /// Booking.com/Airbnb onayından içe aktarma.
 struct LodgingCard: View {
     @Environment(TripStore.self) private var store
@@ -24,28 +24,15 @@ struct LodgingCard: View {
                     Button("Elle ekle", systemImage: "square.and.pencil") { isAdding = true }
                     Button("Rezervasyondan içe aktar", systemImage: "doc.viewfinder") { isImporting = true }
                 } label: {
-                    Image(systemName: "plus")
+                    HeaderPlusLabel()
                 }
-                .buttonStyle(.circleIcon(size: 32))
                 .accessibilityLabel(String(localized: "Konaklama ekle"))
             }
 
             if lodgings.isEmpty {
-                EmptyHint(symbol: "building.2",
-                          text: String(localized: "Otel ya da ev ekle ya da Booking.com, Airbnb onayından içe aktar; günlerin planı oradan başlasın."))
-                HStack(spacing: 10) {
-                    Button {
-                        isAdding = true
-                    } label: {
-                        Label("Elle ekle", systemImage: "square.and.pencil")
-                    }
-                    .buttonStyle(.primary)
-                    Button {
-                        isImporting = true
-                    } label: {
-                        Label("İçe aktar", systemImage: "doc.viewfinder")
-                    }
-                    .buttonStyle(.primary)
+                AddPlaceholder(title: String(localized: "Konaklama ekle"), subtitle: String(localized: "elle ya da rezervasyondan")) {
+                    Button("Elle ekle", systemImage: "square.and.pencil") { isAdding = true }
+                    Button("Rezervasyondan içe aktar", systemImage: "doc.viewfinder") { isImporting = true }
                 }
             }
 
@@ -90,14 +77,16 @@ struct LodgingCard: View {
 
 struct LodgingRow: View {
     let lodging: Lodging
+    @Environment(\.tripText) private var tintText
+    @Environment(\.tripPalette) private var palette
 
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: "bed.double.fill")
                 .font(.system(size: 16))
-                .foregroundStyle(Accent.green.base)
+                .foregroundStyle(tintText)
                 .frame(width: 44, height: 44)
-                .background(Accent.green.tint, in: RoundedRectangle(cornerRadius: Radius.thumb, style: .continuous))
+                .background(Color.soft(palette), in: RoundedRectangle(cornerRadius: Radius.thumb, style: .continuous))
             VStack(alignment: .leading, spacing: 2) {
                 Text(lodging.name).font(.tBodyStrong).foregroundStyle(Color.ink).lineLimit(1)
                 Text("\(AppFormat.dayPill(lodging.checkIn)) \(AppFormat.time(lodging.checkIn)) → \(AppFormat.dayPill(lodging.checkOut)) \(AppFormat.time(lodging.checkOut))")
@@ -111,7 +100,7 @@ struct LodgingRow: View {
                 }
             }
             Spacer(minLength: 8)
-            Tag(text: String(localized: "\(lodging.nights()) gece"), accent: .green)
+            Tag(text: String(localized: "\(lodging.nights()) gece"), color: tintText, soft: .soft(palette))
         }
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)

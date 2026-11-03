@@ -21,16 +21,6 @@
         }
       }
     },
-    " En çok fotoğraf: %@." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : " Most photos: %@."
-          }
-        }
-      }
-    },
     " En geç %@ günü çıkmalısın." : {
       "localizations" : {
         "en" : {
@@ -69,6 +59,1020 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : " You leave tomorrow."
+          }
+        }
+      }
+    },
+    "%@ içinde ara" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search in %@"
+          }
+        }
+      }
+    },
+    "%@ · başlangıç" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ · start"
+          }
+        }
+      }
+    },
+    "%@ · bitiş" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ · end"
+          }
+        }
+      }
+    },
+    "%@ · iniş %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · lands %2$@"
+          }
+        }
+      }
+    },
+    "%@ · kalkış %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · departs %2$@"
+          }
+        }
+      }
+    },
+    "%@ önizlemesi" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ preview"
+          }
+        }
+      }
+    },
+    "%lld gizli fotoğraf" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld hidden photo"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld hidden photos"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld. gün" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Day %lld"
+          }
+        }
+      }
+    },
+    "2 ücretsiz seyahatini kullandın" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You've used your 2 free trips"
+          }
+        }
+      }
+    },
+    "5 şablon · story, gönderi, kare" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "5 templates · story, post, square"
+          }
+        }
+      }
+    },
+    "Abonelikler şu an yüklenemedi." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Subscriptions couldn't be loaded right now."
+          }
+        }
+      }
+    },
+    "7 gün ücretsiz" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "7 days free"
+          }
+        }
+      }
+    },
+    "/yıl" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "/year"
+          }
+        }
+      }
+    },
+    "/ay" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "/month"
+          }
+        }
+      }
+    },
+    "Abonelik, dönem bitmeden 24 saat önce iptal edilmezse otomatik yenilenir. App Store ayarlarından yönetebilirsin." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Subscription renews automatically unless cancelled at least 24 hours before the end of the period. You can manage it in App Store settings."
+          }
+        }
+      }
+    },
+    "Aboneliği yönet" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manage subscription"
+          }
+        }
+      }
+    },
+    "Aramayı temizle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear search"
+          }
+        }
+      }
+    },
+    "Ayarlar'dan Fotoğraflar iznini aç" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Allow Photos access in Settings"
+          }
+        }
+      }
+    },
+    "Bilgiler" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Details"
+          }
+        }
+      }
+    },
+    "Bu bir Premium özelliği" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This is a Premium feature"
+          }
+        }
+      }
+    },
+    "Bu günde fotoğraf yok." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No photos on this day."
+          }
+        }
+      }
+    },
+    "Devam et" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue"
+          }
+        }
+      }
+    },
+    "Aylık %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ per month"
+          }
+        }
+      }
+    },
+    "Durak" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stops"
+          }
+        }
+      }
+    },
+    "Durağı düzenle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit stop"
+          }
+        }
+      }
+    },
+    "Eklemeyi geri al" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Undo add"
+          }
+        }
+      }
+    },
+    "Eklendi" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Added"
+          }
+        }
+      }
+    },
+    "Ekleneceği yer:" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add to:"
+          }
+        }
+      }
+    },
+    "En az %lld fotoğraf seç." : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Choose at least %lld photo."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Choose at least %lld photos."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Fotoğraf %lld, seçili" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photo %lld, selected"
+          }
+        }
+      }
+    },
+    "Fotoğraf seçmek için Anılar'dan erişim ver." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Allow access in Memories to choose photos."
+          }
+        }
+      }
+    },
+    "Fotoğraflar'a kaydedildi" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saved to Photos"
+          }
+        }
+      }
+    },
+    "Fotoğraflar'a kaydedilemedi" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't save to Photos"
+          }
+        }
+      }
+    },
+    "Gece" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nights"
+          }
+        }
+      }
+    },
+    "Geri yüklenecek satın alma bulunamadı." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No purchases found to restore."
+          }
+        }
+      }
+    },
+    "Gezzy Premium" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gezzy Premium"
+          }
+        }
+      }
+    },
+    "Gezzy Premium · aktif" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gezzy Premium · active"
+          }
+        }
+      }
+    },
+    "Gezzy ile planlandı" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Planned with Gezzy"
+          }
+        }
+      }
+    },
+    "Gönderi" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Post"
+          }
+        }
+      }
+    },
+    "Gönderilmedi" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not sent"
+          }
+        }
+      }
+    },
+    "Gün" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Days"
+          }
+        }
+      }
+    },
+    "Harcama" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spent"
+          }
+        }
+      }
+    },
+    "Harita oluşturulamadı" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't create the map"
+          }
+        }
+      }
+    },
+    "Harita oluşturulamadı, internet bağlantını kontrol et." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't create the map, check your connection."
+          }
+        }
+      }
+    },
+    "Kare" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Square"
+          }
+        }
+      }
+    },
+    "Kart oluştur" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create card"
+          }
+        }
+      }
+    },
+    "Kart oluşturulamadı" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't create the card"
+          }
+        }
+      }
+    },
+    "Kartlardan Gezzy işaretini kaldır" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove the Gezzy mark from cards"
+          }
+        }
+      }
+    },
+    "Kartpostal" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Postcard"
+          }
+        }
+      }
+    },
+    "Kaynak: Dışişleri Bakanlığı, son gözden geçirme %@. Seyahatten önce resmî kaynaktan doğrula." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Source: Turkish Ministry of Foreign Affairs, last reviewed %@. Check the official source before travelling."
+          }
+        }
+      }
+    },
+    "Kişi" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "People"
+          }
+        }
+      }
+    },
+    "Km" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Km"
+          }
+        }
+      }
+    },
+    "Kolaj" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Collage"
+          }
+        }
+      }
+    },
+    "Kullanım koşulları" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Terms of use"
+          }
+        }
+      }
+    },
+    "Liste konsolosluğa göre değişir; yetkili aracı kurumdan doğrula." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The list varies by consulate; check with the authorised visa centre."
+          }
+        }
+      }
+    },
+    "Giriş ve çıkış günleri sayılır; sınırda resmî kayıtlar esastır." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entry and exit days count; at the border, official records prevail."
+          }
+        }
+      }
+    },
+    "Metin" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Text"
+          }
+        }
+      }
+    },
+    "Premium" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Premium"
+          }
+        }
+      }
+    },
+    "Premium'a geç" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Go Premium"
+          }
+        }
+      }
+    },
+    "QR ile katılanlar" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Joined via QR"
+          }
+        }
+      }
+    },
+    "Rota" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Route"
+          }
+        }
+      }
+    },
+    "Rota için konumlu durak gerekli" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Route needs stops with a location"
+          }
+        }
+      }
+    },
+    "Seyahat" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trip"
+          }
+        }
+      }
+    },
+    "Seyahatini paylaş" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Share your trip"
+          }
+        }
+      }
+    },
+    "Story" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Story"
+          }
+        }
+      }
+    },
+    "Sınırsız seyahat" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unlimited trips"
+          }
+        }
+      }
+    },
+    "Rotan hiç paylaşılmaz" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your route is never shared"
+          }
+        }
+      }
+    },
+    "Satın alma tamamlanamadı" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Purchase couldn't be completed"
+          }
+        }
+      }
+    },
+    "Verini paylaşmadan Gezzy'yi destekle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Support Gezzy without sharing your data"
+          }
+        }
+      }
+    },
+    "Satın alımları geri yükle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restore purchases"
+          }
+        }
+      }
+    },
+    "elle ya da biletten" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "manually or from a ticket"
+          }
+        }
+      }
+    },
+    "elle ya da rezervasyondan" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "manually or from a booking"
+          }
+        }
+      }
+    },
+    "Gitmek istediğin yerleri ekle; sonra otomatik rota günlere dağıtsın." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add places you want to visit; then let auto route spread them over the days."
+          }
+        }
+      }
+    },
+    "Görülecek" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sights"
+          }
+        }
+      }
+    },
+    "Havalimanına çıkış saatinden (%@) sonra bitiyor" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ends after you need to leave for the airport (%@)"
+          }
+        }
+      }
+    },
+    "Havalimanına çıkış: yaklaşık %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leave for the airport around %@"
+          }
+        }
+      }
+    },
+    "Havalimanında ol: en geç %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Be at the airport by %@"
+          }
+        }
+      }
+    },
+    "km" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "km"
+          }
+        }
+      }
+    },
+    "· Göster" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "· Show"
+          }
+        }
+      }
+    },
+    "Çevrimdışı haritalar ve otomatik rota" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Offline maps and automatic routes"
+          }
+        }
+      }
+    },
+    "İnişten sonra şehre en erken varış: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Earliest arrival in the city after landing: %@"
+          }
+        }
+      }
+    },
+    "Kapı ve biniş saatini bilette kontrol et." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check the gate and boarding time on your ticket."
+          }
+        }
+      }
+    },
+    "Listede yok mu? Elle ekle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not listed? Add it yourself"
+          }
+        }
+      }
+    },
+    "Önce otele uğramak ister misin?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drop by the hotel first?"
+          }
+        }
+      }
+    },
+    "Öne çıkanlar" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Highlights"
+          }
+        }
+      }
+    },
+    "Öneriyi kapat" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dismiss suggestion"
+          }
+        }
+      }
+    },
+    "Popüler" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Popular"
+          }
+        }
+      }
+    },
+    "Popülerlik Wikipedia'da son 30 günde okunma ve Gezzy gezginlerinin seçimlerinden gelir." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Popularity comes from Wikipedia views in the last 30 days and picks by Gezzy travellers."
+          }
+        }
+      }
+    },
+    "Sabah erken uçuş; bu gün için durak planlama." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Early morning flight; don't plan stops for this day."
+          }
+        }
+      }
+    },
+    "İstatistik" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stats"
+          }
+        }
+      }
+    },
+    "Şehirde yaklaşık %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In the city around %@"
+          }
+        }
+      }
+    },
+    "Tümü" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All"
+          }
+        }
+      }
+    },
+    "Yeme-içme" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Food & drink"
+          }
+        }
+      }
+    },
+    "Yeni AB sınır kaydı (EES) nedeniyle pasaport sırası uzun sürebilir." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passport queues can be long because of the new EU Entry/Exit System (EES)."
+          }
+        }
+      }
+    },
+    "Haritada ara" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search the map"
+          }
+        }
+      }
+    },
+    "%@ gününe ekle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add to %@"
+          }
+        }
+      }
+    },
+    "Yer ekle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add place"
+          }
+        }
+      }
+    },
+    "Çok popüler" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Very popular"
+          }
+        }
+      }
+    },
+    "Şehrin konumu bulunamadı. Aramak için bir yer adı yaz." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't find the city. Type a place name to search."
           }
         }
       }
@@ -245,7 +1249,29 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$@ · %2$lld photos"
+            "value" : "%1$@ · %#@photos@"
+          },
+          "substitutions" : {
+            "photos" : {
+              "argNum" : 2,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg photo"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg photos"
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         "tr" : {
@@ -602,16 +1628,6 @@
         }
       }
     },
-    "%@ kartpostalı" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ postcard"
-          }
-        }
-      }
-    },
     "%@ ödedi · %@ · %@" : {
       "localizations" : {
         "en" : {
@@ -874,6 +1890,46 @@
         }
       }
     },
+    "%lld dk yürüyüş" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld min walk"
+          }
+        }
+      }
+    },
+    "Ücretsiz: 1 seyahat hakkın kaldı" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Free: 1 trip left"
+          }
+        }
+      }
+    },
+    "Ücretsiz seyahat hakkın doldu" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No free trips left"
+          }
+        }
+      }
+    },
+    "Haritaları internetsiz kaydet" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save maps for offline use"
+          }
+        }
+      }
+    },
     "%lld dk" : {
       "localizations" : {
         "en" : {
@@ -887,9 +1943,21 @@
     "%lld durak" : {
       "localizations" : {
         "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld stops"
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld stop"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld stops"
+                }
+              }
+            }
           }
         }
       }
@@ -929,25 +1997,21 @@
     "%lld fotoğraf" : {
       "localizations" : {
         "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld photos"
-          }
-        }
-      }
-    },
-    "%lld fotoğraf, %lld an." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$lld photos, %2$lld moments."
-          }
-        },
-        "tr" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$lld fotoğraf, %2$lld an."
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld photo"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld photos"
+                }
+              }
+            }
           }
         }
       }
@@ -1226,22 +2290,6 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$lld. gün · %2$@ · %3$@ yürüyüş"
-          }
-        }
-      }
-    },
-    "%lld. gün, %@, %lld durak" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Day %1$lld, %2$@, %3$lld stops"
-          }
-        },
-        "tr" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$lld. gün, %2$@, %3$lld durak"
           }
         }
       }
@@ -3397,16 +4445,6 @@
         }
       }
     },
-    "Fikir ekle" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Add idea"
-          }
-        }
-      }
-    },
     "Fikirler" : {
       "localizations" : {
         "en" : {
@@ -4034,16 +5072,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "days"
-          }
-        }
-      }
-    },
-    "Gün %@ konaklamasından başlıyor" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The day starts from %@"
           }
         }
       }
@@ -4728,16 +5756,6 @@
         }
       }
     },
-    "İçe aktar" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Import"
-          }
-        }
-      }
-    },
     "iCloud bağlı" : {
       "localizations" : {
         "en" : {
@@ -5229,26 +6247,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Enable cards abroad"
-          }
-        }
-      }
-    },
-    "Kartpostal oluştur" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Create postcard"
-          }
-        }
-      }
-    },
-    "Kartpostalı paylaş" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Share postcard"
           }
         }
       }
@@ -6295,16 +7293,6 @@
         }
       }
     },
-    "Önerilen yerler" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Suggested places"
-          }
-        }
-      }
-    },
     "Önerilen yerler ve okunma sayıları" : {
       "localizations" : {
         "en" : {
@@ -6373,16 +7361,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Suggestions come from Wikipedia; the most-read places of the last 30 days come first. Opening hours are looked up on OpenStreetMap once added to the plan."
-          }
-        }
-      }
-    },
-    "Önerilerde ya da haritada ara" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Search suggestions or the map"
           }
         }
       }
@@ -6481,16 +7459,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hotel or home name"
-          }
-        }
-      }
-    },
-    "Otel ya da ev ekle ya da Booking.com, Airbnb onayından içe aktar; günlerin planı oradan başlasın." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Add a hotel or home, or import a Booking.com or Airbnb confirmation; each day's plan starts there."
           }
         }
       }
@@ -7295,16 +8263,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Import from booking"
-          }
-        }
-      }
-    },
-    "rota" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "route"
           }
         }
       }
@@ -8737,16 +9695,6 @@
         }
       }
     },
-    "Uçuşunu elle yaz ya da e-bilet, ekran görüntüsü veya Wallet kartından içe aktar." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Type your flight in, or import it from an e-ticket, screenshot or Wallet pass."
-          }
-        }
-      }
-    },
     "Ulaşım" : {
       "localizations" : {
         "en" : {
@@ -9330,16 +10278,6 @@
         }
       }
     },
-    "Yer öner" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Suggest places"
-          }
-        }
-      }
-    },
     "Yerlerin topluluk önerilerine eklendi. Teşekkürler!" : {
       "localizations" : {
         "en" : {
@@ -9450,6 +10388,338 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Delete visit"
+          }
+        }
+      }
+    },
+    "≈ %lld dk" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "≈ %lld min"
+          }
+        }
+      }
+    },
+    "Rotanı başkalarına ilham yap" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Let your route inspire others"
+          }
+        }
+      }
+    },
+    "Seyahat bitince — daha önce bitmiş seyahatlerin dahil — gittiğin yerler, sırası ve saatleri, kaç gece ve kaç kişi olduğun, harcama tutarların Gezzy'ye gider. Adın, otelin, uçuşun ve harcama başlıkların gitmez. Profil'den istediğin zaman değiştirebilirsin." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When a trip ends — including trips you've already finished — the places you went, their order and times, how many nights and how many people you were, and your expense amounts go to Gezzy. Your name, hotel, flight and expense titles don't. You can change this anytime in Profile."
+          }
+        }
+      }
+    },
+    "Evet, paylaş" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yes, share"
+          }
+        }
+      }
+    },
+    "Hayır" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No"
+          }
+        }
+      }
+    },
+    "Rotamı Gezzy ile paylaş" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Share my route with Gezzy"
+          }
+        }
+      }
+    },
+    "Premium'da rotan paylaşılmaz." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "With Premium, your route is never shared."
+          }
+        }
+      }
+    },
+    "Rotan Gezzy'ye gönderildi" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your route was sent to Gezzy"
+          }
+        }
+      }
+    },
+    "Gönderilecek" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Will be sent"
+          }
+        }
+      }
+    },
+    "Bu seyahati gönderme" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Don't send this trip"
+          }
+        }
+      }
+    },
+    "Oyları gönder" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send votes"
+          }
+        }
+      }
+    },
+    "Oyların kaydedildi." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your votes were saved."
+          }
+        }
+      }
+    },
+    "Geri alınamadı; internet bağlantını kontrol et." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't undo; check your internet connection."
+          }
+        }
+      }
+    },
+    "Birkaç kısa soru; uygulamayı sana göre açarız. Tercihlerin cihazında kalır; rota paylaşımı yalnızca izin verirsen." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A few short questions so we can tailor the app. Your preferences stay on your device; your route is shared only if you allow it."
+          }
+        }
+      }
+    },
+    "Favori" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Favourite"
+          }
+        }
+      }
+    },
+    "Kapak yap" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set as cover"
+          }
+        }
+      }
+    },
+    "Gizle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hide"
+          }
+        }
+      }
+    },
+    "Kapak yapıldı" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cover set"
+          }
+        }
+      }
+    },
+    "Kapak değiştirilemedi" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't set cover"
+          }
+        }
+      }
+    },
+    "%@, %lld fotoğraf" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@, %#@photos@"
+          },
+          "substitutions" : {
+            "photos" : {
+              "argNum" : 2,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg photo"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg photos"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$lld fotoğraf"
+          }
+        }
+      }
+    },
+    "%lld. gün, %@, %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Day %1$lld, %2$@, %3$@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld. gün, %2$@, %3$@"
+          }
+        }
+      }
+    },
+    "Daha fazla fotoğraf seç" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select more photos"
+          }
+        }
+      }
+    },
+    "Fotoğraf gerekli" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photo required"
+          }
+        }
+      }
+    },
+    "Fotoğraf gerekli: Kartpostal, Kolaj" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photos required: Postcard, Collage"
+          }
+        }
+      }
+    },
+    "Favoride" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In favorites"
+          }
+        }
+      }
+    },
+    "gün (1)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "day"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "gün"
+          }
+        }
+      }
+    },
+    "durak (1)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "stop"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "durak"
+          }
+        }
+      }
+    },
+    "kişi (1)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "person"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "kişi"
           }
         }
       }

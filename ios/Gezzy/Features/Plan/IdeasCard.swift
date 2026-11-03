@@ -1,15 +1,20 @@
 import SwiftUI
 import GezzyKit
 
-/// Gitmek istenen ama henüz bir güne konmamış yerler. Elle ya da önerilerden eklenir; "Güne ekle" ile
-/// seçili güne taşınır ya da "Otomatik rota" hepsini günlere dağıtır.
+/// Gitmek istenen ama henüz bir güne konmamış yerler. Elle ya da önerilerden eklenir; satırdaki "+" ile
+/// seçili güne (basılı tutunca başka bir güne) taşınır ya da "Otomatik rota" hepsini günlere dağıtır.
 struct IdeasCard: View {
+    @Environment(\.tripPalette) private var palette
+    @Environment(\.tripTint) private var tint
+    @Environment(\.tripText) private var tintText
     @Environment(TripStore.self) private var store
     let trip: Trip
     let day: Date
-    @State private var isAdding = false
-    @State private var isSuggesting = false
+    @State private var isPicking = false
     @State private var isPlanning = false
+    @Environment(Entitlements.self) private var entitlements
+    @State private var isShowingPaywall = false
+    @State private var planAfterPaywall = false
     /// Son otomatik rotadan önceki duraklar ve fikirler; "Geri al" bunları geri yükler.
     @State private var undo: (stops: [Stop], ideas: [Stop]?)?
 
@@ -25,32 +30,38 @@ struct IdeasCard: View {
                 }
                 Spacer()
                 Button {
-                    isAdding = true
+                    isPicking = true
                 } label: {
-                    Image(systemName: "plus")
+                    HeaderPlusLabel()
                 }
-                .buttonStyle(.circleIcon(size: 32))
-                .accessibilityLabel("Fikir ekle")
+                .buttonStyle(.plain)
+                .accessibilityLabel("Yer ekle")
             }
 
             if ideas.isEmpty {
-                EmptyHint(symbol: "lightbulb", text: String(localized: "Gitmek istediğin yerleri ekle ya da önerilerden seç; sonra otomatik rota günlere dağıtsın."))
+                AddPlaceholder(title: String(localized: "Yer ekle"),
+                               subtitle: String(localized: "Gitmek istediğin yerleri ekle; sonra otomatik rota günlere dağıtsın.")) {
+                    isPicking = true
+                }
             }
 
             HStack(spacing: 8) {
-                Button {
-                    isSuggesting = true
-                } label: {
-                    Label("Yer öner", systemImage: "sparkle.magnifyingglass")
-                }
-                .buttonStyle(PillButtonStyle())
                 if !ideas.isEmpty {
                     Button {
-                        isPlanning = true
+                        if entitlements.isPremium {
+                            isPlanning = true
+                        } else {
+                            isShowingPaywall = true
+                        }
                     } label: {
-                        Label("Otomatik rota", systemImage: "wand.and.stars")
+                        HStack(spacing: 6) {
+                            Label("Otomatik rota", systemImage: "wand.and.stars")
+                            if !entitlements.isPremium {
+                                Image(systemName: "lock.fill").font(.system(size: 10))
+                            }
+                        }
                     }
-                    .buttonStyle(PillButtonStyle(isProminent: true))
+                    .buttonStyle(PillButtonStyle(tint: tintText, soft: .soft(palette)))
                 }
                 if let undo {
                     Button {
@@ -79,8 +90,8 @@ struct IdeasCard: View {
                     Image(systemName: idea.kind.symbol)
                         .font(.system(size: 14))
                         .foregroundStyle(Color.ink2)
-                        .frame(width: 34, height: 34)
-                        .background(Color.track, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        .frame(width: 28, height: 28)
+                        .background(Color.track, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
                     VStack(alignment: .leading, spacing: 1) {
                         Text(idea.name).font(.subheadline).foregroundStyle(Color.ink).lineLimit(1)
                         if !idea.note.isEmpty {
@@ -88,17 +99,24 @@ struct IdeasCard: View {
                         }
                     }
                     Spacer(minLength: 8)
-                    Button {
-                        withAnimation(.spring(duration: 0.3)) { schedule(idea) }
+                    Menu {
+                        ForEach(trip.days(), id: \.self) { target in
+                            Button("\(AppFormat.dayPill(target)) ekle") {
+                                withAnimation(.spring(duration: 0.3)) { schedule(idea, on: target) }
+                            }
+                        }
                     } label: {
-                        Text("\(AppFormat.dayPill(day)) ekle")
-                            .font(.system(.caption, weight: .bold))
-                            .foregroundStyle(Color.onInk)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(Color.ink, in: Capsule())
+                        Image(systemName: "plus")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundStyle(tintText)
+                            .frame(width: 32, height: 32)
+                            .background(Color.soft(palette), in: Circle())
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
+                    } primaryAction: {
+                        withAnimation(.spring(duration: 0.3)) { schedule(idea, on: day) }
                     }
-                    .buttonStyle(.plain)
+                    .accessibilityLabel(Text("\(AppFormat.dayPill(day)) gününe ekle"))
                 }
                 .contextMenu {
                     Button("Sil", systemImage: "trash", role: .destructive) {
@@ -108,11 +126,19 @@ struct IdeasCard: View {
             }
         }
         .tray()
-        .sheet(isPresented: $isAdding) {
-            AddStopSheet(trip: trip, day: day, asIdea: true)
+        .fullScreenCover(isPresented: $isPicking) {
+            PlacePickerSheet(trip: trip, target: .ideas, openingDay: day)
+                .environment(\.tripPalette, palette)
+                .environment(\.tripTint, tint)
+                .environment(\.tripText, tintText)
         }
-        .sheet(isPresented: $isSuggesting) {
-            PlaceSuggestionsSheet(trip: trip, day: day)
+        .sheet(isPresented: $isShowingPaywall, onDismiss: {
+            if planAfterPaywall {
+                planAfterPaywall = false
+                isPlanning = true
+            }
+        }) {
+            PaywallSheet(reason: .autoPlan) { planAfterPaywall = true }
         }
         .sheet(isPresented: $isPlanning) {
             AutoPlanSheet(trip: trip) { before in
@@ -123,12 +149,12 @@ struct IdeasCard: View {
 
     /// Fikri günün sonuna durak olarak ekler. Durak yeni kimlik alır; böylece fikrin silinmesi
     /// eşitlemede diğer cihazlara da yansır.
-    private func schedule(_ idea: Stop) {
+    private func schedule(_ idea: Stop, on target: Date) {
         store.update(trip.id) { trip in
-            let order = (trip.stops(on: day).map(\.order).max() ?? -1) + 1
+            let order = (trip.stops(on: target).map(\.order).max() ?? -1) + 1
             var stop = idea
             stop.id = UUID()
-            stop.day = Calendar.current.startOfDay(for: day)
+            stop.day = Calendar.current.startOfDay(for: target)
             stop.order = order
             trip.stops.append(stop)
             trip.ideas?.removeAll { $0.id == idea.id }
@@ -136,17 +162,18 @@ struct IdeasCard: View {
     }
 }
 
-/// Kart içi küçük hap düğme.
+/// Kart içi küçük hap düğme; `tint` verilirse yumuşak zemin + renkli metin.
 struct PillButtonStyle: ButtonStyle {
-    var isProminent = false
+    var tint: Color?
+    var soft: Color?
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(.footnote, weight: .semibold))
-            .foregroundStyle(isProminent ? Color.onInk : Color.ink)
+            .foregroundStyle(tint ?? Color.ink)
             .padding(.horizontal, 12)
             .frame(height: 34)
-            .background(isProminent ? Color.ink : Color.track, in: Capsule())
+            .background(soft ?? Color.track, in: Capsule())
             .opacity(configuration.isPressed ? 0.8 : 1)
     }
 }

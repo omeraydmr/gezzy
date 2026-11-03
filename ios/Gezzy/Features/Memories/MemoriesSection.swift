@@ -3,36 +3,50 @@ import Photos
 import SwiftUI
 import GezzyKit
 
+/// Paylaşım stüdyosunu açma isteği (şablon ve önceden seçili fotoğraflar).
+struct StudioRequest: Identifiable {
+    let id = UUID()
+    let template: ShareCardConfig.Template
+    let photoIDs: [String]
+}
+
 /// Anılar: seyahat tarihlerindeki fotoğraflar zamana ve konuma göre anlara ayrılır, en yakın durakla
-/// adlandırılır, haritada gösterilir; seyahatten paylaşılabilir bir kartpostal üretilir.
+/// adlandırılır; öne çıkanlar, harita üzerinde günlük ve paylaşım stüdyosu girişi.
 struct MemoriesSection: View {
     @Environment(TripStore.self) private var store
     @Environment(\.tripTint) private var tint
+    @Environment(\.tripText) private var tripText
+    @Environment(\.tripPalette) private var palette
     let trip: Trip
 
     @State private var moments: [PhotoClusterer.Moment]?
-    @State private var photoCount = 0
-    @State private var expanded: String?
-    @State private var postcard: UIImage?
-    @State private var isRenderingPostcard = false
     @State private var viewer: PhotoViewerContext?
+    @State private var studioRequest: StudioRequest?
+    /// Anlardan türetilenler; her body geçişinde değil, anlar ya da tercihler değişince hesaplanır.
+    @State private var derived: Derived?
     private var library: PhotoLibrary { .shared }
+    private var prefs: MemoryPrefs { .shared }
+
+    private struct Derived {
+        var visible: [PhotoClusterer.Moment]
+        var highlights: [MemoryHighlights.Highlight]
+        var hiddenCount: Int
+    }
 
     var body: some View {
+        // Tercihler body'de okunur; favori/gizle değişince türetilenler yenilenir.
+        let hidden = prefs.hidden(trip.id)
+        let favorites = prefs.favorites(trip.id)
         ModuleCard(String(localized: "Anılar"), symbol: "photo.on.rectangle.angled") {
-            TripSummaryCard(trip: trip)
-            SharedAlbumCard(trip: trip)
-            if CommunityService.shared.isConfigured && CommunityPlaces.canContribute(trip) {
-                CommunityShareCard(trip: trip, verified: CommunityPlaces.verifiedStops(in: trip, moments: moments ?? []))
-            }
             if !library.canRead {
                 permissionPrompt
             } else if let moments {
                 if moments.isEmpty {
                     EmptyHint(symbol: "photo", text: String(localized: "Seyahat tarihlerinde çekilmiş fotoğraf bulunamadı.")).tray()
-                } else {
-                    content(moments)
+                } else if let derived {
+                    content(derived)
                 }
+                if library.isLimited { morePhotosButton }
             } else {
                 HStack(spacing: 10) {
                     ProgressView()
@@ -40,15 +54,31 @@ struct MemoriesSection: View {
                 }
                 .tray()
             }
+            shareRow
+            SharedAlbumCard(trip: trip)
+            if CommunityService.shared.isConfigured && CommunityPlaces.canContribute(trip) {
+                CommunityShareCard(trip: trip, verified: CommunityPlaces.verifiedStops(in: trip, moments: moments ?? []))
+            }
         }
-        .task(id: "\(trip.id)-\(library.status.rawValue)-\(trip.stops.count)") { await load() }
+        .task(id: "\(trip.id)-\(library.status.rawValue)-\(library.revision)-\(trip.stops.count)") { await load() }
+        .onChange(of: moments, initial: true) { rederive() }
+        .onChange(of: hidden) { rederive() }
+        .onChange(of: favorites) { rederive() }
         // Albüm açıldıysa (ör. ekipten biri onay verdi) eksik fotoğrafları yükle; kullanılmayanları temizle.
         .task(id: "\(trip.id)-\(SharedAlbum.canView(store.me.id, in: trip))-\(library.status.rawValue)") {
             AlbumSync.shared.pruneOrphans(store: store)
             await AlbumSync.shared.sync(trip.id, store: store)
         }
         .fullScreenCover(item: $viewer) { context in
-            PhotoViewer(items: context.items, index: context.index)
+            PhotoViewer(items: context.items, index: context.index, tripID: trip.id)
+                .environment(store)
+        }
+        .fullScreenCover(item: $studioRequest) { request in
+            ShareStudioView(trip: trip, request: request, moments: moments)
+                .environment(store)
+                .environment(\.tripPalette, palette)
+                .environment(\.tripTint, tint)
+                .environment(\.tripText, tripText)
         }
     }
 
@@ -68,7 +98,7 @@ struct MemoriesSection: View {
                 } label: {
                     Label("Fotoğraflara erişim ver", systemImage: "photo.on.rectangle")
                 }
-                .buttonStyle(.primary)
+                .buttonStyle(.primary(tint))
             }
         }
         .tray()
@@ -77,139 +107,82 @@ struct MemoriesSection: View {
     // MARK: İçerik
 
     @ViewBuilder
-    private func content(_ moments: [PhotoClusterer.Moment]) -> some View {
-        let biggest = moments.max { $0.count < $1.count }
-        StoryHeadline(text: headline(moments, biggest: biggest))
-
-        let located = moments.filter { $0.center != nil }
-        if !located.isEmpty {
-            Map(initialPosition: MapFraming.position(located.compactMap(\.center).map {
-                CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude)
-            })) {
-                ForEach(located) { moment in
-                    let center = moment.center!
-                    Annotation(moment.stopName ?? "", coordinate: CLLocationCoordinate2D(latitude: center.latitude,
-                                                                                       longitude: center.longitude)) {
-                        Text("\(moment.count)")
-                            .font(.system(.caption, weight: .bold))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 8)
-                            .frame(minWidth: 26, minHeight: 26)
-                            .background(tint, in: Capsule())
-                            .overlay(Capsule().strokeBorder(.white, lineWidth: 2))
-                    }
-                }
-            }
-            .mapStyle(.standard(elevation: .flat, pointsOfInterest: .excludingAll))
-            .frame(height: 220)
-            .clipShape(RoundedRectangle(cornerRadius: Radius.tray, style: .continuous))
-            .cardBackground(Color.tray, in: RoundedRectangle(cornerRadius: Radius.tray, style: .continuous))
+    private func content(_ derived: Derived) -> some View {
+        if !derived.highlights.isEmpty {
+            HighlightsStrip(trip: trip, highlights: derived.highlights, onOpen: { viewer = $0 }, onCreateCard: openStudio)
         }
-
-        let days = Dictionary(grouping: moments) { Calendar.current.startOfDay(for: $0.start) }
-        ForEach(days.keys.sorted(), id: \.self) { day in
-            VStack(alignment: .leading, spacing: 10) {
-                Text(dayTitle(day)).font(.tCaption).foregroundStyle(Color.ink3)
-                ForEach(days[day] ?? []) { moment in
-                    momentRow(moment)
-                }
-            }
-            .tray(padding: 14)
-        }
-
-        postcardButton(cover: biggest)
-    }
-
-    private func momentRow(_ moment: PhotoClusterer.Moment) -> some View {
-        let isExpanded = expanded == moment.id
-        return VStack(alignment: .leading, spacing: 8) {
-            Button {
-                withAnimation(.spring(duration: 0.3)) { expanded = isExpanded ? nil : moment.id }
-            } label: {
-                HStack {
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(moment.stopName ?? timeRange(moment)).font(.tBodyStrong).foregroundStyle(Color.ink)
-                        Text(moment.stopName == nil ? String(localized: "\(moment.count) fotoğraf") : String(localized: "\(timeRange(moment)) · \(moment.count) fotoğraf"))
-                            .font(.caption)
-                            .foregroundStyle(Color.ink3)
-                    }
-                    Spacer()
-                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(Color.ink3)
-                }
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-
-            if isExpanded {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 76), spacing: 4)], spacing: 4) {
-                    ForEach(Array(moment.photoIDs.enumerated()), id: \.element) { index, id in
-                        openable(moment, index) { PhotoThumb(id: id, side: 76) }
-                    }
-                }
-            } else {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 4) {
-                        ForEach(Array(moment.photoIDs.prefix(10).enumerated()), id: \.element) { index, id in
-                            openable(moment, index) { PhotoThumb(id: id, side: 64) }
-                        }
-                    }
-                }
-            }
+        MemoryJournal(trip: trip, moments: derived.visible, onOpen: { viewer = $0 },
+                      hiddenCount: derived.hiddenCount) {
+            // Onay sorulmaz; bu seyahatin gizlileri tek yazımda geri gelir.
+            prefs.unhideAll(trip: trip.id)
         }
     }
 
-    /// Dokununca anın fotoğrafları tam ekran açılır.
-    private func openable<Thumb: View>(_ moment: PhotoClusterer.Moment, _ index: Int,
-                                       @ViewBuilder thumb: () -> Thumb) -> some View {
+    /// Sınırlı erişimde seçimi genişletir; kapanınca anlar yeniden yüklenir (`revision`).
+    private var morePhotosButton: some View {
         Button {
-            viewer = PhotoViewerContext(items: moment.photoIDs.map { .library($0) }, index: index)
+            Task { await library.presentLimitedPicker() }
         } label: {
-            thumb()
+            Label("Daha fazla fotoğraf seç", systemImage: "plus.circle")
+                .font(.system(.subheadline, weight: .semibold))
+                .foregroundStyle(tripText)
+                .frame(maxWidth: .infinity)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Fotoğrafı aç")
     }
 
-    // MARK: Kartpostal
+    private func rederive() {
+        guard let moments, !moments.isEmpty else { derived = nil; return }
+        let hidden = prefs.hidden(trip.id)
+        let allIDs = Set(moments.flatMap(\.photoIDs))
+        derived = Derived(
+            visible: Self.visible(moments, hidden: hidden),
+            highlights: MemoryHighlights.pick(moments: moments, favorites: prefs.favorites(trip.id), hidden: hidden),
+            hiddenCount: hidden.intersection(allIDs).count)
+    }
 
-    @ViewBuilder
-    private func postcardButton(cover: PhotoClusterer.Moment?) -> some View {
-        if let postcard {
-            ShareLink(item: Image(uiImage: postcard),
-                      preview: SharePreview("\(trip.name) kartpostalı", image: Image(uiImage: postcard))) {
-                Label("Kartpostalı paylaş", systemImage: "square.and.arrow.up")
-            }
-            .buttonStyle(.primary)
-        } else {
-            Button {
-                Task { await renderPostcard(cover: cover) }
-            } label: {
-                if isRenderingPostcard {
-                    ProgressView().tint(Color.onInk)
-                } else {
-                    Label("Kartpostal oluştur", systemImage: "rectangle.portrait.on.rectangle.portrait.angled")
+    /// Gizli fotoğraflar çıkarılır, boşalan anlar düşer.
+    private static func visible(_ moments: [PhotoClusterer.Moment], hidden: Set<String>) -> [PhotoClusterer.Moment] {
+        guard !hidden.isEmpty else { return moments }
+        return moments.compactMap { moment in
+            var moment = moment
+            moment.photoIDs.removeAll(where: hidden.contains)
+            return moment.photoIDs.isEmpty ? nil : moment
+        }
+    }
+
+    // MARK: Paylaş
+
+    private var shareRow: some View {
+        Button {
+            openStudio(lastTemplate ?? .postcard, [])
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "square.and.arrow.up")
+                    .font(.system(.title3, weight: .semibold))
+                    .foregroundStyle(tripText)
+                    .frame(width: 32)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Seyahatini paylaş").font(.tBodyStrong).foregroundStyle(Color.ink)
+                    Text("5 şablon · story, gönderi, kare").font(.caption).foregroundStyle(Color.ink3)
                 }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color.ink3)
             }
-            .buttonStyle(.primary)
-            .disabled(isRenderingPostcard)
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
+        .tray(padding: 16)
     }
 
-    private func renderPostcard(cover: PhotoClusterer.Moment?) async {
-        isRenderingPostcard = true
-        defer { isRenderingPostcard = false }
-        var image: UIImage?
-        if let id = cover?.photoIDs[(cover?.photoIDs.count ?? 1) / 2] {
-            image = await library.thumbnail(for: id, side: 1200)
-        }
-        let card = PostcardView(trip: trip, photo: image, photoCount: photoCount, momentCount: moments?.count ?? 0,
-                                stamp: StampImprint.subtitle(for: trip, on: trip.endDate))
-            .environment(\.locale, AppFormat.locale)
-        let renderer = ImageRenderer(content: card)
-        renderer.scale = 3
-        withAnimation { postcard = renderer.uiImage }
+    /// Son kullanılan şablon (`gezzy.shareStudio.v1`).
+    private var lastTemplate: ShareCardConfig.Template? { ShareStudioStore.shared.lastTemplate(for: trip.id) }
+
+    /// Stüdyo kancası: şablon ve önceden seçili fotoğraflarla stüdyoyu açar.
+    private func openStudio(_ template: ShareCardConfig.Template, _ photoIDs: [String]) {
+        studioRequest = StudioRequest(template: template, photoIDs: photoIDs)
     }
 
     // MARK: Yükleme
@@ -218,27 +191,7 @@ struct MemoriesSection: View {
         guard library.canRead else { return }
         let photos = await library.photos(for: trip)
         let grouped = PhotoClusterer.label(PhotoClusterer.moments(photos), stops: trip.stops)
-        photoCount = photos.count
         withAnimation { moments = grouped }
-    }
-
-    // MARK: Metinler
-
-    private func headline(_ moments: [PhotoClusterer.Moment], biggest: PhotoClusterer.Moment?) -> String {
-        var text = String(localized: "\(photoCount) fotoğraf, \(moments.count) an.")
-        if let name = biggest?.stopName { text += String(localized: " En çok fotoğraf: \(name).") }
-        return text
-    }
-
-    private func dayTitle(_ day: Date) -> String {
-        let number = (trip.days().firstIndex { Calendar.current.isDate($0, inSameDayAs: day) } ?? 0) + 1
-        return String(localized: "\(number). gün · \(AppFormat.dayPill(day))")
-    }
-
-    private func timeRange(_ moment: PhotoClusterer.Moment) -> String {
-        let start = AppFormat.time(moment.start)
-        let end = AppFormat.time(moment.end)
-        return start == end ? start : "\(start)–\(end)"
     }
 }
 
@@ -262,66 +215,5 @@ struct PhotoThumb: View {
                 image = await PhotoLibrary.shared.thumbnail(for: id, side: side * displayScale)
             }
             .accessibilityHidden(true)
-    }
-}
-
-/// Paylaşılabilir seyahat kartpostalı (ImageRenderer ile görüntüye çevrilir).
-struct PostcardView: View {
-    let trip: Trip
-    let photo: UIImage?
-    let photoCount: Int
-    let momentCount: Int
-    let stamp: String
-
-    var body: some View {
-        VStack(spacing: 0) {
-            ZStack(alignment: .bottomLeading) {
-                Group {
-                    if let photo {
-                        Image(uiImage: photo).resizable().scaledToFill()
-                    } else {
-                        CoverArt(seed: trip.coverSeed)
-                    }
-                }
-                .frame(width: 360, height: 270)
-                .clipped()
-                LinearGradient(colors: [.clear, .black.opacity(0.55)], startPoint: .center, endPoint: .bottom)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(trip.name)
-                        .font(.system(size: 26, weight: .semibold))
-                        .foregroundStyle(.white)
-                    Text("\(trip.countryCodes.map(Countries.flag).joined()) \(trip.cityTitle) · \(AppFormat.dateRange(trip.startDate, trip.endDate))")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.9))
-                }
-                .padding(18)
-            }
-            .frame(width: 360, height: 270)
-
-            HStack(alignment: .center) {
-                VStack(alignment: .leading, spacing: 8) {
-                    stat("\(trip.days().count)", String(localized: "gün"))
-                    stat("\(photoCount)", String(localized: "fotoğraf"))
-                    stat("\(momentCount)", "an")
-                    stat("\(trip.stops.count)", String(localized: "durak"))
-                }
-                Spacer()
-                StampImprint(subtitle: stamp, scale: 0.8)
-            }
-            .padding(20)
-            .frame(width: 360, height: 180)
-            .background(Color.tray)
-        }
-        .frame(width: 360, height: 450)
-        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-        .padding(12)
-        .background(Color.canvas)
-    }
-
-    private func stat(_ value: String, _ label: String) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 6) {
-            Text(value).font(.system(size: 20, weight: .semibold, design: .rounded)).foregroundStyle(Color.ink)
-            Text(label).font(.system(size: 13, weight: .medium)).foregroundStyle(Color.ink2)
-        }
     }
 }

@@ -14,16 +14,13 @@ public enum ItineraryPlanner {
         /// Gün başlangıcı ve bitişi (gece yarısından dakika).
         public var dayStart: Int
         public var dayEnd: Int
-        /// Varıştan sonra plana başlamadan önceki pay (havalimanı, otele yerleşme).
-        public var afterArrival: Int
-        /// Dönüş uçuşundan önce plan bitmeli.
-        public var beforeDeparture: Int
+        /// Yolcunun uyruğu: uçuş günlerinde EES kuyruğu hesabı için.
+        public var nationality: String
 
-        public init(dayStart: Int = 9 * 60, dayEnd: Int = 19 * 60, afterArrival: Int = 120, beforeDeparture: Int = 180) {
+        public init(dayStart: Int = 9 * 60, dayEnd: Int = 19 * 60, nationality: String = "TR") {
             self.dayStart = dayStart
             self.dayEnd = dayEnd
-            self.afterArrival = afterArrival
-            self.beforeDeparture = beforeDeparture
+            self.nationality = nationality
         }
     }
 
@@ -63,7 +60,11 @@ public enum ItineraryPlanner {
             var weekday: Int
             var start: Int
             var end: Int
+            /// Uçuş günü: pencere sınırına tolerans yok.
+            var arrives: Bool
+            var departs: Bool
             var anchor: Coordinate?
+            var endAnchor: Coordinate?
             var existing: [Stop]
             var added: [Stop] = []
             var used: Int {
@@ -80,10 +81,26 @@ public enum ItineraryPlanner {
 
         var buckets: [Bucket] = days.map { day in
             let window = window(for: day, trip: trip, settings: settings, calendar: calendar)
+            let anchors = trip.anchors(on: day, calendar: calendar)
+            // Yürüyüş uçları yalnızca konaklama: havalimanı bacağı transferdir (pencereye dahil).
+            var start: Coordinate?
+            switch anchors.start {
+            case .lodging(let lodging)?: start = lodging.coordinate
+            case .airport?: start = trip.lodging(forNightOf: day, calendar: calendar)?.coordinate
+            case nil: start = nil
+            }
+            var end: Coordinate?
+            switch anchors.end {
+            case .lodging(let lodging)?: end = lodging.coordinate
+            case .airport?: end = trip.lodging(forMorningOf: day, calendar: calendar)?.coordinate
+            case nil: end = nil
+            }
             return Bucket(day: day,
                           weekday: OpeningHours.dayIndex(calendarWeekday: calendar.component(.weekday, from: day)),
                           start: window.start, end: window.end,
-                          anchor: trip.lodging(forMorningOf: day, calendar: calendar)?.coordinate,
+                          arrives: trip.arrivalFlight(on: day, calendar: calendar) != nil,
+                          departs: trip.departureFlight(on: day, calendar: calendar) != nil,
+                          anchor: start, endAnchor: end,
                           existing: trip.stops(on: day, calendar: calendar))
         }
 
@@ -159,13 +176,17 @@ public enum ItineraryPlanner {
         // Günleri sırala; pencereye sığmayan yenileri çıkar.
         var plans: [DayPlan] = []
         for var bucket in buckets {
-            var result = order(bucket.existing, bucket.added, bucket: (bucket.day, bucket.weekday, bucket.start,
-                                                                       trip.lodging(forMorningOf: bucket.day, calendar: calendar)?.coordinate))
-            while result.end > bucket.end + 30, let drop = result.lastAdded {
+            var result = order(bucket.existing, bucket.added, bucket: (bucket.day, bucket.weekday, bucket.start, bucket.anchor, bucket.endAnchor))
+            // Uçuş günü: hazır olmadan başlayan ya da çıkış saatinden sonra biten yeni yer kalmaz.
+            func violation(_ r: Ordered) -> UUID? {
+                if bucket.arrives, let early = r.addedStarts.first(where: { $0.value < bucket.start })?.key { return early }
+                if bucket.departs ? r.addedEnd > bucket.end : r.end > bucket.end + 30 { return r.lastAdded }
+                return nil
+            }
+            while let drop = violation(result) {
                 bucket.added.removeAll { $0.id == drop }
                 unscheduled.append(drop)
-                result = order(bucket.existing, bucket.added, bucket: (bucket.day, bucket.weekday, bucket.start,
-                                                                       trip.lodging(forMorningOf: bucket.day, calendar: calendar)?.coordinate))
+                result = order(bucket.existing, bucket.added, bucket: (bucket.day, bucket.weekday, bucket.start, bucket.anchor, bucket.endAnchor))
             }
             plans.append(DayPlan(day: bucket.day, order: result.order, starts: result.starts,
                                  added: bucket.added.map(\.id), walkingMeters: result.meters, endMinutes: result.end))
@@ -185,9 +206,13 @@ public enum ItineraryPlanner {
         var end: Int
         var meters: Double
         var lastAdded: UUID?
+        /// Yeni yerlerin (yuvarlanmış) başlangıçları ve en geç bitişi.
+        var addedStarts: [UUID: Int]
+        var addedEnd: Int
     }
 
-    private static func order(_ existing: [Stop], _ added: [Stop], bucket: (day: Date, weekday: Int, start: Int, hotel: Coordinate?)) -> Ordered {
+    private static func order(_ existing: [Stop], _ added: [Stop],
+                              bucket: (day: Date, weekday: Int, start: Int, hotel: Coordinate?, end: Coordinate?)) -> Ordered {
         let all = existing + added
         let located = all.filter { $0.coordinate != nil }
         let unlocated = all.filter { $0.coordinate == nil }
@@ -198,7 +223,7 @@ public enum ItineraryPlanner {
                                  fixedStart: addedIDs.contains(stop.id) ? nil : stop.startMinutes)
         }
         let dayStart = min(bucket.start, located.compactMap { addedIDs.contains($0.id) ? nil : $0.startMinutes }.min() ?? bucket.start)
-        let route = RouteOptimizer.order(visits, from: bucket.hotel, dayStart: dayStart)
+        let route = RouteOptimizer.order(visits, from: bucket.hotel, to: bucket.end, dayStart: dayStart)
         let schedule = RouteOptimizer.schedule(route, visits: visits, from: bucket.hotel, dayStart: dayStart)
         var starts: [UUID: Int] = [:]
         var end = bucket.start
@@ -209,27 +234,28 @@ public enum ItineraryPlanner {
             end = max(end, begin + stop.durationMinutes)
         }
         let path = (bucket.hotel.map { [$0] } ?? []) + route.map { located[$0].coordinate! }
+            + (bucket.hotel != nil && !route.isEmpty ? (bucket.end.map { [$0] } ?? []) : [])
         let lastAdded = route.reversed().map { located[$0].id }.first { addedIDs.contains($0) }
+        let addedEnd = located.filter { addedIDs.contains($0.id) }
+            .compactMap { stop in starts[stop.id].map { $0 + stop.durationMinutes } }.max() ?? 0
         return Ordered(order: route.map { located[$0].id } + unlocated.map(\.id), starts: starts, end: end,
-                       meters: Geo.routeDistance(path), lastAdded: lastAdded)
+                       meters: Geo.routeDistance(path), lastAdded: lastAdded, addedStarts: starts, addedEnd: addedEnd)
     }
 
-    /// Günün kullanılabilir penceresi; varış ve dönüş uçuşlarına göre daralır.
+    /// Günün kullanılabilir penceresi; o gün inilen/kalkılan uçuşa göre `FlightDayTiming` ile daralır
+    /// (iniş: gece otele hazır olma; kalkış: sabah otelinden yola çıkma).
     static func window(for day: Date, trip: Trip, settings: Settings, calendar: Calendar) -> (start: Int, end: Int) {
         var start = settings.dayStart
         var end = settings.dayEnd
-        func minutes(_ date: Date) -> Int {
-            let parts = calendar.dateComponents([.hour, .minute], from: date)
-            return (parts.hour ?? 0) * 60 + (parts.minute ?? 0)
+        if let flight = trip.arrivalFlight(on: day, calendar: calendar),
+           let arrival = FlightDayTiming.arrival(flight, firstPoint: trip.lodging(forNightOf: day, calendar: calendar)?.coordinate,
+                                                 nationality: settings.nationality, fallback: calendar.timeZone) {
+            start = max(start, arrival.readyAt)
         }
-        for flight in trip.flights {
-            // İlk gün: o gün inen uçuştan sonra; son gün: o gün kalkan uçuştan önce.
-            if calendar.isDate(day, inSameDayAs: trip.startDate), calendar.isDate(flight.arrival, inSameDayAs: day) {
-                start = max(start, minutes(flight.arrival) + settings.afterArrival)
-            }
-            if calendar.isDate(flight.departure, inSameDayAs: day), calendar.isDate(day, inSameDayAs: trip.endDate) {
-                end = min(end, minutes(flight.departure) - settings.beforeDeparture)
-            }
+        if let flight = trip.departureFlight(on: day, calendar: calendar),
+           let departure = FlightDayTiming.departure(flight, lastPoint: trip.lodging(forMorningOf: day, calendar: calendar)?.coordinate,
+                                                     nationality: settings.nationality, fallback: calendar.timeZone) {
+            end = min(end, departure.leaveBy)
         }
         return (start, max(start, end))
     }

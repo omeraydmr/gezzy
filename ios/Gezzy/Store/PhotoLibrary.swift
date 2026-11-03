@@ -15,10 +15,30 @@ final class PhotoLibrary {
     private let manager = PHCachingImageManager()
     private let thumbnails = NSCache<NSString, UIImage>()
 
+    /// Sınırlı seçim genişletilince artar; listeler bununla yeniden yüklenir.
+    private(set) var revision = 0
+
     var canRead: Bool { status == .authorized || status == .limited }
+    var isLimited: Bool { status == .limited }
 
     func requestAccess() async {
         status = await PHPhotoLibrary.requestAuthorization(for: .readWrite)
+    }
+
+    /// Sınırlı erişimde sistem seçicisini açar; kapanınca `revision` artar.
+    func presentLimitedPicker() async {
+        guard isLimited, let presenter = Self.topViewController() else { return }
+        _ = await PHPhotoLibrary.shared().presentLimitedLibraryPicker(from: presenter)
+        status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        revision += 1
+    }
+
+    private static func topViewController() -> UIViewController? {
+        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        let window = scenes.flatMap(\.windows).first(where: \.isKeyWindow) ?? scenes.first?.windows.first
+        var top = window?.rootViewController
+        while let presented = top?.presentedViewController { top = presented }
+        return top
     }
 
     /// Seyahatin ilk gününün başından son gününün sonuna kadar çekilen fotoğraflar.
@@ -88,27 +108,31 @@ final class PhotoLibrary {
         return image?.jpegData(compressionQuality: 0.8)
     }
 
-    /// Tam ekran görüntüleyici için büyük görsel.
+    /// Tam ekran görüntüleyici ve kart çıktısı için büyük görsel; önbelleğe alınmaz (bellek şişmesin).
     func fullImage(for id: String, maxPixelSize: CGFloat = 2400) async -> UIImage? {
-        await thumbnail(for: id, side: maxPixelSize, contentMode: .aspectFit)
+        await requestImage(for: id, side: maxPixelSize, contentMode: .aspectFit)
     }
 
     /// Kare küçük görsel (piksel cinsinden kenar).
     func thumbnail(for id: String, side: CGFloat, contentMode: PHImageContentMode = .aspectFill) async -> UIImage? {
         let key = "\(id)@\(Int(side))@\(contentMode.rawValue)" as NSString
         if let cached = thumbnails.object(forKey: key) { return cached }
+        let image = await requestImage(for: id, side: side, contentMode: contentMode)
+        if let image { thumbnails.setObject(image, forKey: key) }
+        return image
+    }
+
+    private func requestImage(for id: String, side: CGFloat, contentMode: PHImageContentMode) async -> UIImage? {
         guard let asset = PHAsset.fetchAssets(withLocalIdentifiers: [id], options: nil).firstObject else { return nil }
         let options = PHImageRequestOptions()
         options.deliveryMode = .highQualityFormat
         options.resizeMode = .fast
         options.isNetworkAccessAllowed = true
-        let image: UIImage? = await withCheckedContinuation { continuation in
+        return await withCheckedContinuation { continuation in
             manager.requestImage(for: asset, targetSize: CGSize(width: side, height: side), contentMode: contentMode,
                                  options: options) { image, _ in
                 continuation.resume(returning: image)
             }
         }
-        if let image { thumbnails.setObject(image, forKey: key) }
-        return image
     }
 }

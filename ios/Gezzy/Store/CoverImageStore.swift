@@ -28,7 +28,7 @@ final class CoverImageStore {
     private let images = NSCache<NSString, UIImage>()
     /// Kartlar için küçültülmüş ve önceden çözülmüş görüntüler ("ad@piksel").
     private let thumbnails = NSCache<NSString, UIImage>()
-    private var colors: [String: Color] = [:]
+    private var averages: [String: UInt32] = [:]
     private let context = CIContext(options: [.workingColorSpace: NSNull()])
 
     init(directory: URL = CoverImageStore.defaultDirectory) {
@@ -64,7 +64,7 @@ final class CoverImageStore {
         }.value
         for (name, image) in decoded {
             thumbnails.setObject(image, forKey: "\(name)@\(Int(size))" as NSString)
-            _ = dominantColor(named: name)
+            _ = averageHex(named: name)
         }
     }
 
@@ -141,7 +141,7 @@ final class CoverImageStore {
         try? FileManager.default.copyItem(at: source, to: target)
         images.removeObject(forKey: name as NSString)
         removeThumbnails(named: name)
-        colors[name] = nil
+        averages[name] = nil
     }
 
     private func removeThumbnails(named name: String) {
@@ -158,15 +158,30 @@ final class CoverImageStore {
     func delete(named name: String) {
         images.removeObject(forKey: name as NSString)
         removeThumbnails(named: name)
-        colors[name] = nil
+        averages[name] = nil
         try? FileManager.default.removeItem(at: directory.appendingPathComponent(name))
     }
 
-    /// Fotoğrafın ortalama renginden, kart üzerinde okunabilir kalacak şekilde doygunlaştırılmış bir ton.
-    func dominantColor(named name: String) -> Color? {
-        if let cached = colors[name] { return cached }
+    /// Fotoğrafın doygunlaştırılmamış ortalama rengi (0xRRGGBB); palet türetmek için.
+    func averageHex(named name: String) -> UInt32? {
+        if let cached = averages[name] { return cached }
         // Ortalama renk için 64 piksellik görüntü yeter; tam boy açmaya gerek yok.
-        guard let image = thumbnail(named: name, maxPixelSize: 64), let input = CIImage(image: image) else { return nil }
+        guard let image = thumbnail(named: name, maxPixelSize: 64), let hex = averageHex(of: image) else { return nil }
+        averages[name] = hex
+        return hex
+    }
+
+    /// Verilen görüntünün ortalama rengi (0xRRGGBB); küçük görsel vermek yeterli. Önbelleğe yazılmaz.
+    func averageHex(of image: UIImage) -> UInt32? {
+        guard let average = averageColor(of: image) else { return nil }
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        average.getRed(&r, green: &g, blue: &b, alpha: &a)
+        func byte(_ v: CGFloat) -> UInt32 { UInt32(max(0, min(255, (v * 255).rounded()))) }
+        return byte(r) << 16 | byte(g) << 8 | byte(b)
+    }
+
+    private func averageColor(of image: UIImage) -> UIColor? {
+        guard let input = CIImage(image: image) else { return nil }
 
         let filter = CIFilter.areaAverage()
         filter.inputImage = input
@@ -176,16 +191,8 @@ final class CoverImageStore {
         var pixel = [UInt8](repeating: 0, count: 4)
         context.render(output, toBitmap: &pixel, rowBytes: 4, bounds: CGRect(x: 0, y: 0, width: 1, height: 1),
                        format: .RGBA8, colorSpace: nil)
-        let average = UIColor(red: CGFloat(pixel[0]) / 255, green: CGFloat(pixel[1]) / 255,
-                              blue: CGFloat(pixel[2]) / 255, alpha: 1)
-
-        var hue: CGFloat = 0, saturation: CGFloat = 0, brightness: CGFloat = 0, alpha: CGFloat = 0
-        average.getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: &alpha)
-        let vivid = UIColor(hue: hue, saturation: min(1, max(0.45, saturation * 1.6)),
-                            brightness: min(0.85, max(0.55, brightness)), alpha: 1)
-        let color = Color(uiColor: vivid)
-        colors[name] = color
-        return color
+        return UIColor(red: CGFloat(pixel[0]) / 255, green: CGFloat(pixel[1]) / 255,
+                       blue: CGFloat(pixel[2]) / 255, alpha: 1)
     }
 
     private static func resized(_ image: UIImage, maxDimension: CGFloat) -> UIImage {

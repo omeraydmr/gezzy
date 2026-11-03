@@ -8,6 +8,7 @@ import GezzyKit
 /// Ekip paylaşımı ve eşitleme iCloud üzerinden yürür.
 struct OnboardingView: View {
     @Environment(TripStore.self) private var store
+    @Environment(Entitlements.self) private var entitlements
     /// Bitince ilk seyahati planlamak istendiyse true.
     let onFinish: (_ planFirstTrip: Bool) -> Void
 
@@ -22,6 +23,9 @@ struct OnboardingView: View {
     @State private var preferences: TravelPreferences
     @State private var cloudStatus: CloudStatus = .checking
     @State private var cloudUserID: String?
+    /// Rota paylaşım cevabı; "Devam" ile kaydedilir. Önceden seçili değil.
+    @State private var routeChoice: RouteReporter.Choice? = RouteReporter.shared.choice
+    @State private var isShowingPaywall = false
     @FocusState private var isNameFocused: Bool
 
     enum CloudStatus: Equatable {
@@ -62,6 +66,11 @@ struct OnboardingView: View {
         .background(TintGlow(tint: Accent.blue.base, offsetY: -260))
         .task { await checkCloud() }
         .interactiveDismissDisabled()
+        .sheet(isPresented: $isShowingPaywall) { PaywallSheet(reason: .dataSharingDeclined) }
+        .onChange(of: routeChoice) { _, choice in
+            // "Hayır" seçildiği anda paywall; kapanınca ankette kalınır.
+            if choice == .no { isShowingPaywall = true }
+        }
     }
 
     // MARK: Çerçeve
@@ -107,7 +116,11 @@ struct OnboardingView: View {
                     .disabled(ProfileDraft.validName(name) == nil)
                     .opacity(ProfileDraft.validName(name) == nil ? 0.5 : 1)
             case .survey:
-                Button("Devam") { go(.cloud) }.buttonStyle(.primary)
+                Button("Devam") { saveRouteChoice(); go(.cloud) }
+                    .buttonStyle(.primary)
+                    .disabled(needsRouteChoice)
+                    .opacity(needsRouteChoice ? 0.5 : 1)
+                // Rota tercihi boş kalır; açılışta bir kez sorulur.
                 Button("Şimdilik geç") {
                     preferences = TravelPreferences()
                     go(.cloud)
@@ -272,7 +285,7 @@ struct OnboardingView: View {
 
     private var survey: some View {
         VStack(alignment: .leading, spacing: 22) {
-            stepTitle(String(localized: "Nasıl seyahat ediyorsun?"), String(localized: "Üç kısa soru; uygulamayı sana göre açarız. Cevaplar cihazında kalır."))
+            stepTitle(String(localized: "Nasıl seyahat ediyorsun?"), String(localized: "Birkaç kısa soru; uygulamayı sana göre açarız. Tercihlerin cihazında kalır; rota paylaşımı yalnızca izin verirsen."))
 
             question(String(localized: "Genelde kiminle?")) {
                 chips(TravelPreferences.Companion.allCases, selected: { preferences.companion == $0 }, title: companionTitle) {
@@ -289,6 +302,21 @@ struct OnboardingView: View {
                     preferences.toggle($0)
                 }
             }
+            if !entitlements.isPremium {
+                RouteSharingPrompt(choice: $routeChoice)
+            }
+        }
+    }
+
+    /// Premium değilse rota sorusu cevaplanmadan devam edilmez.
+    private var needsRouteChoice: Bool { !entitlements.isPremium && routeChoice == nil }
+
+    private func saveRouteChoice() {
+        guard !entitlements.isPremium, let routeChoice else { return }
+        RouteReporter.shared.setChoice(routeChoice)
+        if routeChoice == .yes {
+            // Daha önce bitmiş seyahatler de gönderilsin.
+            Task { await RouteReporter.shared.run(store: store) }
         }
     }
 

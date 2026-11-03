@@ -8,6 +8,11 @@ struct ProfileView: View {
     @State private var isEditing = false
     @State private var isAddingCountry = false
     @State private var isShowingAbout = false
+    @State private var isShowingPaywall = false
+    @State private var isManagingSubscription = false
+    @State private var isRestoring = false
+    @State private var restoreFoundNothing = false
+    @Environment(Entitlements.self) private var entitlements
 
     var body: some View {
         let visited = TravelStats.visitedCountries(trips: store.trips, extra: store.extraVisitedCountries)
@@ -16,6 +21,8 @@ struct ProfileView: View {
                 VStack(spacing: 16) {
                     meCard
                     countriesCard(visited)
+                    premiumCard
+                    privacyCard
                     Button {
                         store.restartOnboarding()
                     } label: {
@@ -57,10 +64,93 @@ struct ProfileView: View {
                 MemberEditor(member: store.me) { updated in store.saveProfile(updated) }
             }
             .sheet(isPresented: $isShowingAbout) { AboutView() }
+            .sheet(isPresented: $isShowingPaywall) { PaywallSheet(reason: .profile) }
+            .manageSubscriptionsSheet(isPresented: $isManagingSubscription)
             .sheet(isPresented: $isAddingCountry) {
                 CountryPickerSheet(selected: Set(visited)) { code, isOn in store.setVisited(code, isOn) }
             }
         }
+    }
+
+    /// Premium durumu: aktifse yönetim, değilse paywall ve geri yükleme.
+    private var premiumCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            if entitlements.isPremium {
+                Label("Gezzy Premium · aktif", systemImage: "checkmark.seal.fill")
+                    .font(.tBodyStrong)
+                    .foregroundStyle(Color.ink)
+                premiumRow("Aboneliği yönet", symbol: "creditcard") { isManagingSubscription = true }
+            } else {
+                premiumRow("Premium'a geç", symbol: "star") { isShowingPaywall = true }
+                premiumRow("Satın alımları geri yükle", symbol: "arrow.clockwise", isBusy: isRestoring) {
+                    Task {
+                        isRestoring = true
+                        restoreFoundNothing = false
+                        let restored = await entitlements.restore()
+                        isRestoring = false
+                        withAnimation { restoreFoundNothing = !restored }
+                    }
+                }
+                if restoreFoundNothing {
+                    Text("Geri yüklenecek satın alma bulunamadı.")
+                        .font(.footnote)
+                        .foregroundStyle(Color.ink2)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .tray()
+    }
+
+    /// Gizlilik: rota raporu izni. Premium'da rota hiç paylaşılmaz.
+    private var privacyCard: some View {
+        let reporter = RouteReporter.shared
+        let isPremium = entitlements.isPremium
+        return VStack(alignment: .leading, spacing: 10) {
+            Text("Gizlilik").font(.tCaption).foregroundStyle(Color.ink2)
+            Toggle(isOn: Binding(
+                get: { !isPremium && reporter.choice == .yes },
+                set: { isOn in
+                    reporter.setChoice(isOn ? .yes : .no)
+                    if isOn {
+                        Task { await reporter.run(store: store) }
+                    }
+                })) {
+                Text("Rotamı Gezzy ile paylaş").font(.tBodyStrong).foregroundStyle(Color.ink)
+            }
+            .disabled(isPremium)
+            Group {
+                if isPremium {
+                    Text("Premium'da rotan paylaşılmaz.")
+                } else {
+                    Text(RouteSharingPrompt.explanation)
+                }
+            }
+            .font(.caption)
+            .foregroundStyle(Color.ink2)
+            .fixedSize(horizontal: false, vertical: true)
+        }
+        .tray()
+    }
+
+    private func premiumRow(_ title: LocalizedStringKey, symbol: String, isBusy: Bool = false,
+                            action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack {
+                Label(title, systemImage: symbol)
+                    .font(.tBodyStrong)
+                    .foregroundStyle(Color.ink)
+                Spacer()
+                if isBusy {
+                    ProgressView()
+                } else {
+                    Image(systemName: "chevron.right").foregroundStyle(Color.ink3)
+                }
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(isBusy)
     }
 
     private var meCard: some View {

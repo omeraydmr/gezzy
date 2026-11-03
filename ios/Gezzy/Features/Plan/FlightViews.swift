@@ -1,7 +1,7 @@
 import SwiftUI
 import GezzyKit
 
-/// Plan sekmesindeki uçuş kartı: uçuşları listeler; elle ekleme, düzenleme ve rezervasyondan içe aktarma.
+/// Rezervasyon sekmesindeki uçuş kartı: uçuşları listeler; elle ekleme, düzenleme ve rezervasyondan içe aktarma.
 struct FlightsCard: View {
     @Environment(TripStore.self) private var store
     let trip: Trip
@@ -21,27 +21,15 @@ struct FlightsCard: View {
                     Button("Elle ekle", systemImage: "square.and.pencil") { isAdding = true }
                     Button("Biletten içe aktar", systemImage: "doc.viewfinder") { isImporting = true }
                 } label: {
-                    Image(systemName: "plus")
+                    HeaderPlusLabel()
                 }
-                .buttonStyle(.circleIcon(size: 32))
                 .accessibilityLabel("Uçuş ekle")
             }
 
             if flights.isEmpty {
-                EmptyHint(symbol: "airplane.departure", text: String(localized: "Uçuşunu elle yaz ya da e-bilet, ekran görüntüsü veya Wallet kartından içe aktar."))
-                HStack(spacing: 10) {
-                    Button {
-                        isAdding = true
-                    } label: {
-                        Label("Elle ekle", systemImage: "square.and.pencil")
-                    }
-                    .buttonStyle(.primary)
-                    Button {
-                        isImporting = true
-                    } label: {
-                        Label("İçe aktar", systemImage: "doc.viewfinder")
-                    }
-                    .buttonStyle(.primary)
+                AddPlaceholder(title: String(localized: "Uçuş ekle"), subtitle: String(localized: "elle ya da biletten")) {
+                    Button("Elle ekle", systemImage: "square.and.pencil") { isAdding = true }
+                    Button("Biletten içe aktar", systemImage: "doc.viewfinder") { isImporting = true }
                 }
             }
 
@@ -69,14 +57,16 @@ struct FlightsCard: View {
 
 struct FlightRow: View {
     let flight: FlightSegment
+    @Environment(\.tripText) private var tintText
+    @Environment(\.tripPalette) private var palette
 
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: "airplane")
                 .font(.system(size: 16))
-                .foregroundStyle(Accent.blue.base)
+                .foregroundStyle(tintText)
                 .frame(width: 44, height: 44)
-                .background(Accent.blue.tint, in: RoundedRectangle(cornerRadius: Radius.thumb, style: .continuous))
+                .background(Color.soft(palette), in: RoundedRectangle(cornerRadius: Radius.thumb, style: .continuous))
             VStack(alignment: .leading, spacing: 2) {
                 Text("\(flight.fromCode) → \(flight.toCode)")
                     .font(.tBodyStrong)
@@ -90,7 +80,7 @@ struct FlightRow: View {
                     .foregroundStyle(Color.ink3)
             }
             Spacer(minLength: 8)
-            Tag(text: AppFormat.duration(minutes: flight.durationMinutes), accent: .blue)
+            Tag(text: AppFormat.duration(minutes: flight.durationMinutes), color: tintText, soft: .soft(palette))
         }
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
