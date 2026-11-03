@@ -147,6 +147,8 @@ struct DayChips: View {
     var onDropStop: ((UUID, Date) -> Void)?
     /// Çok şehirli seyahatte günün şehri: ad, renk, şehrin ilk günü mü (ad orada yazılır), geçiş günü mü.
     var city: ((Date) -> (name: String, color: Color, isFirstDay: Bool, isTransition: Bool))?
+    /// VoiceOver'da sayının adı ("3 durak", "12 fotoğraf").
+    var countLabel: (Int) -> String = { String(localized: "\($0) durak") }
     @Environment(\.tripTint) private var tint
     @State private var dropTarget: Date?
 
@@ -228,7 +230,7 @@ struct DayChips: View {
         } isTargeted: { targeted in
             if targeted { dropTarget = day } else if dropTarget == day { dropTarget = nil }
         }
-        .accessibilityLabel(Text("\(number). gün, \(AppFormat.dayPill(day)), \(count) durak"))
+        .accessibilityLabel(Text("\(number). gün, \(AppFormat.dayPill(day)), \(countLabel(count))"))
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }

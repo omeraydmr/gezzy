@@ -22,11 +22,19 @@ struct MemoriesSection: View {
     @State private var moments: [PhotoClusterer.Moment]?
     @State private var viewer: PhotoViewerContext?
     @State private var studioRequest: StudioRequest?
+    /// Anlardan türetilenler; her body geçişinde değil, anlar ya da tercihler değişince hesaplanır.
+    @State private var derived: Derived?
     private var library: PhotoLibrary { .shared }
     private var prefs: MemoryPrefs { .shared }
 
+    private struct Derived {
+        var visible: [PhotoClusterer.Moment]
+        var highlights: [MemoryHighlights.Highlight]
+        var hiddenCount: Int
+    }
+
     var body: some View {
-        // Tercihler body'de okunur; favori/gizle değişince görünüm yenilenir.
+        // Tercihler body'de okunur; favori/gizle değişince türetilenler yenilenir.
         let hidden = prefs.hidden(trip.id)
         let favorites = prefs.favorites(trip.id)
         ModuleCard(String(localized: "Anılar"), symbol: "photo.on.rectangle.angled") {
@@ -35,9 +43,10 @@ struct MemoriesSection: View {
             } else if let moments {
                 if moments.isEmpty {
                     EmptyHint(symbol: "photo", text: String(localized: "Seyahat tarihlerinde çekilmiş fotoğraf bulunamadı.")).tray()
-                } else {
-                    content(moments, hidden: hidden, favorites: favorites)
+                } else if let derived {
+                    content(derived)
                 }
+                if library.isLimited { morePhotosButton }
             } else {
                 HStack(spacing: 10) {
                     ProgressView()
@@ -51,7 +60,10 @@ struct MemoriesSection: View {
                 CommunityShareCard(trip: trip, verified: CommunityPlaces.verifiedStops(in: trip, moments: moments ?? []))
             }
         }
-        .task(id: "\(trip.id)-\(library.status.rawValue)-\(trip.stops.count)") { await load() }
+        .task(id: "\(trip.id)-\(library.status.rawValue)-\(library.revision)-\(trip.stops.count)") { await load() }
+        .onChange(of: moments, initial: true) { rederive() }
+        .onChange(of: hidden) { rederive() }
+        .onChange(of: favorites) { rederive() }
         // Albüm açıldıysa (ör. ekipten biri onay verdi) eksik fotoğrafları yükle; kullanılmayanları temizle.
         .task(id: "\(trip.id)-\(SharedAlbum.canView(store.me.id, in: trip))-\(library.status.rawValue)") {
             AlbumSync.shared.pruneOrphans(store: store)
@@ -95,19 +107,38 @@ struct MemoriesSection: View {
     // MARK: İçerik
 
     @ViewBuilder
-    private func content(_ moments: [PhotoClusterer.Moment], hidden: Set<String>, favorites: Set<String>) -> some View {
-        let visible = Self.visible(moments, hidden: hidden)
-        let highlights = MemoryHighlights.pick(moments: moments, favorites: favorites, hidden: hidden)
+    private func content(_ derived: Derived) -> some View {
+        if !derived.highlights.isEmpty {
+            HighlightsStrip(trip: trip, highlights: derived.highlights, onOpen: { viewer = $0 }, onCreateCard: openStudio)
+        }
+        MemoryJournal(trip: trip, moments: derived.visible, onOpen: { viewer = $0 },
+                      hiddenCount: derived.hiddenCount) {
+            // Onay sorulmaz; bu seyahatin gizlileri tek yazımda geri gelir.
+            prefs.unhideAll(trip: trip.id)
+        }
+    }
+
+    /// Sınırlı erişimde seçimi genişletir; kapanınca anlar yeniden yüklenir (`revision`).
+    private var morePhotosButton: some View {
+        Button {
+            Task { await library.presentLimitedPicker() }
+        } label: {
+            Label("Daha fazla fotoğraf seç", systemImage: "plus.circle")
+                .font(.system(.subheadline, weight: .semibold))
+                .foregroundStyle(tripText)
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func rederive() {
+        guard let moments, !moments.isEmpty else { derived = nil; return }
+        let hidden = prefs.hidden(trip.id)
         let allIDs = Set(moments.flatMap(\.photoIDs))
-        let hiddenHere = hidden.intersection(allIDs)
-        if !highlights.isEmpty {
-            HighlightsStrip(trip: trip, highlights: highlights, onOpen: { viewer = $0 }, onCreateCard: openStudio)
-        }
-        MemoryJournal(trip: trip, moments: visible, onOpen: { viewer = $0 },
-                      hiddenCount: hiddenHere.count) {
-            // Onay sorulmaz; bu seyahatin gizlileri geri gelir.
-            for id in hidden { prefs.setHidden(id, false, trip: trip.id) }
-        }
+        derived = Derived(
+            visible: Self.visible(moments, hidden: hidden),
+            highlights: MemoryHighlights.pick(moments: moments, favorites: prefs.favorites(trip.id), hidden: hidden),
+            hiddenCount: hidden.intersection(allIDs).count)
     }
 
     /// Gizli fotoğraflar çıkarılır, boşalan anlar düşer.

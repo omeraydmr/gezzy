@@ -21,16 +21,6 @@
         }
       }
     },
-    " En çok fotoğraf: %@." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : " Most photos: %@."
-          }
-        }
-      }
-    },
     " En geç %@ günü çıkmalısın." : {
       "localizations" : {
         "en" : {
@@ -136,9 +126,21 @@
     "%lld gizli fotoğraf" : {
       "localizations" : {
         "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld hidden photos"
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld hidden photo"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld hidden photos"
+                }
+              }
+            }
           }
         }
       }
@@ -356,9 +358,21 @@
     "En az %lld fotoğraf seç." : {
       "localizations" : {
         "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Choose at least %lld photos."
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Choose at least %lld photo."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Choose at least %lld photos."
+                }
+              }
+            }
           }
         }
       }
@@ -1235,7 +1249,29 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$@ · %2$lld photos"
+            "value" : "%1$@ · %#@photos@"
+          },
+          "substitutions" : {
+            "photos" : {
+              "argNum" : 2,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg photo"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg photos"
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         "tr" : {
@@ -1592,16 +1628,6 @@
         }
       }
     },
-    "%@ kartpostalı" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ postcard"
-          }
-        }
-      }
-    },
     "%@ ödedi · %@ · %@" : {
       "localizations" : {
         "en" : {
@@ -1917,9 +1943,21 @@
     "%lld durak" : {
       "localizations" : {
         "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld stops"
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld stop"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld stops"
+                }
+              }
+            }
           }
         }
       }
@@ -1959,25 +1997,21 @@
     "%lld fotoğraf" : {
       "localizations" : {
         "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld photos"
-          }
-        }
-      }
-    },
-    "%lld fotoğraf, %lld an." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$lld photos, %2$lld moments."
-          }
-        },
-        "tr" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$lld fotoğraf, %2$lld an."
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld photo"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld photos"
+                }
+              }
+            }
           }
         }
       }
@@ -2256,22 +2290,6 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$lld. gün · %2$@ · %3$@ yürüyüş"
-          }
-        }
-      }
-    },
-    "%lld. gün, %@, %lld durak" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Day %1$lld, %2$@, %3$lld stops"
-          }
-        },
-        "tr" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$lld. gün, %2$@, %3$lld durak"
           }
         }
       }
@@ -6233,26 +6251,6 @@
         }
       }
     },
-    "Kartpostal oluştur" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Create postcard"
-          }
-        }
-      }
-    },
-    "Kartpostalı paylaş" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Share postcard"
-          }
-        }
-      }
-    },
     "Kategori limitleri belirle, harcamalar burada dolsun." : {
       "localizations" : {
         "en" : {
@@ -8265,16 +8263,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Import from booking"
-          }
-        }
-      }
-    },
-    "rota" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "route"
           }
         }
       }
@@ -10590,6 +10578,148 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Couldn't set cover"
+          }
+        }
+      }
+    },
+    "%@, %lld fotoğraf" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@, %#@photos@"
+          },
+          "substitutions" : {
+            "photos" : {
+              "argNum" : 2,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg photo"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg photos"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$lld fotoğraf"
+          }
+        }
+      }
+    },
+    "%lld. gün, %@, %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Day %1$lld, %2$@, %3$@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld. gün, %2$@, %3$@"
+          }
+        }
+      }
+    },
+    "Daha fazla fotoğraf seç" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select more photos"
+          }
+        }
+      }
+    },
+    "Fotoğraf gerekli" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photo required"
+          }
+        }
+      }
+    },
+    "Fotoğraf gerekli: Kartpostal, Kolaj" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photos required: Postcard, Collage"
+          }
+        }
+      }
+    },
+    "Favoride" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In favorites"
+          }
+        }
+      }
+    },
+    "gün (1)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "day"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "gün"
+          }
+        }
+      }
+    },
+    "durak (1)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "stop"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "durak"
+          }
+        }
+      }
+    },
+    "kişi (1)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "person"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "kişi"
           }
         }
       }

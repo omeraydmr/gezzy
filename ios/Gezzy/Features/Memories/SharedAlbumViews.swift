@@ -196,7 +196,7 @@ struct PhotoViewer: View {
     var tripID: UUID?
     @Environment(\.dismiss) private var dismiss
     @Environment(TripStore.self) private var store
-    @State private var toast: LocalizedStringKey?
+    @State private var toast: String?
     @State private var toastTask: Task<Void, Never>?
     private var prefs: MemoryPrefs { .shared }
 
@@ -255,7 +255,8 @@ struct PhotoViewer: View {
                 }
                 HStack(spacing: 28) {
                     let isFavorite = prefs.favorites(tripID).contains(id)
-                    barButton(isFavorite ? "heart.fill" : "heart", "Favori") {
+                    barButton(isFavorite ? "heart.fill" : "heart", "Favori",
+                              value: isFavorite ? String(localized: "Favoride") : "") {
                         prefs.toggleFavorite(id, trip: tripID)
                     }
                     if store.trip(tripID).map(store.canEdit) == true {
@@ -273,7 +274,8 @@ struct PhotoViewer: View {
         }
     }
 
-    private func barButton(_ symbol: String, _ label: LocalizedStringKey, action: @escaping () -> Void) -> some View {
+    private func barButton(_ symbol: String, _ label: LocalizedStringKey, value: String = "",
+                           action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: symbol)
                 .font(.system(size: 20, weight: .semibold))
@@ -281,6 +283,7 @@ struct PhotoViewer: View {
                 .frame(width: 44, height: 44)
         }
         .accessibilityLabel(label)
+        .accessibilityValue(Text(value))
     }
 
     private func setCover(_ photoID: String, _ tripID: UUID) {
@@ -291,7 +294,9 @@ struct PhotoViewer: View {
                 ok = (try? store.setCoverPhoto(data, for: tripID)) != nil
             }
             guard !Task.isCancelled else { return }
-            withAnimation { toast = ok ? "Kapak yapıldı" : "Kapak değiştirilemedi" }
+            let text = ok ? String(localized: "Kapak yapıldı") : String(localized: "Kapak değiştirilemedi")
+            UIAccessibility.post(notification: .announcement, argument: text)
+            withAnimation { toast = text }
             try? await Task.sleep(for: .seconds(1.5))
             guard !Task.isCancelled else { return }
             withAnimation { toast = nil }

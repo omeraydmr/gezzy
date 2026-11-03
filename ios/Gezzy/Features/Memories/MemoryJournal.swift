@@ -38,7 +38,8 @@ struct MemoryJournal: View {
     var body: some View {
         let today = dayMoments
         VStack(alignment: .leading, spacing: 12) {
-            DayChips(days: trip.days(), selection: $selection, stopCount: photoCount(on:))
+            DayChips(days: trip.days(), selection: $selection, stopCount: photoCount(on:),
+                     countLabel: { String(localized: "\($0) fotoğraf") })
             if today.contains(where: { $0.center != nil }) || trip.stops(on: selection).contains(where: { $0.coordinate != nil }) {
                 map(today)
             }
@@ -100,6 +101,8 @@ struct MemoryJournal: View {
                 Annotation(item.moment.stopName ?? "", coordinate: item.coordinate, anchor: .center) {
                     Button { flash(item.moment.id) } label: { photoPin(item.moment) }
                         .buttonStyle(.plain)
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(Text(pinLabel(item.moment)))
                 }
                 .annotationTitles(.hidden)
             }
@@ -127,9 +130,14 @@ struct MemoryJournal: View {
                     .background(tint, in: Capsule())
                     .overlay(Capsule().strokeBorder(.white, lineWidth: 1.5))
                     .offset(x: 6, y: -6)
+                    .accessibilityHidden(true)
             }
             .shadow(color: .black.opacity(0.2), radius: 3, y: 2)
-            .accessibilityLabel(Text(moment.stopName ?? timeRange(moment)))
+    }
+
+    /// "<durak ya da saat>, N fotoğraf"
+    private func pinLabel(_ moment: PhotoClusterer.Moment) -> String {
+        String(localized: "\(moment.stopName ?? timeRange(moment)), \(moment.count) fotoğraf")
     }
 
     /// Pine dokununca liste o ana kayar ve 1 sn vurgulanır.
