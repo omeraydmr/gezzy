@@ -27,6 +27,8 @@ final class RouteReporter {
     /// Kayıtlı durumlar okunamadıysa ham veri korunur: üzerine yazılmaz, gönderim yapılmaz
     /// (rapor kimlikleri yeniden üretilip seyahatler tekrar gönderilmesin).
     private var entriesUnreadable = false
+    /// Bu oturumda geri alınan / gönderilmeyecek seyahatler; kayıt yazılamasa da gönderimi engeller.
+    private var excludedThisSession: Set<UUID> = []
 
     private init() {
         choice = UserDefaults.standard.string(forKey: Self.choiceKey).flatMap(Choice.init)
@@ -85,7 +87,7 @@ final class RouteReporter {
             case .pending(let date): lastAttempt = date
             case nil: break
             }
-            if service.choice(for: trip) == .declined { continue }
+            if excludedThisSession.contains(trip.id) || service.choice(for: trip) == .declined { continue }
             let now = Date()
             guard RouteReportRetry.shouldAttempt(lastAttempt: lastAttempt, now: now) else { continue }
             let id = reportID(for: trip)
@@ -111,20 +113,42 @@ final class RouteReporter {
                 continue
             } catch CommunityService.Failure.rejected(let status) where RouteReportRetry.isFinal(status: status) {
                 print("RouteReporter: sunucu raporu reddetti (\(status))")
-                set(.rejected, for: trip)
+                // Bekleme sırasında geri alındıysa o karar korunur.
+                if isWithdrawn(trip) {
+                    await undoIfWithdrawn(trip, reportID: id, contribution: contribution)
+                } else {
+                    set(.rejected, for: trip)
+                }
             } catch {
-                set(.pending(lastAttempt: Date()), for: trip)
+                if isWithdrawn(trip) {
+                    await undoIfWithdrawn(trip, reportID: id, contribution: contribution)
+                } else {
+                    set(.pending(lastAttempt: Date()), for: trip)
+                }
             }
         }
     }
 
+    private func isWithdrawn(_ trip: Trip) -> Bool {
+        excludedThisSession.contains(trip.id) || state(for: trip.id) == .withdrawn
+    }
+
     private func isStillWanted(_ trip: Trip) -> Bool {
-        choice == .yes && state(for: trip.id) != .withdrawn
+        choice == .yes && !isWithdrawn(trip)
+    }
+
+    /// Geri alma kararını kaydeder; kayıt okunamıyorsa en azından bu oturumda gönderimi engeller.
+    private func markWithdrawn(_ trip: Trip) {
+        excludedThisSession.insert(trip.id)
+        if entriesUnreadable {
+            print("RouteReporter: kayıtlar okunamadığı için geri alma yalnızca bu oturumda tutuluyor")
+        }
+        set(.withdrawn, for: trip)
     }
 
     /// Gönderim sürerken geri alınan seyahatin sunucuya ulaşmış parçalarını (en iyi çabayla) geri çeker.
     private func undoIfWithdrawn(_ trip: Trip, reportID: String?, contribution: CommunityPlaces.Contribution?) async {
-        guard state(for: trip.id) == .withdrawn else { return }
+        guard isWithdrawn(trip) else { return }
         let service = CommunityService.shared
         if let reportID { try? await service.withdrawReport(id: reportID) }
         if let contribution { try? await service.withdraw(contribution) }
@@ -137,12 +161,12 @@ final class RouteReporter {
         if let contribution = RouteReport.contribution(trip: trip) {
             try await service.withdraw(contribution)
         }
-        set(.withdrawn, for: trip)
+        markWithdrawn(trip)
         service.clearChoice(for: trip)
     }
 
     /// Henüz gönderilmemiş seyahati gönderme; `.withdrawn` durumu tekrar gönderimi engeller.
     func exclude(_ trip: Trip) {
-        set(.withdrawn, for: trip)
+        markWithdrawn(trip)
     }
 }
