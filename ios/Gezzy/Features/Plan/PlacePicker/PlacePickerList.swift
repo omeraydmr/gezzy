@@ -43,7 +43,11 @@ struct PlacePickerList: View {
                             Label("Listede yok mu? Elle ekle", systemImage: "square.and.pencil")
                         }
                     } footer: {
-                        Text("Popülerlik Wikipedia'da son 30 günde okunma ve Gezzy gezginlerinin seçimlerinden gelir.")
+                        VStack(alignment: .leading, spacing: 6) {
+                            Label("Haritada bir yere dokun ya da basılı tutarak iğne bırak; oradan da eklenir.",
+                                  systemImage: "hand.tap")
+                            Text("Popülerlik Wikipedia'da son 30 günde okunma ve Gezzy gezginlerinin seçimlerinden gelir.")
+                        }
                     }
                 }
                 .listStyle(.insetGrouped)
@@ -132,7 +136,7 @@ struct PlacePickerList: View {
                     let isOn = model.filter == filter
                     Button(filter.title) { withAnimation { model.filter = filter } }
                         .font(.subheadline.weight(isOn ? .semibold : .regular))
-                        .foregroundStyle(isOn ? Color.white : Color.ink)
+                        .foregroundStyle(isOn ? Color.onInk : Color.ink)
                         .padding(.horizontal, 14)
                         .padding(.vertical, 7)
                         .background(isOn ? Color.ink : Color(.tertiarySystemFill), in: Capsule())

@@ -10823,6 +10823,61 @@
           }
         }
       }
+    },
+    "Seçilen yer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Selected place"
+          }
+        }
+      }
+    },
+    "İşaretli yer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dropped pin"
+          }
+        }
+      }
+    },
+    "Haritadan" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From the map"
+          }
+        }
+      }
+    },
+    "%@ listesine eklendi" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Added to %@"
+          }
+        }
+      }
+    },
+    "Haritada bir yere dokun ya da basılı tutarak iğne bırak; oradan da eklenir." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap a place on the map, or press and hold to drop a pin, to add it from there."
+          }
+        }
+      }
     }
   },
   "version" : "1.0"
