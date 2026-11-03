@@ -126,4 +126,87 @@ final class RouteReportTests: XCTestCase {
         let r = try XCTUnwrap(make(t))
         XCTAssertEqual(r.days.first { $0.index == 2 }?.stops.count, 30)
     }
+
+    func testDraftTripsAreNotReported() {
+        var draft = trip(); draft.status = .draft
+        XCTAssertNil(make(draft))
+        XCTAssertFalse(RouteReport.willSend(trip: draft, me: me, now: now, calendar: cal))
+        XCTAssertTrue(RouteReport.willSend(trip: trip(), me: me, now: now, calendar: cal))
+    }
+
+    /// Uzun seyahat: 3 günde 30'ar durak → 90 yer, 87 geçiş; katkı sunucu sınırına kırpılır, rapor kırpılmaz.
+    func longTrip() -> Trip {
+        var t = trip()
+        t.endDate = TestCalendar.date(2026, 11, 25)
+        for day in 0..<3 {
+            let d = TestCalendar.date(2026, 11, 21 + day)
+            for i in 0..<30 {
+                t.stops.append(Stop(day: d, order: i, name: "Yer \(day)-\(i)", kind: .sight,
+                                    coordinate: .init(latitude: 55.6 + Double(day * 30 + i) / 1000, longitude: 12.5)))
+            }
+        }
+        return t
+    }
+
+    func testContributionCappedToServerLimits() throws {
+        let c = try XCTUnwrap(RouteReport.contribution(trip: longTrip(), calendar: cal))
+        XCTAssertEqual(c.places.count, 60)
+        XCTAssertLessThanOrEqual(c.transitions.count, 60)
+        let refs = Set(c.places.map(\.ref))
+        XCTAssertTrue(c.transitions.allSatisfy { $0.allSatisfy(refs.contains) })
+        // Kota maliyeti (yer + geçiş) günlük 300'ün altında.
+        XCTAssertLessThanOrEqual(c.places.count + c.transitions.count, 300)
+        let r = try XCTUnwrap(make(longTrip()))
+        XCTAssertEqual(r.places.count, 93)
+    }
+
+    func testShortTripContributionUntouched() throws {
+        let c = try XCTUnwrap(RouteReport.contribution(trip: trip(), calendar: cal))
+        XCTAssertEqual(c.places.count, 3)
+        XCTAssertEqual(c.transitions, [["p0", "p1"]])
+    }
+
+    func testClampsToServerRanges() throws {
+        var t = trip()
+        t.endDate = TestCalendar.date(2027, 3, 30) // 131 gece
+        t.members = [Member(id: me, name: "Ömer", role: .owner)] + (0..<40).map { Member(id: UUID(), name: "Kişi \($0)") }
+        t.expenses = [Expense(title: "Akşam", amount: 1_000, category: .food, paidBy: me,
+                              splitAmong: t.members.map(\.id), date: TestCalendar.date(2026, 11, 20))]
+        let r = try XCTUnwrap(make(t, now: TestCalendar.date(2027, 4, 5)))
+        XCTAssertEqual(r.nights, 90)
+        XCTAssertEqual(r.travellers, 30)
+        XCTAssertEqual(r.expenses.first?.splitCount, 30)
+    }
+
+    func testImplausiblePlaceNamesDropped() throws {
+        var t = trip()
+        let d = TestCalendar.date(2026, 11, 21)
+        t.stops += [
+            Stop(day: d, order: 0, name: "Ali'nin evi 0532 123 45 67", kind: .sight, coordinate: .init(latitude: 55.61, longitude: 12.5)),
+            Stop(day: d, order: 1, name: "🍕", kind: .food, coordinate: .init(latitude: 55.62, longitude: 12.5)),
+            Stop(day: d, order: 2, name: "Kastellet", kind: .sight, coordinate: .init(latitude: 55.69, longitude: 12.59)),
+            Stop(day: d, order: 3, name: "insta @yer", kind: .sight, coordinate: .init(latitude: 55.63, longitude: 12.5)),
+        ]
+        let r = try XCTUnwrap(make(t))
+        XCTAssertEqual(r.places.map(\.name), ["Nyhavn", "Strøget", "Tivoli", "Kastellet"])
+        let refs = Set(r.places.map(\.ref))
+        XCTAssertTrue(r.days.flatMap(\.stops).allSatisfy { refs.contains($0.ref) })
+        XCTAssertEqual(r.days.first { $0.index == 2 }?.stops.map(\.ref), ["p3"])
+        let c = try XCTUnwrap(RouteReport.contribution(trip: t, calendar: cal))
+        XCTAssertEqual(c.places.map(\.name), ["Nyhavn", "Strøget", "Tivoli", "Kastellet"])
+    }
+
+    func testPlaceNameMirrorsServerRule() {
+        for ok in ["Nyhavn", "Ayasofya", "Café 1900", "東京タワー", "  Tivoli  "] { XCTAssertTrue(PlaceName.isPlausible(ok), ok) }
+        for bad in ["A", "🍕🍕", "12345", "www.yer", "yer.com", "a@b", "t.me/x", "Tel 0532 123 4567", "Yeeeeeeer",
+                    String(repeating: "ab", count: 41)] {
+            XCTAssertFalse(PlaceName.isPlausible(bad), bad)
+        }
+    }
+
+    func testImplausibleCityIsNotReported() throws {
+        var t = trip()
+        t.destination = Destination(countryCode: "dk", city: "🏙️")
+        XCTAssertNil(make(t))
+    }
 }

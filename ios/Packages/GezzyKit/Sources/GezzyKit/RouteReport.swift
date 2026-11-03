@@ -23,6 +23,9 @@ public struct RouteReport: Codable, Hashable, Sendable {
 
     /// Sunucunun kabul sınırları; aşılırsa rapor kalıcı reddedilirdi.
     static let maxDays = 60, maxVisitsPerDay = 30, maxPlaces = 200, maxExpenses = 500
+    static let maxNights = 90, maxTravellers = 30, maxSplit = 30, maxCities = 20
+    /// `places/contribute` sınırları (sunucu: community.ts `validate`).
+    static let maxContributionPlaces = 60, maxContributionTransitions = 60
 
     public var reportID: String
     public var country: String
@@ -44,23 +47,55 @@ public struct RouteReport: Codable, Hashable, Sendable {
         return owner.id == me
     }
 
-    /// Topluluk havuzu için oysuz katkı.
+    /// Sunucunun reddedeceği adlı duraklar (bağlantı, telefon, yalnızca simge…) gönderilmez.
+    static func implausibleStops(in trip: Trip) -> Set<UUID> {
+        Set(CommunityPlaces.eligibleStops(in: trip).filter { !PlaceName.isPlausible($0.name) }.map(\.id))
+    }
+
+    /// Adı uygun duraklarla tam katkı (rapor için; sınırsız).
+    static func fullContribution(trip: Trip, calendar: Calendar) -> CommunityPlaces.Contribution? {
+        CommunityPlaces.contribution(for: trip, ratings: [:], verified: [], excluded: implausibleStops(in: trip),
+                                     calendar: calendar)
+    }
+
+    /// Topluluk havuzu için oysuz katkı; sunucu sınırına (60 yer, 60 geçiş) kırpılır.
     public static func contribution(trip: Trip, calendar: Calendar = .current) -> CommunityPlaces.Contribution? {
-        CommunityPlaces.contribution(for: trip, ratings: [:], verified: [], calendar: calendar)
+        guard var full = fullContribution(trip: trip, calendar: calendar) else { return nil }
+        full.places = Array(full.places.prefix(maxContributionPlaces))
+        let kept = Set(full.places.map(\.ref))
+        full.transitions = Array(full.transitions.filter { $0.allSatisfy(kept.contains) }.prefix(maxContributionTransitions))
+        return full
+    }
+
+    /// Bu cihaz bu seyahatin raporunu gönderir mi (sahip, planlı, bitmiş, en az iki uygun yer).
+    public static func willSend(trip: Trip, me: UUID, now: Date = Date(), calendar: Calendar = .current) -> Bool {
+        make(trip: trip, me: me, reportID: "", now: now, calendar: calendar) != nil
     }
 
     public static func make(trip: Trip, me: UUID, reportID: String, now: Date = Date(),
                             calendar: Calendar = .current) -> RouteReport? {
-        guard CommunityPlaces.canContribute(trip, now: now, calendar: calendar), isSender(trip, me: me),
-              let contribution = contribution(trip: trip, calendar: calendar) else { return nil }
-        // Katkıdaki ref'ler uygun durakların sırasıyla eşleşir ("p0", "p1"…).
-        let eligible = CommunityPlaces.eligibleStops(in: trip)
+        // Taslak seyahatler gerçekten yapılmamış olabilir; yalnızca planlananlar.
+        guard trip.status == .planned, CommunityPlaces.canContribute(trip, now: now, calendar: calendar),
+              isSender(trip, me: me),
+              let contribution = fullContribution(trip: trip, calendar: calendar) else { return nil }
+        let cities = (trip.isMultiCity ? trip.cityLegs.map(\.destination.city) : [trip.destination.city])
+            .filter { PlaceName.isPlausible($0) && $0.utf16.count <= 80 }
+        guard let city = cities.first else { return nil }
+        // Katkıdaki ref'ler uygun (adı geçerli) durakların sırasıyla eşleşir ("p0", "p1"…).
+        let implausible = implausibleStops(in: trip)
+        let eligible = CommunityPlaces.eligibleStops(in: trip).filter { !implausible.contains($0.id) }
         let start = calendar.startOfDay(for: trip.startDate)
         func dayIndex(_ date: Date) -> Int {
             calendar.dateComponents([.day], from: start, to: calendar.startOfDay(for: date)).day ?? 0
         }
         let dayCount = trip.days(calendar: calendar).count
-        let places = Array(contribution.places.prefix(maxPlaces))
+        let places = contribution.places.prefix(maxPlaces).map { place in
+            var place = place
+            if place.category.utf16.count > 40 || (!place.category.isEmpty && !PlaceName.isPlausible(place.category)) {
+                place.category = ""
+            }
+            return place
+        }
         let keptRefs = Set(places.map(\.ref))
         var byDay: [Int: [Visit]] = [:]
         for (index, stop) in eligible.enumerated() {
@@ -74,14 +109,14 @@ public struct RouteReport: Codable, Hashable, Sendable {
             let index = dayIndex(expense.date)
             return Spend(day: (0..<dayCount).contains(index) ? index : nil, category: expense.category.rawValue,
                          amount: expense.amount, originalAmount: expense.originalAmount,
-                         originalCurrency: expense.originalCurrency, splitCount: max(1, expense.splitAmong.count))
+                         originalCurrency: expense.originalCurrency, splitCount: max(1, min(maxSplit, expense.splitAmong.count)))
         }
         let parts = calendar.dateComponents([.year, .month], from: trip.startDate)
-        let cities = trip.isMultiCity ? trip.cityLegs.map(\.destination.city) : [trip.destination.city]
         return RouteReport(
-            reportID: reportID, country: trip.destination.countryCode.uppercased(), city: cities.first ?? trip.destination.city,
-            cities: cities, year: parts.year ?? 0, month: parts.month ?? 0, nights: trip.nights(calendar: calendar),
-            travellers: max(1, trip.members.count), currency: trip.currency.uppercased(), places: places,
+            reportID: reportID, country: trip.destination.countryCode.uppercased(), city: city,
+            cities: Array(cities.prefix(maxCities)), year: parts.year ?? 0, month: parts.month ?? 0,
+            nights: max(0, min(maxNights, trip.nights(calendar: calendar))),
+            travellers: max(1, min(maxTravellers, trip.members.count)), currency: trip.currency.uppercased(), places: places,
             days: byDay.keys.sorted().prefix(maxDays).map { Day(index: $0, stops: byDay[$0]!) },
             budget: Dictionary(trip.budget.map { ($0.category.rawValue, $0.limit) }, uniquingKeysWith: max),
             expenses: Array(spends))
