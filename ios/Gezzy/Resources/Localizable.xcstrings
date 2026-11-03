@@ -10723,6 +10723,36 @@
           }
         }
       }
+    },
+    "Okunan metni göster" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show recognised text"
+          }
+        }
+      }
+    },
+    "Yeniden oku" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Read again"
+          }
+        }
+      }
+    },
+    "Panodaki içerik okunamadı." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't read the clipboard content."
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

@@ -397,11 +397,24 @@ public enum BookingParser {
             let end = day.range.location + day.range.length
             return times.first { $0.range.location >= end && $0.range.location - end < 40 }
         }
-        guard let inDay = dateAfter(checkInKey), let outDay = dateAfter(checkOutKey) else { return [] }
+        guard let inDay = dateAfter(checkInKey), var outDay = dateAfter(checkOutKey) else { return [] }
+        // Ekran görüntüsünde giriş ve çıkış yan yana iki sütundur ("Check-in  Checkout" / "3:00 PM  11:00 AM" /
+        // "Sat, Nov 14  Sun, Nov 15"): iki etiket de aynı tarihi bulursa çıkış bir sonrakini alır.
+        let columns = outDay.range.location == inDay.range.location
+        if columns {
+            let end = inDay.range.location + inDay.range.length
+            guard let next = dates.first(where: { $0.range.location >= end && $0.range.location - end < 40 }) else { return [] }
+            outDay = next
+        }
         // Airbnb saati tarihten önce yazar ("Check-in / 3:00 PM / Sat, Nov 14").
         func time(for key: NSTextCheckingResult, _ day: DayToken) -> TimeToken? {
             let end = key.range.location + key.range.length
             return times.first { $0.range.location >= end && $0.range.location < day.range.location } ?? timeAfter(day)
+        }
+        func columnTime(_ index: Int) -> TimeToken? {
+            let end = checkInKey.range.location + checkInKey.range.length
+            let row = times.filter { $0.range.location >= end && $0.range.location < inDay.range.location }
+            return index < row.count ? row[index] : nil
         }
         func rangeEnd(_ time: TimeToken) -> TimeToken {
             let end = time.range.location + time.range.length
@@ -409,8 +422,10 @@ public enum BookingParser {
             let between = (text as NSString).substring(with: NSRange(location: end, length: next.range.location - end))
             return between.trimmingCharacters(in: .whitespaces).allSatisfy { "-–—".contains($0) } ? next : time
         }
-        let inTime = time(for: checkInKey, inDay).map { ($0.hour, $0.minute) } ?? (14, 0)
-        let outTime = time(for: checkOutKey, outDay).map(rangeEnd).map { ($0.hour, $0.minute) } ?? (11, 0)
+        let inToken = columns ? columnTime(0) : time(for: checkInKey, inDay)
+        let outToken = columns ? columnTime(1) : time(for: checkOutKey, outDay).map(rangeEnd)
+        let inTime = inToken.map { ($0.hour, $0.minute) } ?? (14, 0)
+        let outTime = outToken.map { ($0.hour, $0.minute) } ?? (11, 0)
         guard let checkIn = date(inDay, hour: inTime.0, minute: inTime.1, timeZone: nil, calendar: calendar),
               let checkOut = date(outDay, hour: outTime.0, minute: outTime.1, timeZone: nil, calendar: calendar),
               checkOut > checkIn else { return [] }
@@ -447,10 +462,11 @@ public enum BookingParser {
                 next += 1
             }
         } else {
-            // Etiketsiz adres (Airbnb): en az iki virgül ve bir sayı içeren satır.
+            // Etiketsiz adres (Airbnb): en az iki virgül ve bir sayı içeren satır; tarih satırı ("Sat, Nov 14  Sun, Nov 15") değil.
+            let dateTexts = dates.map { (text as NSString).substring(with: $0.range) }
             address = lines.first { line in
                 line.count <= 120 && line.filter { $0 == "," }.count >= 2 && line.contains(where: \.isNumber)
-                    && !line.contains(":") && !line.hasPrefix("+")
+                    && !line.contains(":") && !line.hasPrefix("+") && !dateTexts.contains { line.contains($0) }
             } ?? ""
         }
 

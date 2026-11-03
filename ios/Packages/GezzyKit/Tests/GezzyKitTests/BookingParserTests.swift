@@ -194,6 +194,35 @@ final class BookingParserTests: XCTestCase {
         XCTAssertNil(lodging.coordinate)
     }
 
+    /// iPhone ekran görüntüsü (Vision, satırlar soldan sağa birleşik): giriş ve çıkış aynı satırda iki sütun.
+    func testAirbnbScreenshotTwoColumns() throws {
+        let text = """
+        16:14  •1|  42)
+        FA86772C-EOF5-43DF-8527-OC... V
+        Sample Side Studios 3/2
+        Check-in  Checkout
+        3:00 PM  11:00 AM
+        Sat, Nov 14  Sun, Nov 15
+        C Call host: +36 70 000 0000
+        Who's coming
+        2 guests
+        Test Guest, Other Guest
+        Confirmation code
+        HM2TEST0X1
+        Budapest, Example utca 1, Budapest, 1088, Hungary
+        Hosted by M Test
+        Payment details
+        Total cost: ₺4,363.46
+        """
+        let lodging = try XCTUnwrap(BookingParser.parse(text, now: now, calendar: cal).lodgings.first)
+        XCTAssertEqual(lodging.name, "Sample Side Studios 3/2")
+        XCTAssertEqual(lodging.address, "Budapest, Example utca 1, Budapest, 1088, Hungary")
+        XCTAssertEqual(lodging.confirmation, "HM2TEST0X1")
+        XCTAssertEqual(lodging.note, "Toplam: ₺4,363.46")
+        XCTAssertEqual(cal.dateComponents([.month, .day, .hour], from: lodging.checkIn), DateComponents(month: 11, day: 14, hour: 15))
+        XCTAssertEqual(cal.dateComponents([.month, .day, .hour], from: lodging.checkOut), DateComponents(month: 11, day: 15, hour: 11))
+    }
+
     func testAirbnbTurkishLayout() throws {
         let text = """
         Galata Loft
