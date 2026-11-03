@@ -106,4 +106,24 @@ final class RouteReportTests: XCTestCase {
         XCTAssertFalse(RouteReportRetry.isFinal(status: 429))
         XCTAssertFalse(RouteReportRetry.isFinal(status: 500))
     }
+
+    func testStopsOutsideTripAreSkipped() throws {
+        var t = trip()
+        t.stops.append(Stop(day: TestCalendar.date(2026, 11, 10), order: 0, name: "Erken", kind: .sight,
+                            coordinate: .init(latitude: 55.7, longitude: 12.5)))
+        let r = try XCTUnwrap(make(t))
+        XCTAssertEqual(r.days.map(\.index), [0, 1])
+        XCTAssertEqual(r.days.flatMap(\.stops).count, 3)
+    }
+
+    func testVisitsPerDayCapped() throws {
+        var t = trip()
+        let d = TestCalendar.date(2026, 11, 21)
+        for i in 0..<31 {
+            t.stops.append(Stop(day: d, order: i, name: "Yer \(i)", kind: .sight,
+                                coordinate: .init(latitude: 55.6 + Double(i) / 1000, longitude: 12.5)))
+        }
+        let r = try XCTUnwrap(make(t))
+        XCTAssertEqual(r.days.first { $0.index == 2 }?.stops.count, 30)
+    }
 }

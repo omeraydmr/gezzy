@@ -21,6 +21,9 @@ public struct RouteReport: Codable, Hashable, Sendable {
         public var splitCount: Int
     }
 
+    /// Sunucunun kabul sınırları; aşılırsa rapor kalıcı reddedilirdi.
+    static let maxDays = 60, maxVisitsPerDay = 30, maxPlaces = 200, maxExpenses = 500
+
     public var reportID: String
     public var country: String
     public var city: String
@@ -56,14 +59,18 @@ public struct RouteReport: Codable, Hashable, Sendable {
         func dayIndex(_ date: Date) -> Int {
             calendar.dateComponents([.day], from: start, to: calendar.startOfDay(for: date)).day ?? 0
         }
+        let dayCount = trip.days(calendar: calendar).count
+        let places = Array(contribution.places.prefix(maxPlaces))
+        let keptRefs = Set(places.map(\.ref))
         var byDay: [Int: [Visit]] = [:]
         for (index, stop) in eligible.enumerated() {
-            let rounded = stop.startMinutes.map { min(1425, (($0 + 7) / 15) * 15) }
-            byDay[dayIndex(stop.day), default: []]
-                .append(Visit(ref: "p\(index)", startMinutes: rounded, durationMinutes: stop.durationMinutes))
+            let ref = "p\(index)"
+            let day = dayIndex(stop.day)
+            guard keptRefs.contains(ref), (0..<dayCount).contains(day), byDay[day, default: []].count < maxVisitsPerDay else { continue }
+            let rounded = stop.startMinutes.map { max(0, min(1425, (($0 + 7) / 15) * 15)) }
+            byDay[day, default: []].append(Visit(ref: ref, startMinutes: rounded, durationMinutes: max(0, min(1440, stop.durationMinutes))))
         }
-        let dayCount = trip.days(calendar: calendar).count
-        let spends = trip.expenses.filter { !$0.isTransfer }.sorted { $0.date < $1.date }.map { expense in
+        let spends = trip.expenses.filter { !$0.isTransfer }.sorted { $0.date < $1.date }.prefix(maxExpenses).map { expense in
             let index = dayIndex(expense.date)
             return Spend(day: (0..<dayCount).contains(index) ? index : nil, category: expense.category.rawValue,
                          amount: expense.amount, originalAmount: expense.originalAmount,
@@ -74,10 +81,10 @@ public struct RouteReport: Codable, Hashable, Sendable {
         return RouteReport(
             reportID: reportID, country: trip.destination.countryCode.uppercased(), city: cities.first ?? trip.destination.city,
             cities: cities, year: parts.year ?? 0, month: parts.month ?? 0, nights: trip.nights(calendar: calendar),
-            travellers: max(1, trip.members.count), currency: trip.currency.uppercased(), places: contribution.places,
-            days: byDay.keys.sorted().map { Day(index: $0, stops: byDay[$0]!) },
+            travellers: max(1, trip.members.count), currency: trip.currency.uppercased(), places: places,
+            days: byDay.keys.sorted().prefix(maxDays).map { Day(index: $0, stops: byDay[$0]!) },
             budget: Dictionary(trip.budget.map { ($0.category.rawValue, $0.limit) }, uniquingKeysWith: max),
-            expenses: spends)
+            expenses: Array(spends))
     }
 }
 
