@@ -2,12 +2,12 @@ import assert from "node:assert/strict";
 import { DatabaseSync } from "node:sqlite";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import { contribute, contributorHash, DAILY_QUOTA, isPlausibleName, nearby, nextPlaces, report, validate, type Contribution, type Database } from "./community.ts";
+import { contribute, contributorHash, DAILY_QUOTA, isPlausibleName, nearby, nextPlaces, report, validate, withdraw, type Contribution, type Database } from "./community.ts";
 
 /** node:sqlite'ı D1 arayüzüne uyduran küçük adaptör. */
 function d1(): Database {
   const db = new DatabaseSync(":memory:");
-  for (const file of ["0001_community.sql", "0002_attest_reports.sql"]) {
+  for (const file of ["0001_community.sql", "0002_attest_reports.sql", "0003_trip_reports.sql"]) {
     db.exec(readFileSync(new URL(`../migrations/${file}`, import.meta.url), "utf8"));
   }
   return {
@@ -124,4 +124,17 @@ test("spammy place names are rejected", () => {
   for (const bad of ["www.cheap-tours.com", "Visit https://x.io", "Call +90 555 123 45 67", "info@spam.net", "!!!!!!!!", "12345", "a"])
     assert.equal(isPlausibleName(bad), false, bad);
   assert.equal(validate(trip({ places: [{ ...castle, name: "best deals www.x.com" }], transitions: [] })), "name");
+});
+
+test("withdraw removes only the contributor's votes and transitions", async () => {
+  const db = d1();
+  await contribute(db, "u1", trip());
+  await contribute(db, "u2", trip());
+  await withdraw(db, "u1", trip());
+  const count = async (sql: string) => (await db.prepare(sql).first<{ n: number }>())!.n;
+  assert.equal(await count("SELECT COUNT(*) AS n FROM votes WHERE contributor = 'u1'"), 0);
+  assert.equal(await count("SELECT COUNT(*) AS n FROM transitions WHERE contributor = 'u1'"), 0);
+  assert.equal(await count("SELECT COUNT(*) AS n FROM votes WHERE contributor = 'u2'"), 3);
+  assert.equal(await count("SELECT COUNT(*) AS n FROM transitions WHERE contributor = 'u2'"), 2);
+  assert.equal(await count("SELECT COUNT(*) AS n FROM places"), 3);
 });

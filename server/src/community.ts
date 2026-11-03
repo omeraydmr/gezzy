@@ -104,8 +104,8 @@ function normalize(name: string): string {
   return name.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
 }
 
-/** Aynı yer: 60 m içinde ve adları örtüşüyor (dil farkı olabilir; çok yakınsa ad şartı aranmaz). */
-async function findOrCreatePlace(db: Database, country: string, p: ContributedPlace, now: number): Promise<number> {
+/** Aynı yer: 60 m içinde ve adları örtüşüyor (dil farkı olabilir; çok yakınsa ad şartı aranmaz). Yoksa null. */
+async function findPlace(db: Database, p: ContributedPlace): Promise<number | null> {
   const dLat = 0.001, dLon = 0.001 / Math.max(0.2, Math.cos((p.lat * Math.PI) / 180));
   const { results } = await db.prepare(
     "SELECT id, name, lat, lon FROM places WHERE lat BETWEEN ? AND ? AND lon BETWEEN ? AND ?",
@@ -116,7 +116,12 @@ async function findOrCreatePlace(db: Database, country: string, p: ContributedPl
     .filter((r) => r.distance <= SAME_PLACE_METERS &&
       (r.distance <= 15 || normalize(r.name).split(" ").some((w) => w.length > 2 && target.includes(w))))
     .sort((a, b) => a.distance - b.distance)[0];
-  if (match) return match.id;
+  return match?.id ?? null;
+}
+
+async function findOrCreatePlace(db: Database, country: string, p: ContributedPlace, now: number): Promise<number> {
+  const found = await findPlace(db, p);
+  if (found !== null) return found;
   const row = await db.prepare(
     "INSERT INTO places (country, name, lat, lon, kind, category, created_at) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id",
   ).bind(country, p.name.trim(), p.lat, p.lon, p.kind, p.category ?? "", now).first<{ id: number }>();
@@ -154,6 +159,16 @@ export async function contribute(db: Database, contributor: string, c: Contribut
     ).bind(a, b, contributor, now).run();
   }
   return true;
+}
+
+/** Katkı veren kişinin bu katkıdaki yerlere ait oylarını ve geçişlerini siler; yerlerin kendisi ve başkalarının oyları kalır. */
+export async function withdraw(db: Database, contributor: string, c: Contribution): Promise<void> {
+  for (const p of c.places) {
+    const id = await findPlace(db, p);
+    if (id === null) continue;
+    await db.prepare("DELETE FROM votes WHERE place_id = ? AND contributor = ?").bind(id, contributor).run();
+    await db.prepare("DELETE FROM transitions WHERE contributor = ? AND (from_id = ? OR to_id = ?)").bind(contributor, id, id).run();
+  }
 }
 
 export interface CommunityPlace {

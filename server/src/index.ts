@@ -3,11 +3,15 @@
 //  POST   /attest/register     cihaz anahtarının Apple onayı (attestation); açık anahtar saklanır
 //  POST   /places/contribute   seyahati biten kullanıcının onayla paylaştığı yerler ve geçişler (D1)
 //  POST   /places/report       yanlış ya da spam yer bildirimi
+//  POST   /places/withdraw    katkıyı geri çeker (kişinin oyları ve geçişleri silinir)
+//  POST   /trips/report        biten seyahatin anonim rota raporu
+//  POST   /trips/report/withdraw  raporu geri çeker
 //  GET    /places/nearby       ?lat&lon  en az 3 kişinin önerdiği yerler
 //  GET    /places/next         ?lat&lon  bu yerden sonra en sık gidilenler
 
 import { base64ToBytes, verifyAssertion, verifyAttestation } from "./appattest.ts";
-import { contribute, contributorHash, nearby, nextPlaces, report, validate, type Database } from "./community.ts";
+import { contribute, contributorHash, nearby, nextPlaces, report, validate, withdraw, type Database } from "./community.ts";
+import { MAX_PAYLOAD_BYTES, submitReport, validateReport, withdrawReport } from "./reports.ts";
 
 interface Env {
   /** App Attest challenge'ları (kısa ömürlü). */
@@ -33,6 +37,7 @@ export default {
     if (env.CLIENT_KEY && request.headers.get("x-gezzy-key") !== env.CLIENT_KEY) return json({ error: "unauthorized" }, 401);
     const url = new URL(request.url);
     if (url.pathname.startsWith("/places/")) return places(request, url, env);
+    if (url.pathname.startsWith("/trips/")) return trips(request, url, env);
     if (url.pathname.startsWith("/attest/")) return attest(request, url, env);
     return json({ error: "not found" }, 404);
   },
@@ -89,7 +94,7 @@ async function sender(request: Request, body: Uint8Array, env: Env): Promise<str
 }
 
 async function places(request: Request, url: URL, env: Env): Promise<Response> {
-  if (request.method === "POST" && (url.pathname === "/places/contribute" || url.pathname === "/places/report")) {
+  if (request.method === "POST" && (url.pathname === "/places/contribute" || url.pathname === "/places/report" || url.pathname === "/places/withdraw")) {
     // İmza istek gövdesinin baytları üzerinden doğrulanır; JSON ondan sonra okunur.
     const bytes = new Uint8Array(await request.arrayBuffer());
     const who = await sender(request, bytes, env);
@@ -102,6 +107,10 @@ async function places(request: Request, url: URL, env: Env): Promise<Response> {
     }
     const body = validate(parsed);
     if (typeof body === "string") return json({ error: `invalid ${body}` }, 400);
+    if (url.pathname === "/places/withdraw") {
+      await withdraw(env.DB, who, body);
+      return json({ ok: true });
+    }
     const accepted = await contribute(env.DB, who, body);
     return accepted ? json({ ok: true }) : json({ error: "quota" }, 429);
   }
@@ -116,4 +125,28 @@ async function places(request: Request, url: URL, env: Env): Promise<Response> {
     });
   }
   return json({ error: "not found" }, 404);
+}
+
+async function trips(request: Request, url: URL, env: Env): Promise<Response> {
+  if (request.method !== "POST" || (url.pathname !== "/trips/report" && url.pathname !== "/trips/report/withdraw")) {
+    return json({ error: "not found" }, 404);
+  }
+  const bytes = new Uint8Array(await request.arrayBuffer());
+  if (bytes.length > MAX_PAYLOAD_BYTES) return json({ error: "too large" }, 413);
+  const who = await sender(request, bytes, env);
+  if (who instanceof Response) return who;
+  let parsed: unknown = null;
+  try { parsed = JSON.parse(new TextDecoder().decode(bytes)); } catch { /* geçersiz gövde */ }
+  if (url.pathname === "/trips/report/withdraw") {
+    const id = (parsed as { id?: unknown } | null)?.id;
+    if (typeof id !== "string" || id.length > 64) return json({ error: "invalid" }, 400);
+    await withdrawReport(env.DB, who, id);
+    return json({ ok: true }); // sahiplik sızdırılmaz
+  }
+  const r = validateReport(parsed);
+  if (typeof r === "string") return json({ error: `invalid ${r}` }, 400);
+  const result = await submitReport(env.DB, who, r);
+  if (result === "conflict") return json({ error: "conflict" }, 409);
+  if (result === "quota") return json({ error: "quota" }, 429);
+  return json({ ok: true });
 }
