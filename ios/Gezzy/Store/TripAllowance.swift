@@ -16,9 +16,12 @@ enum TripAllowance {
         return value
     }
 
-    /// `NewTripSheet` ile yeni seyahat oluşturuldu.
+    /// `NewTripSheet` ile yeni seyahat oluşturuldu; `store.add` çağrısından SONRA çağrılmalı.
+    /// Okuma hatasında yazmaz; `owned` yeni seyahati zaten içerir.
     @MainActor static func recordCreation(store: TripStore) {
-        write(created(store: store) + 1)
+        let stored = read()
+        guard stored.readable else { return }
+        write(max(stored.value + 1, owned(store: store)))
     }
 
     /// Sahibi ben olan ya da üyesi olmayan seyahatler.
