@@ -110,11 +110,10 @@ struct TripDetailView: View {
 
                             Section {
                                 VStack(spacing: 0) {
-                                    // Kaydırma hedefi: başlığın doğal yeri (içeriğin hemen üstü). LazyVStack ekran dışındaki
-                                    // öğeleri kurmadığı için hedef, sabitken hep görünen içerik satırının içinde durur.
+                                    // Kaydırma hedefi: içeriğin üst kenarı. LazyVStack ekran dışındaki öğeleri kurmadığı için
+                                    // hedef, sabitken hep görünen içerik satırının içinde durur.
                                     Color.clear
-                                        .frame(height: max(tabsHeight, 1))
-                                        .padding(.top, -max(tabsHeight, 1))
+                                        .frame(height: 1)
                                         .id(Self.tabsAnchor)
                                     tabContent(trip, canEdit: canEdit, palette: palette)
                                 }
@@ -129,10 +128,14 @@ struct TripDetailView: View {
                     .onChange(of: contentID) {
                         // Sabitken içerik çubuğun hemen altından başlar; değilse konum korunur.
                         guard isTabsPinned else { return }
+                        // scrollTo hedefin üstünü görünümün tepesine (sabit bandın altına) koyar; hedef noktayı bant
+                        // yüksekliği kadar aşağı kaydırınca içerik bandın hemen altından başlar.
+                        let viewport = outer.size.height + navBarBottom
+                        let anchor = UnitPoint(x: 0.5, y: viewport > 0 ? min(1, tabsHeight / viewport) : 0)
                         if reduceMotion {
-                            proxy.scrollTo(Self.tabsAnchor, anchor: .top)
+                            proxy.scrollTo(Self.tabsAnchor, anchor: anchor)
                         } else {
-                            withAnimation(.easeInOut(duration: 0.25)) { proxy.scrollTo(Self.tabsAnchor, anchor: .top) }
+                            withAnimation(.easeInOut(duration: 0.25)) { proxy.scrollTo(Self.tabsAnchor, anchor: anchor) }
                         }
                     }
                 }
