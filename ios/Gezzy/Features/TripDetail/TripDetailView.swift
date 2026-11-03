@@ -16,7 +16,11 @@ extension EnvironmentValues {
 struct TripDetailView: View {
     @Environment(TripStore.self) private var store
     let tripID: Trip.ID
+    /// Gerçekte açık bölüm; "Daha fazla" altındakiler için `moreOpen` ile birlikte okunur.
     @State private var section: TripSection
+    @State private var selectedTab: TripTab
+    /// "Daha fazla" sekmesinde bir bölüm açık mı (değilse ızgara görünür).
+    @State private var moreOpen: Bool
     @State private var coverTarget: Trip.ID?
     @State private var isEditingTrip = false
     @Environment(Entitlements.self) private var entitlements
@@ -29,6 +33,8 @@ struct TripDetailView: View {
     init(tripID: Trip.ID, initialSection: TripSection = .plan) {
         self.tripID = tripID
         _section = State(initialValue: initialSection)
+        _selectedTab = State(initialValue: initialSection.tab)
+        _moreOpen = State(initialValue: initialSection.tab == .more)
     }
 
     enum TripSection: String, CaseIterable, Hashable {
@@ -38,7 +44,7 @@ struct TripDetailView: View {
             switch self {
             case .plan: String(localized: "Plan")
             case .reservations: String(localized: "Rezervasyon")
-            case .money: String(localized: "Bütçe")
+            case .money: String(localized: "Para")
             case .packing: String(localized: "Valiz")
             case .visa: String(localized: "Vize")
             case .crew: String(localized: "Ekip")
@@ -85,27 +91,39 @@ struct TripDetailView: View {
                             .padding(.top, 12)
                     }
 
-                    SectionTabs(selection: $section)
+                    SectionTabs(selection: selectedTab, openSection: moreOpen ? section : nil, select: selectTab)
+                        .padding(.horizontal, 16)
                         .padding(.top, 16)
 
                     Group {
-                        switch section {
-                        case .plan: PlanSection(trip: trip)
-                        case .reservations: ReservationsSection(trip: trip)
-                        case .money: MoneySection(trip: trip)
-                        case .packing: PackingSection(trip: trip)
-                        case .visa: VisaSection(trip: trip)
-                        case .crew: CrewSection(trip: trip)
-                        case .memories: MemoriesSection(trip: trip)
+                        if selectedTab == .more && !moreOpen {
+                            MoreSections(trip: trip) { opened in
+                                section = opened
+                                moreOpen = true
+                            }
+                        } else {
+                            VStack(alignment: .leading, spacing: 12) {
+                                if moreOpen {
+                                    Button { moreOpen = false } label: {
+                                        Label("Daha fazla", systemImage: "chevron.left")
+                                            .font(.system(.footnote, weight: .semibold))
+                                            .foregroundStyle(palette.accentText)
+                                            .frame(minHeight: 44)
+                                            .contentShape(Rectangle())
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                                sectionContent(trip)
+                                    // Görüntüleyici: düğmeler ve alanlar kapalı (anılar yalnızca okuma olduğu için açık kalır).
+                                    .disabled(!canEdit && section != .memories)
+                            }
                         }
                     }
-                    // Görüntüleyici: düğmeler ve alanlar kapalı (anılar yalnızca okuma olduğu için açık kalır).
-                    .disabled(!canEdit && section != .memories)
                     .padding(.horizontal, 16)
                     .padding(.top, 16)
                     .padding(.bottom, 32)
                     .transition(.opacity)
-                    .id(section)
+                    .id(contentID)
                 }
             }
             .ignoresSafeArea(edges: .top)
@@ -114,7 +132,7 @@ struct TripDetailView: View {
             .environment(\.tripTint, tint)
             .environment(\.tripPalette, palette)
             .environment(\.tripText, palette.accentText)
-            .environment(\.openReservations) { section = .reservations }
+            .environment(\.openReservations) { selectTab(.reservations) }
             .navigationTitle(isHeroCollapsed ? trip.name : "")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(isHeroCollapsed ? .visible : .hidden, for: .navigationBar)
@@ -141,10 +159,35 @@ struct TripDetailView: View {
                 Text(calendarMessage ?? "")
             }
             .animation(.easeInOut(duration: 0.2), value: isHeroCollapsed)
-            .animation(.easeInOut(duration: 0.2), value: section)
+            .animation(.easeInOut(duration: 0.2), value: contentID)
         } else {
             ContentUnavailableView("Seyahat bulunamadı", systemImage: "suitcase")
         }
+    }
+
+    @ViewBuilder
+    private func sectionContent(_ trip: Trip) -> some View {
+        switch section {
+        case .plan: PlanSection(trip: trip)
+        case .reservations: ReservationsSection(trip: trip)
+        case .money: MoneySection(trip: trip)
+        case .packing: PackingSection(trip: trip)
+        case .visa: VisaSection(trip: trip)
+        case .crew: CrewSection(trip: trip)
+        case .memories: MemoriesSection(trip: trip)
+        }
+    }
+
+    /// İçeriğin kimliği: ızgara ya da açık bölüm. Değişince içerik yumuşakça yer değiştirir.
+    private var contentID: String {
+        selectedTab == .more && !moreOpen ? "more" : section.rawValue
+    }
+
+    /// Sekmeye dokunma; "Daha fazla" her dokunuşta ızgaraya döner.
+    private func selectTab(_ tab: TripTab) {
+        selectedTab = tab
+        moreOpen = false
+        if let direct = tab.section { section = direct }
     }
 
     private func coverMenu(_ trip: Trip) -> some View {
@@ -330,48 +373,66 @@ struct TripTicketRow: View {
 
 // MARK: - Tabs
 
-/// İkonlu sekme hapları; seçili sekmenin ikonu seyahat rengini alır.
+/// Dört eşit sekme; seçili olan seyahat rengiyle dolu kapsül. "Daha fazla" açık bölümün adını gösterir.
 struct SectionTabs: View {
-    @Binding var selection: TripDetailView.TripSection
-    @Environment(\.tripText) private var tintText
+    let selection: TripTab
+    /// "Daha fazla" altında açık bölüm (yoksa ızgara).
+    let openSection: TripDetailView.TripSection?
+    let select: (TripTab) -> Void
+    @Environment(\.tripTint) private var tint
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Namespace private var namespace
 
     var body: some View {
-        ScrollViewReader { reader in
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 6) {
-                    ForEach(TripDetailView.TripSection.allCases, id: \.self) { section in
-                        let isSelected = section == selection
-                        Button {
-                            withAnimation(.spring(duration: 0.3)) {
-                                selection = section
-                                reader.scrollTo(section, anchor: .center)
-                            }
-                        } label: {
-                            Label(section.title, systemImage: section.symbol)
-                                .font(.system(.subheadline, weight: .semibold))
-                                .foregroundStyle(isSelected ? Color.ink : Color.ink2)
-                                .labelStyle(TintedIconLabelStyle(iconColor: isSelected ? tintText : Color.ink3))
-                                .padding(.horizontal, 14)
-                                .padding(.vertical, 10)
-                                .background {
-                                    if isSelected {
-                                        Capsule()
-                                            .fill(Color.tray)
-                                            .softShadow()
-                                            .matchedGeometryEffect(id: "tab", in: namespace)
-                                    }
-                                }
-                        }
-                        .buttonStyle(.plain)
-                        .id(section)
-                        .accessibilityAddTraits(isSelected ? .isSelected : [])
-                    }
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 4)
+        HStack(spacing: 4) {
+            ForEach(TripTab.allCases, id: \.self) { tab in
+                button(tab)
             }
         }
+        .padding(4)
+        .background(Color.track, in: Capsule())
+        // Kapsül geçişi; Reduce Motion açıksa animasyonsuz (dıştaki içerik animasyonunu da ezer).
+        .animation(reduceMotion ? nil : .spring(duration: 0.3), value: selection)
+        .animation(reduceMotion ? nil : .spring(duration: 0.3), value: openSection)
+    }
+
+    private func button(_ tab: TripTab) -> some View {
+        let isSelected = tab == selection
+        let shown = tab == .more ? openSection : nil
+        let title = shown?.title ?? tab.title
+        let symbol = shown?.symbol ?? tab.symbol
+        let iconOnly = dynamicTypeSize >= .accessibility1
+        return Button {
+            select(tab)
+        } label: {
+            Group {
+                if iconOnly {
+                    Image(systemName: symbol)
+                        .foregroundStyle(isSelected ? Color.white : Color.ink3)
+                } else {
+                    Label(title, systemImage: symbol)
+                        .foregroundStyle(isSelected ? Color.white : Color.ink2)
+                        .labelStyle(TintedIconLabelStyle(iconColor: isSelected ? .white : Color.ink3))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
+                }
+            }
+            .font(.system(.subheadline, weight: .semibold))
+            .padding(.horizontal, 6)
+            .frame(maxWidth: .infinity, minHeight: 44)
+            .background {
+                if isSelected {
+                    Capsule()
+                        .fill(tint)
+                        .matchedGeometryEffect(id: "tab", in: namespace)
+                }
+            }
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(title))
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
 

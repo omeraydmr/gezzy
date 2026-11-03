@@ -285,6 +285,16 @@
         }
       }
     },
+    "Daha fazla" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "More"
+          }
+        }
+      }
+    },
     "Devam et" : {
       "localizations" : {
         "en" : {
@@ -393,6 +403,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Allow access in Memories to choose photos."
+          }
+        }
+      }
+    },
+    "Fotoğraflar ve paylaşım kartı" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photos and share card"
           }
         }
       }
@@ -627,6 +647,16 @@
         }
       }
     },
+    "Liste boş" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "List empty"
+          }
+        }
+      }
+    },
     "Liste konsolosluğa göre değişir; yetkili aracı kurumdan doğrula." : {
       "localizations" : {
         "en" : {
@@ -653,6 +683,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Text"
+          }
+        }
+      }
+    },
+    "Para" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Money"
           }
         }
       }
@@ -723,6 +763,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Share your trip"
+          }
+        }
+      }
+    },
+    "Seyahatten sonra" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "After the trip"
           }
         }
       }
@@ -2306,6 +2356,16 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$lld/%2$lld"
+          }
+        }
+      }
+    },
+    "%lld/%lld hazır" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld/%2$lld packed"
           }
         }
       }

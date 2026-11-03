@@ -345,8 +345,8 @@ struct TripGlance: View {
     }
 
     private var visa: (value: String, accent: Accent) {
-        let pending = trip.members.filter { store.visaAssessment(for: $0, in: trip).needsAction }.count
-        return pending == 0 ? (String(localized: "Hazır ✓"), .green) : (String(localized: "\(pending) kişi bekliyor"), .orange)
+        let pending = TripSummaries.visaPending(trip, store: store)
+        return (TripSummaries.visaText(trip, store: store), pending == 0 ? .green : .orange)
     }
 
     private var budgetValue: String {
@@ -356,7 +356,8 @@ struct TripGlance: View {
     }
 
     private var packingValue: String {
-        guard !trip.packing.isEmpty else { return String(localized: "Boş") }
-        return "\(trip.packing.filter(\.isPacked).count)/\(trip.packing.count)"
+        let packing = TripSummaries.packing(trip)
+        guard packing.count > 0 else { return String(localized: "Boş") }
+        return "\(packing.packed)/\(packing.count)"
     }
 }
