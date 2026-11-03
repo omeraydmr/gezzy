@@ -10133,6 +10133,16 @@
           }
         }
       }
+    },
+    "Birkaç kısa soru; uygulamayı sana göre açarız. Tercihlerin cihazında kalır; rota paylaşımı yalnızca izin verirsen." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A few short questions so we can tailor the app. Your preferences stay on your device; your route is shared only if you allow it."
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

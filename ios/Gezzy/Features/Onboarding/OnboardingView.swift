@@ -285,7 +285,7 @@ struct OnboardingView: View {
 
     private var survey: some View {
         VStack(alignment: .leading, spacing: 22) {
-            stepTitle(String(localized: "Nasıl seyahat ediyorsun?"), String(localized: "Üç kısa soru; uygulamayı sana göre açarız. Cevaplar cihazında kalır."))
+            stepTitle(String(localized: "Nasıl seyahat ediyorsun?"), String(localized: "Birkaç kısa soru; uygulamayı sana göre açarız. Tercihlerin cihazında kalır; rota paylaşımı yalnızca izin verirsen."))
 
             question(String(localized: "Genelde kiminle?")) {
                 chips(TravelPreferences.Companion.allCases, selected: { preferences.companion == $0 }, title: companionTitle) {

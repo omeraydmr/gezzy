@@ -24,14 +24,20 @@ final class RouteReporter {
     private(set) var choice: Choice?
     private var entries: [String: Entry]
     private var isRunning = false
+    /// Kayıtlı durumlar okunamadıysa ham veri korunur: üzerine yazılmaz, gönderim yapılmaz
+    /// (rapor kimlikleri yeniden üretilip seyahatler tekrar gönderilmesin).
+    private var entriesUnreadable = false
 
     private init() {
         choice = UserDefaults.standard.string(forKey: Self.choiceKey).flatMap(Choice.init)
-        if let data = UserDefaults.standard.data(forKey: Self.entriesKey),
-           let decoded = try? JSONDecoder().decode([String: Entry].self, from: data) {
-            entries = decoded
-        } else {
-            entries = [:]
+        entries = [:]
+        if let data = UserDefaults.standard.data(forKey: Self.entriesKey) {
+            do {
+                entries = try JSONDecoder().decode([String: Entry].self, from: data)
+            } catch {
+                entriesUnreadable = true
+                print("RouteReporter: kayıtlı rapor durumları okunamadı; gönderim durduruldu (\(error))")
+            }
         }
     }
 
@@ -47,6 +53,7 @@ final class RouteReporter {
     func state(for tripID: UUID) -> State? { entries[tripID.uuidString]?.state }
 
     private func save() {
+        guard !entriesUnreadable else { return }
         if let data = try? JSONEncoder().encode(entries) { UserDefaults.standard.set(data, forKey: Self.entriesKey) }
     }
 
@@ -66,28 +73,38 @@ final class RouteReporter {
     }
 
     func run(store: TripStore, isPremium: Bool) async {
-        guard !isPremium, choice == .yes, !isRunning else { return }
+        guard !isPremium, choice == .yes, !isRunning, !entriesUnreadable else { return }
         isRunning = true
         defer { isRunning = false }
         let service = CommunityService.shared
         for trip in store.trips {
-            if service.choice(for: trip) == .declined { continue }
-            let current = state(for: trip.id)
+            // Geri çekilen / reddedilen seyahat, topluluk tercihinden bağımsız olarak bir daha gönderilmez.
             var lastAttempt: Date?
-            switch current {
+            switch state(for: trip.id) {
             case .sent, .rejected, .withdrawn: continue
             case .pending(let date): lastAttempt = date
             case nil: break
             }
+            if service.choice(for: trip) == .declined { continue }
             let now = Date()
             guard RouteReportRetry.shouldAttempt(lastAttempt: lastAttempt, now: now) else { continue }
             let id = reportID(for: trip)
             guard let report = RouteReport.make(trip: trip, me: store.me.id, reportID: id, now: now) else { continue }
+            let contribution = RouteReport.contribution(trip: trip)
             do {
-                if let contribution = RouteReport.contribution(trip: trip) {
+                if let contribution {
                     try await service.contribute(contribution)
                 }
+                // Bekleme sırasında geri alındıysa ya da izin kapandıysa raporu gönderme.
+                guard isStillWanted(trip) else {
+                    await undoIfWithdrawn(trip, reportID: nil, contribution: contribution)
+                    continue
+                }
                 try await service.sendReport(report)
+                guard isStillWanted(trip) else {
+                    await undoIfWithdrawn(trip, reportID: id, contribution: contribution)
+                    continue
+                }
                 set(.sent, for: trip)
                 service.setChoice(.shared, for: trip)
             } catch CommunityService.Failure.notConfigured {
@@ -101,7 +118,19 @@ final class RouteReporter {
         }
     }
 
-    /// Gönderilmiş raporu ve katkıları geri çeker.
+    private func isStillWanted(_ trip: Trip) -> Bool {
+        choice == .yes && state(for: trip.id) != .withdrawn
+    }
+
+    /// Gönderim sürerken geri alınan seyahatin sunucuya ulaşmış parçalarını (en iyi çabayla) geri çeker.
+    private func undoIfWithdrawn(_ trip: Trip, reportID: String?, contribution: CommunityPlaces.Contribution?) async {
+        guard state(for: trip.id) == .withdrawn else { return }
+        let service = CommunityService.shared
+        if let reportID { try? await service.withdrawReport(id: reportID) }
+        if let contribution { try? await service.withdraw(contribution) }
+    }
+
+    /// Gönderilmiş raporu ve katkıları geri çeker. Topluluk kartı yeniden "Paylaş/Paylaşma" sorar.
     func withdraw(_ trip: Trip) async throws {
         let service = CommunityService.shared
         try await service.withdrawReport(id: reportID(for: trip))
@@ -109,12 +138,11 @@ final class RouteReporter {
             try await service.withdraw(contribution)
         }
         set(.withdrawn, for: trip)
-        service.setChoice(.declined, for: trip)
+        service.clearChoice(for: trip)
     }
 
-    /// Henüz gönderilmemiş seyahati gönderme.
+    /// Henüz gönderilmemiş seyahati gönderme; `.withdrawn` durumu tekrar gönderimi engeller.
     func exclude(_ trip: Trip) {
-        CommunityService.shared.setChoice(.declined, for: trip)
         set(.withdrawn, for: trip)
     }
 }

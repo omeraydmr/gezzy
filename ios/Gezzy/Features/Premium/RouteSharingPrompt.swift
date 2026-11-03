@@ -29,12 +29,18 @@ struct RouteSharingPrompt: View {
         return Button {
             withAnimation(.spring(duration: 0.25)) { choice = value }
         } label: {
-            HStack(spacing: 6) {
-                if isOn { Image(systemName: "checkmark").font(.system(size: 13, weight: .bold)) }
-                Text(title).font(.system(.subheadline, weight: .semibold))
-            }
-            .foregroundStyle(Color.ink)
-            .frame(maxWidth: .infinity, minHeight: 46)
+            // Onay ikonu kenarda durur; seçilince metin kaymaz.
+            Text(title)
+                .font(.system(.subheadline, weight: .semibold))
+                .foregroundStyle(Color.ink)
+                .frame(maxWidth: .infinity, minHeight: 46)
+                .overlay(alignment: .leading) {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(Color.ink)
+                        .padding(.leading, 14)
+                        .opacity(isOn ? 1 : 0)
+                }
             .background(Color.tray, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: 14, style: .continuous)

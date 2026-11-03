@@ -35,6 +35,13 @@ final class CommunityService {
         UserDefaults.standard.set(choices, forKey: Self.choicesKey)
     }
 
+    /// Seyahatin topluluk tercihini siler; kart yeniden sorar.
+    func clearChoice(for trip: Trip) {
+        var choices = UserDefaults.standard.dictionary(forKey: Self.choicesKey) as? [String: String] ?? [:]
+        choices[trip.id.uuidString] = nil
+        UserDefaults.standard.set(choices, forKey: Self.choicesKey)
+    }
+
     enum Failure: Error { case notConfigured, rejected(Int) }
 
     func contribute(_ contribution: CommunityPlaces.Contribution) async throws {
