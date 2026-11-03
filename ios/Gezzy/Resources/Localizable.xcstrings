@@ -10013,6 +10013,126 @@
           }
         }
       }
+    },
+    "Rotanı başkalarına ilham yap" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Let your route inspire others"
+          }
+        }
+      }
+    },
+    "Seyahat bitince gittiğin yerler, sırası ve saatleri, kaç gece ve kaç kişi olduğun, harcama tutarların Gezzy'ye gider. Adın, otelin, uçuşun ve harcama başlıkların gitmez. Profil'den istediğin zaman değiştirebilirsin." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When your trip ends, the places you went, their order and times, how many nights and how many people you were, and your expense amounts go to Gezzy. Your name, hotel, flight and expense titles don't. You can change this anytime in Profile."
+          }
+        }
+      }
+    },
+    "Evet, paylaş" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yes, share"
+          }
+        }
+      }
+    },
+    "Hayır" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No"
+          }
+        }
+      }
+    },
+    "Rotamı Gezzy ile paylaş" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Share my route with Gezzy"
+          }
+        }
+      }
+    },
+    "Premium'da rotan paylaşılmaz." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "With Premium, your route is never shared."
+          }
+        }
+      }
+    },
+    "Rotan Gezzy'ye gönderildi" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your route was sent to Gezzy"
+          }
+        }
+      }
+    },
+    "Gönderilecek" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Will be sent"
+          }
+        }
+      }
+    },
+    "Bu seyahati gönderme" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Don't send this trip"
+          }
+        }
+      }
+    },
+    "Oyları gönder" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send votes"
+          }
+        }
+      }
+    },
+    "Oyların kaydedildi." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your votes were saved."
+          }
+        }
+      }
+    },
+    "Geri alınamadı; internet bağlantını kontrol et." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't undo; check your internet connection."
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

@@ -21,6 +21,7 @@ struct ProfileView: View {
                     meCard
                     countriesCard(visited)
                     premiumCard
+                    privacyCard
                     Button {
                         store.restartOnboarding()
                     } label: {
@@ -90,6 +91,37 @@ struct ProfileView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .tray()
+    }
+
+    /// Gizlilik: rota raporu izni. Premium'da rota hiç paylaşılmaz.
+    private var privacyCard: some View {
+        let reporter = RouteReporter.shared
+        let isPremium = entitlements.isPremium
+        return VStack(alignment: .leading, spacing: 10) {
+            Text("Gizlilik").font(.tCaption).foregroundStyle(Color.ink2)
+            Toggle(isOn: Binding(
+                get: { !isPremium && reporter.choice == .yes },
+                set: { isOn in
+                    reporter.setChoice(isOn ? .yes : .no)
+                    if isOn {
+                        Task { await reporter.run(store: store, isPremium: entitlements.isPremium) }
+                    }
+                })) {
+                Text("Rotamı Gezzy ile paylaş").font(.tBodyStrong).foregroundStyle(Color.ink)
+            }
+            .disabled(isPremium)
+            Group {
+                if isPremium {
+                    Text("Premium'da rotan paylaşılmaz.")
+                } else {
+                    Text(RouteSharingPrompt.explanation)
+                }
+            }
+            .font(.caption)
+            .foregroundStyle(Color.ink2)
+            .fixedSize(horizontal: false, vertical: true)
+        }
         .tray()
     }
 

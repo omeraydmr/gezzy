@@ -6,6 +6,7 @@ import GezzyKit
 struct CommunityShareCard: View {
     @Environment(\.tripPalette) private var palette
     @Environment(\.tripText) private var tintText
+    @Environment(Entitlements.self) private var entitlements
     let trip: Trip
     /// Fotoğraflarla doğrulanan duraklar.
     let verified: Set<UUID>
@@ -16,9 +17,93 @@ struct CommunityShareCard: View {
     @State private var isExpanded = false
     @State private var isSending = false
     @State private var errorText: String?
+    @State private var isWithdrawing = false
+    @State private var withdrawError: String?
+    @State private var votesSaved = false
     private var service: CommunityService { .shared }
+    private var reporter: RouteReporter { .shared }
+
+    /// Rota raporu durumu; izin yoksa ya da premium'da nil (bugünkü kart).
+    private enum ReportStatus { case sent, pending }
+
+    private var reportStatus: ReportStatus? {
+        guard reporter.choice == .yes, !entitlements.isPremium else { return nil }
+        switch reporter.state(for: trip.id) {
+        case .sent: return .sent
+        case .pending, nil: return .pending
+        case .withdrawn, .rejected: return nil
+        }
+    }
 
     var body: some View {
+        Group {
+            switch reportStatus {
+            case .sent: sentCard.tray()
+            case .pending: pendingCard.tray(padding: 14)
+            case nil: communityCard
+            }
+        }
+        .onAppear { choice = service.choice(for: trip) }
+    }
+
+    // MARK: Rota raporu
+
+    private var sentCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 10) {
+                Label("Rotan Gezzy'ye gönderildi", systemImage: "checkmark.circle.fill")
+                    .font(.tBodyStrong)
+                    .foregroundStyle(Color.ink)
+                Spacer(minLength: 4)
+                if isWithdrawing {
+                    ProgressView()
+                } else {
+                    Button("Geri al") { Task { await withdraw() } }
+                        .buttonStyle(PillButtonStyle())
+                }
+            }
+            if let withdrawError {
+                Label(withdrawError, systemImage: "exclamationmark.triangle").font(.footnote).foregroundStyle(Color.food)
+            }
+            votingSection(sendTitle: String(localized: "Oyları gönder"))
+            if votesSaved {
+                Label("Oyların kaydedildi.", systemImage: "heart.fill").font(.footnote).foregroundStyle(Color.ink2)
+            }
+        }
+    }
+
+    private var pendingCard: some View {
+        HStack(spacing: 10) {
+            Label("Gönderilecek", systemImage: "clock")
+                .font(.tBody)
+                .foregroundStyle(Color.ink2)
+            Spacer(minLength: 4)
+            Button("Bu seyahati gönderme") {
+                withAnimation {
+                    reporter.exclude(trip)
+                    choice = service.choice(for: trip)
+                }
+            }
+            .buttonStyle(PillButtonStyle())
+        }
+    }
+
+    private func withdraw() async {
+        isWithdrawing = true
+        defer { isWithdrawing = false }
+        withdrawError = nil
+        do {
+            try await reporter.withdraw(trip)
+            withAnimation { choice = service.choice(for: trip) }
+        } catch {
+            withdrawError = String(localized: "Geri alınamadı; internet bağlantını kontrol et.")
+        }
+    }
+
+    // MARK: Topluluk kartı
+
+    @ViewBuilder
+    private var communityCard: some View {
         Group {
             if choice == .shared {
                 Label("Yerlerin topluluk önerilerine eklendi. Teşekkürler!", systemImage: "heart.fill")
@@ -29,7 +114,6 @@ struct CommunityShareCard: View {
                 prompt.tray()
             }
         }
-        .onAppear { choice = service.choice(for: trip) }
     }
 
     private var prompt: some View {
@@ -42,25 +126,7 @@ struct CommunityShareCard: View {
                 .font(.footnote)
                 .foregroundStyle(Color.ink2)
 
-            Button {
-                withAnimation(.spring(duration: 0.3)) { isExpanded.toggle() }
-            } label: {
-                HStack {
-                    Text("\(stops.count - excluded.count) yer · oyla")
-                        .font(.system(.subheadline, weight: .semibold))
-                    Spacer()
-                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down").font(.caption.weight(.semibold))
-                }
-                .foregroundStyle(Color.ink)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-
-            if isExpanded {
-                ForEach(stops) { stop in
-                    row(stop)
-                }
-            }
+            stopList(stops)
 
             if let errorText {
                 Label(errorText, systemImage: "exclamationmark.triangle").font(.footnote).foregroundStyle(Color.food)
@@ -81,6 +147,49 @@ struct CommunityShareCard: View {
                 .buttonStyle(PillButtonStyle())
             }
         }
+    }
+
+    /// Gönderilmiş rotada oylar sonradan eklenebilir; sunucu aynı katkıyı günceller.
+    private func votingSection(sendTitle: String) -> some View {
+        let stops = CommunityPlaces.eligibleStops(in: trip)
+        return VStack(alignment: .leading, spacing: 12) {
+            stopList(stops)
+            if let errorText {
+                Label(errorText, systemImage: "exclamationmark.triangle").font(.footnote).foregroundStyle(Color.food)
+            }
+            if isExpanded {
+                Button {
+                    Task { await share() }
+                } label: {
+                    if isSending { ProgressView().tint(tintText) } else { Text(sendTitle) }
+                }
+                .buttonStyle(PillButtonStyle(tint: tintText, soft: .soft(palette)))
+                .disabled(isSending || stops.count == excluded.count)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func stopList(_ stops: [Stop]) -> some View {
+            Button {
+                withAnimation(.spring(duration: 0.3)) { isExpanded.toggle() }
+            } label: {
+                HStack {
+                    Text("\(stops.count - excluded.count) yer · oyla")
+                        .font(.system(.subheadline, weight: .semibold))
+                    Spacer()
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down").font(.caption.weight(.semibold))
+                }
+                .foregroundStyle(Color.ink)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            if isExpanded {
+                ForEach(stops) { stop in
+                    row(stop)
+                }
+            }
     }
 
     private func row(_ stop: Stop) -> some View {
@@ -128,6 +237,10 @@ struct CommunityShareCard: View {
         errorText = nil
         do {
             try await service.contribute(contribution)
+            if reportStatus == .sent {
+                withAnimation { votesSaved = true; isExpanded = false }
+                return
+            }
             service.setChoice(.shared, for: trip)
             withAnimation { choice = .shared }
         } catch CommunityService.Failure.rejected(429) {

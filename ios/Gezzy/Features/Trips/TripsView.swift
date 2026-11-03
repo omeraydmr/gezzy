@@ -23,8 +23,19 @@ struct TripsView: View {
     @State private var pendingDelete: Trip?
     @State private var isShowingProfile = false
     @State private var arrivingID: Trip.ID?
+    /// Rota paylaşımı mevcut / anketi atlayan kullanıcılara bir kez sorulur.
+    @AppStorage("gezzy.routeSharing.prompted") private var routeSharingPrompted = false
+    @State private var isAskingRouteSharing = false
+    @State private var paywallAfterRoutePrompt = false
+    @State private var isShowingSharingPaywall = false
 
     enum Scope: Hashable { case upcoming, past }
+
+    private var shouldAskRouteSharing: Bool {
+        store.hasCompletedOnboarding && !isOnboarding && !routeSharingPrompted
+            && RouteReporter.shared.choice == nil && !entitlements.isPremium
+            && AppRouter.shared.pendingImport == nil && !isCreating && !isShowingProfile
+    }
 
     private var trips: [Trip] { scope == .upcoming ? store.upcoming : store.past }
     private var focusedIndex: Int { min(max(index, 0), max(trips.count - 1, 0)) }
@@ -136,6 +147,30 @@ struct TripsView: View {
             .onAppear {
                 if !store.hasCompletedOnboarding { isOnboarding = true }
             }
+            .task {
+                // Açılıştaki diğer sunumlar otursun.
+                try? await Task.sleep(for: .seconds(1))
+                if shouldAskRouteSharing { isAskingRouteSharing = true }
+            }
+            .sheet(isPresented: $isAskingRouteSharing, onDismiss: {
+                // Aşağı kaydırılarak kapatılsa da bir daha sorulmaz.
+                routeSharingPrompted = true
+                if paywallAfterRoutePrompt {
+                    paywallAfterRoutePrompt = false
+                    isShowingSharingPaywall = true
+                }
+            }) {
+                RouteSharingPromptSheet { choice in
+                    RouteReporter.shared.setChoice(choice)
+                    routeSharingPrompted = true
+                    if choice == .yes {
+                        Task { await RouteReporter.shared.run(store: store, isPremium: entitlements.isPremium) }
+                    } else {
+                        paywallAfterRoutePrompt = true
+                    }
+                }
+            }
+            .sheet(isPresented: $isShowingSharingPaywall) { PaywallSheet(reason: .dataSharingDeclined) }
             .onChange(of: store.hasCompletedOnboarding) { _, completed in
                 // Profilden "tanıtımı yeniden göster": önce profil sayfası kapansın.
                 guard !completed, !isOnboarding else { return }
