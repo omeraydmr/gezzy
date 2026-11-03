@@ -8,6 +8,7 @@ struct IdeasCard: View {
     @Environment(\.tripTint) private var tint
     @Environment(\.tripText) private var tintText
     @Environment(TripStore.self) private var store
+    @Environment(\.colorScheme) private var colorScheme
     let trip: Trip
     let day: Date
     @State private var isPicking = false
@@ -111,6 +112,8 @@ struct IdeasCard: View {
                             .foregroundStyle(tintText)
                             .frame(width: 32, height: 32)
                             .background(Color.soft(palette), in: Circle())
+                            // Koyu temada yumuşak zemin kartla neredeyse aynı; ince halka düğmeyi seçtirir.
+                            .overlay(Circle().strokeBorder(tintText.opacity(colorScheme == .dark ? 0.45 : 0), lineWidth: 1))
                             .frame(width: 44, height: 44)
                             .contentShape(Rectangle())
                     } primaryAction: {

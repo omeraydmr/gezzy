@@ -27,10 +27,11 @@ struct PlacePickerMap: View {
         return nil
     }
 
-    /// İlk 15 öneri + seçili + eklenenler; numara listedeki sırasıdır.
+    /// İlk 10 öneri (harita bunları çerçeveler) + seçili + eklenenler; numara listedeki sırasıdır.
+    /// Daha fazlası haritayı boğup Haritalar noktalarını örtüyordu.
     private var pinned: [(number: Int, item: PlaceRanking.Ranked)] {
         model.numbered.enumerated().compactMap { index, item in
-            index < 15 || item.id == model.focusedID || model.added[item.id] != nil ? (index + 1, item) : nil
+            index < 10 || item.id == model.focusedID || model.added[item.id] != nil ? (index + 1, item) : nil
         }
     }
 

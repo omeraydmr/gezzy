@@ -44,10 +44,10 @@ final class PlaceRankingTests: XCTestCase {
 
     func testBadges() {
         XCTAssertEqual(PlaceRanking.badge(popularity: 1, contributors: 4), .community(4))
-        XCTAssertEqual(PlaceRanking.badge(popularity: 0.8, contributors: nil), .veryPopular)
-        XCTAssertEqual(PlaceRanking.badge(popularity: 0.79, contributors: nil), .popular)
-        XCTAssertEqual(PlaceRanking.badge(popularity: 0.5, contributors: nil), .popular)
-        XCTAssertNil(PlaceRanking.badge(popularity: 0.49, contributors: nil))
+        XCTAssertEqual(PlaceRanking.badge(popularity: 0.95, contributors: nil), .veryPopular)
+        XCTAssertEqual(PlaceRanking.badge(popularity: 0.94, contributors: nil), .popular)
+        XCTAssertEqual(PlaceRanking.badge(popularity: 0.8, contributors: nil), .popular)
+        XCTAssertNil(PlaceRanking.badge(popularity: 0.79, contributors: nil), "İlk %20'nin dışı rozetsiz")
         XCTAssertNil(PlaceRanking.badge(popularity: 0.1, contributors: 0), "0 katkıcı rozet olmaz")
     }
 
@@ -71,6 +71,19 @@ final class PlaceRankingTests: XCTestCase {
         let top = place("wiki/3", "Oceanário", score: 90, slot: 9)
         let pool = PlaceRanking.pool(wikipedia: [far, near, top], community: [])
         XCTAssertEqual(PlaceRanking.browse(pool, center: center).map(\.id), ["wiki/3", "wiki/1", "wiki/2"])
+    }
+
+    func testBrowsePrefersNearbyWhenPopularityIsClose() {
+        // Uzaktaki (~13 km) biraz daha popüler yer, merkezdeki neredeyse aynı popülerlikteki yerin arkasına düşer.
+        let scores = (0..<10).map { place("wiki/f\($0)", "Dolgu \($0)", score: $0 + 1, slot: 0) }
+        var far = place("wiki/far", "Uzak Kilise", score: 1000, slot: 0)
+        far.coordinate = Coordinate(latitude: center.latitude + 0.117, longitude: center.longitude)
+        var near = place("wiki/near", "Belediye", score: 999, slot: 0)
+        near.coordinate = center
+        let pool = PlaceRanking.pool(wikipedia: scores + [far, near], community: [])
+        let ids = PlaceRanking.browse(pool, center: center).map(\.id)
+        XCTAssertEqual(ids.first, "wiki/near")
+        XCTAssertLessThan(ids.firstIndex(of: "wiki/near")!, ids.firstIndex(of: "wiki/far")!)
     }
 
     func testExactNameBeatsMorePopularPrefixMatch() {
