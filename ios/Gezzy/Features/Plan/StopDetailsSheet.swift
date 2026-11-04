@@ -17,6 +17,7 @@ struct StopFormFields: View {
             Toggle("Saat belirle", isOn: Binding(
                 get: { stop.startMinutes != nil },
                 set: { stop.startMinutes = $0 ? (stop.startMinutes ?? 10 * 60) : nil }))
+            .tint(Color.success)
             if let minutes = stop.startMinutes {
                 DatePicker("Başlangıç", selection: Binding(
                     get: { Calendar.current.date(bySettingHour: minutes / 60, minute: minutes % 60, second: 0, of: .now) ?? .now },

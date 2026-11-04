@@ -34,6 +34,15 @@ struct TripDetailView: View {
     /// Sekme başlığının tam yüksekliği (gezinme çubuğu payı dahil).
     @State private var tabsHeight: CGFloat = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// Sekmeler sabitken içerik değişimi: önce eski içerik dururken sekme bandına kaydırılır, sonra değiştirilir.
+    @State private var pendingSwitch: ContentSwitch?
+
+    private struct ContentSwitch: Equatable {
+        let id = UUID()
+        let tab: TripTab
+        let section: TripSection
+        let moreOpen: Bool
+    }
 
     init(tripID: Trip.ID, initialSection: TripSection = .plan) {
         self.tripID = tripID
@@ -125,17 +134,19 @@ struct TripDetailView: View {
                         }
                     }
                     .ignoresSafeArea(edges: .top)
-                    .onChange(of: contentID) {
-                        // Sabitken içerik çubuğun hemen altından başlar; değilse konum korunur.
-                        guard isTabsPinned else { return }
-                        // scrollTo hedefin üstünü görünümün tepesine (sabit bandın altına) koyar; hedef noktayı bant
-                        // yüksekliği kadar aşağı kaydırınca içerik bandın hemen altından başlar.
+                    .onChange(of: pendingSwitch) { _, change in
+                        guard let change else { return }
+                        // Eski (uzun) içerik hâlâ yerindeyken sekme bandına kaydır; içerik sonra değişir. Önce
+                        // değiştirip sonra kaydırmak, kısalan içerikte ofseti içeriğin sonunun ötesinde bırakıp
+                        // boş ekran gösteriyordu.
                         let viewport = outer.size.height + navBarBottom
                         let anchor = UnitPoint(x: 0.5, y: viewport > 0 ? min(1, tabsHeight / viewport) : 0)
-                        if reduceMotion {
-                            proxy.scrollTo(Self.tabsAnchor, anchor: anchor)
-                        } else {
-                            withAnimation(.easeInOut(duration: 0.25)) { proxy.scrollTo(Self.tabsAnchor, anchor: anchor) }
+                        var transaction = Transaction()
+                        transaction.disablesAnimations = true
+                        withTransaction(transaction) { proxy.scrollTo(Self.tabsAnchor, anchor: anchor) }
+                        DispatchQueue.main.async {
+                            apply(change)
+                            pendingSwitch = nil
                         }
                     }
                 }
@@ -173,7 +184,6 @@ struct TripDetailView: View {
             }
             .animation(.easeInOut(duration: 0.2), value: isHeroCollapsed)
             .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: isTabsPinned)
-            .animation(.easeInOut(duration: 0.2), value: contentID)
         } else {
             ContentUnavailableView("Seyahat bulunamadı", systemImage: "suitcase")
         }
@@ -184,13 +194,12 @@ struct TripDetailView: View {
         Group {
             if selectedTab == .more && !moreOpen {
                 MoreSections(trip: trip) { opened in
-                    section = opened
-                    moreOpen = true
+                    switchContent(tab: .more, section: opened, moreOpen: true)
                 }
             } else {
                 VStack(alignment: .leading, spacing: 12) {
                     if moreOpen {
-                        Button { moreOpen = false } label: {
+                        Button { switchContent(tab: .more, section: section, moreOpen: false) } label: {
                             Label("Daha fazla", systemImage: "chevron.left")
                                 .font(.system(.footnote, weight: .semibold))
                                 .foregroundStyle(palette.accentText)
@@ -208,7 +217,7 @@ struct TripDetailView: View {
         .padding(.horizontal, 16)
         .padding(.top, Self.tabsGap - Self.tabsInset)
         .padding(.bottom, 32)
-        .transition(.opacity)
+        // Geçiş animasyonu yok: eski uzun içerik solarken yeni kısa içerik konumu bozuyordu.
         .id(contentID)
     }
 
@@ -260,9 +269,19 @@ struct TripDetailView: View {
 
     /// Sekmeye dokunma; "Daha fazla" her dokunuşta ızgaraya döner.
     private func selectTab(_ tab: TripTab) {
-        selectedTab = tab
-        moreOpen = false
-        if let direct = tab.section { section = direct }
+        switchContent(tab: tab, section: tab.section ?? section, moreOpen: false)
+    }
+
+    /// Sekmeler sabitse önce kaydırma, sonra değişim (bkz. `pendingSwitch`); değilse konum korunur, doğrudan değişir.
+    private func switchContent(tab: TripTab, section: TripSection, moreOpen: Bool) {
+        let change = ContentSwitch(tab: tab, section: section, moreOpen: moreOpen)
+        if isTabsPinned { pendingSwitch = change } else { apply(change) }
+    }
+
+    private func apply(_ change: ContentSwitch) {
+        selectedTab = change.tab
+        section = change.section
+        moreOpen = change.moreOpen
     }
 
     private func coverMenu(_ trip: Trip) -> some View {

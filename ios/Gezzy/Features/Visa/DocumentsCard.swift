@@ -182,6 +182,7 @@ private struct DocumentDetailsSheet: View {
                 }
                 Section {
                     Toggle("Yalnızca bu cihazda", isOn: $isPrivate)
+                    .tint(Color.success)
                 } footer: {
                     Text(isPrivate
                          ? String(localized: "Dosya iCloud'a yüklenmez; ekip yalnızca belgenin adını görür.")

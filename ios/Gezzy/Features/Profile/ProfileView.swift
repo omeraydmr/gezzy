@@ -118,6 +118,7 @@ struct ProfileView: View {
                 })) {
                 Text("Rotamı Gezzy ile paylaş").font(.tBodyStrong).foregroundStyle(Color.ink)
             }
+            .tint(Color.success)
             .disabled(isPremium)
             Group {
                 if isPremium {

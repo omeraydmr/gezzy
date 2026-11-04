@@ -71,6 +71,7 @@ struct TripEditSheet: View {
                     DatePicker("Dönüş", selection: $endDate, in: startDate..., displayedComponents: .date)
                     if datesChanged && !trip.stops.isEmpty {
                         Toggle("Planı da kaydır", isOn: $shiftPlan)
+                        .tint(Color.success)
                     }
                 } footer: {
                     if datesChanged && !trip.stops.isEmpty {
@@ -88,6 +89,7 @@ struct TripEditSheet: View {
                         ForEach(NewTripSheet.currencies, id: \.self) { Text($0) }
                     }
                     Toggle("Taslak", isOn: $isDraft)
+                    .tint(Color.success)
                     Button {
                         withAnimation { coverSeed = (coverSeed + 1) % 120 }
                     } label: {

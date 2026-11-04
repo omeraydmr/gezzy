@@ -292,6 +292,7 @@ struct StudioControls: View {
                     } set: { isOn in
                         if isOn { config.stats.insert(stat) } else { config.stats.remove(stat) }
                     })
+                    .tint(Color.success)
                     .font(.tBody)
                     .padding(.vertical, 8)
                 }
@@ -327,6 +328,7 @@ struct StudioControls: View {
                     }
                 }
             }
+            .tint(Color.success)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)

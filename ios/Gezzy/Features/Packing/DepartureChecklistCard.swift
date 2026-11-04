@@ -181,6 +181,7 @@ struct ChecklistItemEditor: View {
                 TextField("Not", text: $item.note, axis: .vertical)
                 Toggle("Son gün", isOn: Binding(get: { item.daysBefore != nil },
                                                 set: { item.daysBefore = $0 ? (item.daysBefore ?? 3) : nil }))
+                .tint(Color.success)
                 if let days = item.daysBefore {
                     Stepper(days == 0 ? String(localized: "Gidiş günü") : String(localized: "Gidişten \(days) gün önce"),
                             value: Binding(get: { days }, set: { item.daysBefore = $0 }), in: 0...90)
