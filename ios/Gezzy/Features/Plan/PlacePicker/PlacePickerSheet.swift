@@ -16,6 +16,8 @@ struct PlacePickerSheet: View {
     @State private var mapAspect: Double?
     /// Büyük çekmecede liste değişti; çekmece küçülünce yeniden çerçevelenecek.
     @State private var reframePending = false
+    /// Haritada dokunulan Apple Haritalar noktası.
+    @State private var selectedFeature: MapFeature?
 
     /// Çekmecenin en küçük hâli: harita baskın.
     static let peek = PresentationDetent.fraction(0.3)
@@ -34,10 +36,35 @@ struct PlacePickerSheet: View {
     }
 
     private func content(_ trip: Trip) -> some View {
-        PlacePickerMap(trip: trip, model: model, position: $position) { id in
+        PlacePickerMap(trip: trip, model: model, position: $position, selection: $selectedFeature) { id in
+            model.mapPick = nil
             let target = detent == Self.peek ? PresentationDetent.medium : detent
             focus(id, trip: trip, detent: target)
             detent = target
+        } onLongPress: { coordinate in
+            selectedFeature = nil
+            model.focusedID = nil
+            // Kart görünsün diye çekmece en küçüğe iner.
+            detent = Self.peek
+            Task { await model.drop(at: coordinate) }
+        }
+        .sensoryFeedback(.impact(weight: .medium), trigger: model.mapPick?.id) { _, new in new?.hasPrefix("pin/") == true }
+        .onChange(of: selectedFeature) { _, feature in
+            if let feature {
+                model.focusedID = nil
+                model.pick(feature: feature)
+                detent = Self.peek
+                // Üstteki kart noktayı örtmesin: görünen alanın ortasına al.
+                withAnimation(.easeInOut(duration: 0.4)) {
+                    position = MapFraming.focus(feature.coordinate, visibleFraction: 0.7, aspect: mapAspect)
+                }
+            } else if model.mapPick?.id.hasPrefix("map/feature/") == true {
+                model.mapPick = nil
+            }
+        }
+        .onChange(of: model.mapPick?.id) { _, id in
+            // Kart kapandı: Haritalar seçimi de kalksın.
+            if id == nil { selectedFeature = nil }
         }
         .ignoresSafeArea()
         .background(GeometryReader { proxy in
@@ -45,7 +72,22 @@ struct PlacePickerSheet: View {
                 .onAppear { mapAspect = aspect(proxy.size) }
                 .onChange(of: proxy.size) { _, size in mapAspect = aspect(size) }
         })
-        .overlay(alignment: .top) { cityChips(trip) }
+        .overlay(alignment: .top) {
+            VStack(spacing: 10) {
+                cityChips(trip)
+                if let pick = model.mapPick {
+                    MapPickCard(pick: pick, isResolving: model.isResolvingPick, isAdded: model.added[pick.id] != nil,
+                                targetTitle: targetTitle(trip)) {
+                        withAnimation(.spring(duration: 0.25)) { model.toggle(suggestion: pick, store: store, trip: trip) }
+                    } onClose: {
+                        withAnimation { model.mapPick = nil }
+                    }
+                    .padding(.horizontal, 16)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                }
+            }
+            .animation(.spring(duration: 0.3), value: model.mapPick?.id)
+        }
         .sheet(isPresented: $showsDrawer) {
             PlacePickerList(trip: trip, model: model, detent: $detent,
                             onFocus: { focus($0, trip: trip) },
@@ -54,6 +96,8 @@ struct PlacePickerSheet: View {
                 .presentationDetents([Self.peek, .medium, .large], selection: $detent)
                 .presentationBackgroundInteraction(.enabled(upThrough: .medium))
                 .presentationDragIndicator(.visible)
+                // Cam çekmecede haritanın renkleri listeye vurup okunurluğu düşürüyor; düz zemin.
+                .presentationBackground(Color(.systemGroupedBackground))
                 .interactiveDismissDisabled()
         }
         .task(id: model.legID) {
@@ -70,6 +114,8 @@ struct PlacePickerSheet: View {
         .onChange(of: detent) { _, new in
             guard new != .large else { return }
             reframePending = false
+            // Haritadan seçim varken harita yerinde kalır.
+            guard model.mapPick == nil else { return }
             if let id = model.focusedID { focus(id, trip: trip) } else { frame(trip) }
         }
     }
@@ -83,7 +129,7 @@ struct PlacePickerSheet: View {
                         let isOn = model.leg(in: trip).id == leg.id
                         Button(leg.destination.city) { model.legID = leg.id }
                             .font(.subheadline.weight(isOn ? .semibold : .regular))
-                            .foregroundStyle(isOn ? Color.white : Color.ink)
+                            .foregroundStyle(isOn ? Color.onInk : Color.ink)
                             .padding(.horizontal, 14)
                             .padding(.vertical, 8)
                             .background(isOn ? AnyShapeStyle(Color.ink) : AnyShapeStyle(.regularMaterial), in: Capsule())
@@ -93,6 +139,15 @@ struct PlacePickerSheet: View {
                 .padding(.horizontal, 16)
             }
             .padding(.top, 8)
+        }
+    }
+
+    private func targetTitle(_ trip: Trip) -> String {
+        switch model.target {
+        case .ideas: return String(localized: "Fikirler")
+        case .day(let day):
+            let number = (trip.days().firstIndex { Calendar.current.isDate($0, inSameDayAs: day) } ?? 0) + 1
+            return String(localized: "\(number). gün")
         }
     }
 
@@ -146,5 +201,61 @@ struct PlacePickerSheet: View {
             try? await Task.sleep(for: .milliseconds(300))
             dismiss()
         }
+    }
+}
+
+/// Haritadan seçilen yerin kartı: ad, tür, hedefe ekle ya da geri al.
+private struct MapPickCard: View {
+    @Environment(\.tripPalette) private var palette
+    let pick: PlaceSuggestions.Suggestion
+    let isResolving: Bool
+    let isAdded: Bool
+    let targetTitle: String
+    let onToggle: () -> Void
+    let onClose: () -> Void
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: pick.id.hasPrefix("pin/") ? "mappin" : pick.kind.symbol)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(palette.accentText)
+                .frame(width: 36, height: 36)
+                .background(palette.accentText.opacity(0.14), in: Circle())
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 6) {
+                    Text(pick.name).font(.system(.subheadline, weight: .semibold)).foregroundStyle(Color.ink).lineLimit(1)
+                    if isResolving { ProgressView().controlSize(.mini) }
+                }
+                Text(isAdded ? String(localized: "\(targetTitle) listesine eklendi") : pick.category)
+                    .font(.caption).foregroundStyle(isAdded ? Color.success : Color.ink2).lineLimit(1)
+            }
+            Spacer(minLength: 4)
+            Button(action: onToggle) {
+                Label(isAdded ? String(localized: "Geri al") : String(localized: "Ekle"),
+                      systemImage: isAdded ? "arrow.uturn.backward" : "plus")
+                    .font(.system(.subheadline, weight: .semibold))
+                    .foregroundStyle(isAdded ? Color.ink : Color.white)
+                    .padding(.horizontal, 14)
+                    .frame(minHeight: 36)
+                    .background(isAdded ? AnyShapeStyle(Color(.tertiarySystemFill)) : AnyShapeStyle(Color(hex: palette.accent)),
+                                in: Capsule())
+            }
+            .buttonStyle(.plain)
+            Button(action: onClose) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(Color.ink2)
+                    .frame(width: 30, height: 30)
+                    .background(Color(.tertiarySystemFill), in: Circle())
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Kapat")
+        }
+        .padding(.leading, 12)
+        .padding(.vertical, 6)
+        .background(.thickMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .shadow(color: .black.opacity(0.12), radius: 12, y: 4)
     }
 }

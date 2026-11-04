@@ -25,6 +25,10 @@ struct BookingImportSheet: View {
     @State private var selectedFlights: Set<Int> = []
     @State private var selectedLodgings: Set<Int> = []
     @State private var errorText: String?
+    /// Ekran görüntüsünden ya da panodan okunan ham metin; hiçbir şey tanınmazsa gösterilir ve düzeltilebilir.
+    @State private var readText: String?
+
+    static let pasteTypes: [UTType] = [.image, .pdf, .utf8PlainText, .plainText, .text, .html, .rtf]
 
     var body: some View {
         NavigationStack {
@@ -40,9 +44,9 @@ struct BookingImportSheet: View {
                         Label("Ekran görüntüsü seç", systemImage: "photo")
                     }
                     // Havayolunun e-bilet sayfası gibi metinler: sayfada "Tümünü seç → Kopyala", sonra buraya yapıştır.
-                    PasteButton(payloadType: String.self) { strings in
-                        let text = strings.joined(separator: "\n")
-                        Task { @MainActor in apply(BookingParser.parse(text)) }
+                    // Düz metin dışında kopyalanan ekran görüntüsü, PDF ve zengin metin (HTML/RTF) de kabul edilir.
+                    PasteButton(supportedContentTypes: Self.pasteTypes) { providers in
+                        Task { @MainActor in await paste(providers) }
                     }
                     .labelStyle(.titleAndIcon)
                     .buttonBorderShape(.capsule)
@@ -63,6 +67,17 @@ struct BookingImportSheet: View {
                     if isEmpty(result) {
                         Section {
                             Text(emptyText(result)).foregroundStyle(Color.ink2)
+                            // Okunan metni gösterip düzeltmeye izin ver: OCR hatası ya da tanınmayan düzen elle onarılır.
+                            if readText != nil {
+                                DisclosureGroup("Okunan metni göster") {
+                                    TextEditor(text: Binding(get: { readText ?? "" }, set: { readText = $0 }))
+                                        .font(.footnote.monospaced())
+                                        .frame(minHeight: 160)
+                                    Button("Yeniden oku") {
+                                        apply(BookingParser.parse(readText ?? ""))
+                                    }
+                                }
+                            }
                         }
                     }
                     if kind != .lodgings && !result.flights.isEmpty {
@@ -110,12 +125,11 @@ struct BookingImportSheet: View {
             .onChange(of: photoItem) { _, item in
                 guard let item else { return }
                 Task {
-                    guard let data = try? await item.loadTransferable(type: Data.self),
-                          let image = CoverImageStore.downsample(data: data, maxPixelSize: 2400) else {
+                    guard let data = try? await item.loadTransferable(type: Data.self) else {
                         errorText = String(localized: "Görüntü açılamadı.")
                         return
                     }
-                    await read(lines: TextReader.lines(in: image))
+                    await read(imageData: data)
                 }
             }
         }
@@ -216,8 +230,65 @@ struct BookingImportSheet: View {
         }
     }
 
-    private func read(lines: [String]) async {
-        apply(BookingParser.parse(lines.joined(separator: "\n")))
+    private func read(imageData data: Data) async {
+        guard let image = CoverImageStore.downsample(data: data, maxPixelSize: 2400) else {
+            errorText = String(localized: "Görüntü açılamadı.")
+            return
+        }
+        isReading = true
+        defer { isReading = false }
+        errorText = nil
+        read(text: await TextReader.lines(in: image).joined(separator: "\n"))
+    }
+
+    private func read(text: String) {
+        readText = text
+        apply(BookingParser.parse(text))
+    }
+
+    /// Panodaki içerik: görüntü → metin okuma, PDF → dosya okuyucu, HTML/RTF → düz metin, aksi halde düz metin.
+    private func paste(_ providers: [NSItemProvider]) async {
+        errorText = nil
+        for provider in providers {
+            if provider.hasItemConformingToTypeIdentifier(UTType.image.identifier),
+               let data = await Self.data(provider, .image) {
+                await read(imageData: data)
+                return
+            }
+            if provider.hasItemConformingToTypeIdentifier(UTType.pdf.identifier),
+               let data = await Self.data(provider, .pdf) {
+                let url = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).pdf")
+                guard (try? data.write(to: url)) != nil else { continue }
+                await read(url: url)
+                try? FileManager.default.removeItem(at: url)
+                return
+            }
+            for type in [UTType.html, .rtf] where provider.hasItemConformingToTypeIdentifier(type.identifier) {
+                if let data = await Self.data(provider, type),
+                   let attributed = try? NSAttributedString(
+                       data: data, options: [.documentType: type == .html ? NSAttributedString.DocumentType.html : .rtf,
+                                             .characterEncoding: String.Encoding.utf8.rawValue],
+                       documentAttributes: nil) {
+                    read(text: attributed.string)
+                    return
+                }
+            }
+            for type in [UTType.utf8PlainText, .plainText, .text] where provider.hasItemConformingToTypeIdentifier(type.identifier) {
+                if let data = await Self.data(provider, type), let text = String(data: data, encoding: .utf8) {
+                    read(text: text)
+                    return
+                }
+            }
+        }
+        errorText = String(localized: "Panodaki içerik okunamadı.")
+    }
+
+    private static func data(_ provider: NSItemProvider, _ type: UTType) async -> Data? {
+        await withCheckedContinuation { continuation in
+            provider.loadDataRepresentation(forTypeIdentifier: type.identifier) { data, _ in
+                continuation.resume(returning: data)
+            }
+        }
     }
 
     private func apply(_ parsed: BookingParser.Result) {

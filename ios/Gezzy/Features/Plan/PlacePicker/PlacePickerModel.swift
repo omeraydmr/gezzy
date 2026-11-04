@@ -1,3 +1,4 @@
+import MapKit
 import SwiftUI
 import GezzyKit
 
@@ -46,6 +47,10 @@ final class PlacePickerModel {
     var legID: UUID?
     /// Haritada ve listede vurgulanan öneri.
     var focusedID: String?
+    /// Haritadan seçilen yer: Apple Haritalar noktası ya da basılı tutup bırakılan iğne ("pin/…").
+    var mapPick: PlaceSuggestions.Suggestion?
+    /// Bırakılan iğnenin adı aranıyor.
+    private(set) var isResolvingPick = false
 
     private(set) var center: Coordinate?
     private(set) var isLoading = false
@@ -214,19 +219,64 @@ final class PlacePickerModel {
 
     /// Öneriyi hedefe ekler; eklenmişse geri alır.
     func toggle(_ item: PlaceRanking.Ranked, store: TripStore, trip: Trip) {
-        if let stopID = added[item.id] {
+        toggle(suggestion: item.suggestion, store: store, trip: trip)
+    }
+
+    func toggle(suggestion: PlaceSuggestions.Suggestion, store: TripStore, trip: Trip) {
+        if let stopID = added[suggestion.id] {
             store.update(trip.id) { trip in
                 trip.stops.removeAll { $0.id == stopID }
                 trip.ideas?.removeAll { $0.id == stopID }
             }
-            added[item.id] = nil
+            added[suggestion.id] = nil
         } else {
-            var stop = item.suggestion.stop(day: trip.startDate)
-            // Apple Haritalar önerisinde not kategoriyi tekrarlar; boş bırak.
-            if item.id.hasPrefix("map/") { stop.note = "" }
+            var stop = suggestion.stop(day: trip.startDate)
+            // Apple Haritalar önerisinde ve haritadan seçilende not kategoriyi tekrarlar; boş bırak.
+            if suggestion.id.hasPrefix("map/") || suggestion.id.hasPrefix("pin/") { stop.note = "" }
             insert(stop, store: store, tripID: trip.id)
-            added[item.id] = stop.id
+            added[suggestion.id] = stop.id
         }
+    }
+
+    // MARK: Haritadan seçme
+
+    /// Haritadaki Apple Haritalar noktasına dokunuldu.
+    func pick(feature: MapFeature) {
+        let c = feature.coordinate
+        let kind = PlaceSearch.kind(for: feature.pointOfInterestCategory)
+        let name = feature.title ?? String(localized: "Seçilen yer")
+        mapPick = PlaceSuggestions.Suggestion(id: "map/feature/\(name)/\(c.latitude),\(c.longitude)", name: name,
+                                              kind: kind, category: kind.title, coordinate: Coordinate(latitude: c.latitude, longitude: c.longitude),
+                                              openingHours: nil, duration: 60, score: 0)
+    }
+
+    /// Haritada basılı tutulan noktaya iğne bırakır; adı yakındaki yerden ya da adresten gelir.
+    func drop(at c: CLLocationCoordinate2D) async {
+        let id = "pin/\(c.latitude),\(c.longitude)"
+        let coordinate = Coordinate(latitude: c.latitude, longitude: c.longitude)
+        mapPick = PlaceSuggestions.Suggestion(id: id, name: String(localized: "İşaretli yer"), kind: .sight,
+                                              category: String(localized: "Haritadan"), coordinate: coordinate,
+                                              openingHours: nil, duration: 60, score: 0)
+        isResolvingPick = true
+        defer { if mapPick?.id == id { isResolvingPick = false } }
+        let location = CLLocation(latitude: c.latitude, longitude: c.longitude)
+        var name: String?
+        var kind = StopKind.sight
+        // Önce 60 m içindeki en yakın adlı yer; yoksa adres.
+        let request = MKLocalPointsOfInterestRequest(center: c, radius: 60)
+        if let items = try? await MKLocalSearch(request: request).start().mapItems,
+           let nearest = items.min(by: { location.distance(from: $0.placemark.location ?? location) <
+                                         location.distance(from: $1.placemark.location ?? location) }),
+           let found = nearest.name {
+            name = found
+            kind = PlaceSearch.kind(for: nearest.pointOfInterestCategory)
+        } else if let placemark = try? await CLGeocoder().reverseGeocodeLocation(location).first {
+            name = placemark.name ?? placemark.thoroughfare
+        }
+        guard mapPick?.id == id, added[id] == nil, let name else { return }
+        mapPick?.name = name
+        mapPick?.kind = kind
+        if kind != .sight { mapPick?.category = kind.title }
     }
 
     /// Durağı hedefe yazar: güne eklenirse günün sonuna, saatsiz.

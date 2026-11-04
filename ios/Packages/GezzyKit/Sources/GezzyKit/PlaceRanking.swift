@@ -24,8 +24,11 @@ public enum PlaceRanking {
         public var badge: Badge? { PlaceRanking.badge(popularity: popularity, contributors: suggestion.contributors) }
     }
 
-    public static let veryPopularThreshold = 0.8
-    public static let popularThreshold = 0.5
+    /// Rozetler seçici: ilk %5 "Çok popüler", ilk %20 "Popüler"; her satırda rozet anlamsızlaşıyordu.
+    public static let veryPopularThreshold = 0.95
+    public static let popularThreshold = 0.8
+    /// Göz atarken merkeze yakınlığın payı: 12 km ötedeki biraz daha popüler yer merkezdekinin önüne geçmesin.
+    public static let browseProximityWeight = 0.3
     /// Hem Wikipedia'da hem toplulukta olan yer için ek puan.
     public static let communityBonus = 0.1
     /// Bu benzerliğin altındaki öneriler aramada gösterilmez (tür eşleşmesi hariç).
@@ -89,10 +92,15 @@ public enum PlaceRanking {
         return result + wiki
     }
 
-    /// Arama yokken: popülerlik azalan, eşitlikte merkeze yakın olan önce.
+    /// Arama yokken: popülerlik + yakınlık payı azalan, eşitlikte merkeze yakın olan önce.
     public static func browse(_ pool: [Ranked], center: Coordinate?) -> [Ranked] {
-        pool.sorted { a, b in
-            if a.popularity != b.popularity { return a.popularity > b.popularity }
+        func score(_ item: Ranked) -> Double {
+            let proximity = center.map { max(0, 1 - Geo.distance(item.suggestion.coordinate, $0) / proximityRange) } ?? 0
+            return item.popularity + browseProximityWeight * proximity
+        }
+        return pool.sorted { a, b in
+            let sa = score(a), sb = score(b)
+            if sa != sb { return sa > sb }
             if let center {
                 let da = Geo.distance(a.suggestion.coordinate, center), db = Geo.distance(b.suggestion.coordinate, center)
                 if da != db { return da < db }
