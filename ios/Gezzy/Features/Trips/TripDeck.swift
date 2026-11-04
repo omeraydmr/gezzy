@@ -15,6 +15,8 @@ struct TripDeck: View {
     var onInvite: (Trip) -> Void
     /// Yeni oluşturulup damgalanan seyahat; yukarıdan uçarak girer ve kısa süre damga izini taşır.
     var arrivingID: Trip.ID?
+    /// Silinmekte olan seyahat; bileti yırtılıp savrulur.
+    var tearingID: Trip.ID?
 
     @GestureState(resetTransaction: Transaction(animation: TripDeck.settleAnimation))
     private var dragOffset: CGFloat = 0
@@ -33,8 +35,10 @@ struct TripDeck: View {
                     let relative = Double(position) - progress
                     if geometry.isVisible(relative) {
                         let t = geometry.transform(relative: relative)
-                        TripTicketCard(trip: trip, side: side, maxWidth: proxy.size.width - 24)
-                            .equatable()
+                        TornTicket(isTearing: trip.id == tearingID) {
+                            TripTicketCard(trip: trip, side: side, maxWidth: proxy.size.width - 24)
+                                .equatable()
+                        }
                             .overlay {
                                 if trip.id == arrivingID {
                                     StampImprint(subtitle: StampImprint.subtitle(for: trip), scale: side / 280)
@@ -55,7 +59,8 @@ struct TripDeck: View {
                             }
                             .transition(.asymmetric(
                                 insertion: .offset(y: -side * 1.6).combined(with: .scale(scale: 0.5)).combined(with: .opacity),
-                                removal: .opacity.combined(with: .scale(scale: 0.8))))
+                                // Yırtılan bilet zaten ekrandan savruldu; ikinci bir çıkış animasyonu yok.
+                                removal: trip.id == tearingID ? .identity : .opacity.combined(with: .scale(scale: 0.8))))
                             .scaleEffect(t.scale)
                             .rotationEffect(.degrees(t.rotationDegrees), anchor: .bottom)
                             .offset(x: t.x, y: t.y)
@@ -119,6 +124,100 @@ struct TripDeck: View {
             Button("Fotoğrafı kaldır", systemImage: "photo.badge.minus") { onRemoveCover(trip) }
         }
         Button("Seyahati sil", systemImage: "trash", role: .destructive) { onDelete(trip) }
+    }
+}
+
+/// Yırtılma + savrulma süresi (ms); silme bu süreden sonra yapılır.
+enum TicketTear {
+    static let duration = 720
+}
+
+/// Bileti dikine, dişli bir çizgiden ikiye yırtar; yarımlar dönerek sağa ve sola savrulur.
+struct TornTicket<Content: View>: View {
+    let isTearing: Bool
+    @ViewBuilder let content: Content
+    @State private var phase: Phase = .whole
+
+    private enum Phase { case whole, ripped, flung }
+
+    var body: some View {
+        if isTearing {
+            ZStack {
+                half(.left)
+                half(.right)
+            }
+            .onAppear {
+                // Önce yırtık açılır, sonra yarımlar fırlar.
+                withAnimation(.easeOut(duration: 0.16)) { phase = .ripped }
+                withAnimation(.easeIn(duration: 0.5).delay(0.18)) { phase = .flung }
+            }
+            .sensoryFeedback(.impact(weight: .heavy), trigger: phase == .ripped)
+            .allowsHitTesting(false)
+        } else {
+            content
+        }
+    }
+
+    private func half(_ side: TearHalf.Side) -> some View {
+        let sign: CGFloat = side == .left ? -1 : 1
+        return content
+            .mask(TearHalf(side: side))
+            .rotationEffect(.degrees(rotation(sign)), anchor: side == .left ? .bottomLeading : .bottomTrailing)
+            .offset(x: offsetX(sign), y: offsetY(side))
+            .opacity(phase == .flung ? 0 : 1)
+    }
+
+    private func rotation(_ sign: CGFloat) -> Double {
+        switch phase {
+        case .whole: 0
+        case .ripped: Double(sign) * 5
+        case .flung: Double(sign) * 38
+        }
+    }
+
+    private func offsetX(_ sign: CGFloat) -> CGFloat {
+        switch phase {
+        case .whole: 0
+        case .ripped: sign * 10
+        case .flung: sign * 420
+        }
+    }
+
+    /// Yarımlar farklı yüksekliklere savrulur: biri aşağı düşer, diğeri hafif yukarı fırlar.
+    private func offsetY(_ side: TearHalf.Side) -> CGFloat {
+        switch phase {
+        case .whole: 0
+        case .ripped: side == .left ? 4 : -4
+        case .flung: side == .left ? 260 : -90
+        }
+    }
+}
+
+/// Bilet yarımı için maske: ortadan dişli bir yırtık çizgisinin bir yanı.
+struct TearHalf: Shape {
+    enum Side { case left, right }
+    let side: Side
+
+    /// Yırtığın sabit dişleri (rastgele görünsün, her çizimde aynı kalsın).
+    private static let jitter: [CGFloat] = [0.0, 0.7, -0.4, 0.9, -0.8, 0.3, -0.6, 0.8, -0.2, 0.6, -0.9, 0.4, -0.5, 0.7, 0.0]
+
+    func path(in rect: CGRect) -> Path {
+        let amplitude = rect.width * 0.03
+        let steps = Self.jitter.count - 1
+        let seam = Self.jitter.enumerated().map { i, j in
+            CGPoint(x: rect.midX + j * amplitude, y: rect.minY + rect.height * CGFloat(i) / CGFloat(steps))
+        }
+        // Maske kartın biraz dışına taşar: dönüşte köşeler kesilmesin.
+        let pad: CGFloat = 40
+        let edgeX = side == .left ? rect.minX - pad : rect.maxX + pad
+        var path = Path()
+        path.move(to: CGPoint(x: edgeX, y: rect.minY - pad))
+        path.addLine(to: CGPoint(x: seam[0].x, y: rect.minY - pad))
+        for point in seam { path.addLine(to: point) }
+        path.addLine(to: CGPoint(x: seam[steps].x, y: rect.maxY + pad))
+        path.addLine(to: CGPoint(x: edgeX, y: rect.maxY + pad))
+        path.closeSubpath()
+        return path
     }
 }
 

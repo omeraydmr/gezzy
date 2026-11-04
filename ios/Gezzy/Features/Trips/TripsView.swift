@@ -23,6 +23,9 @@ struct TripsView: View {
     @State private var pendingDelete: Trip?
     @State private var isShowingProfile = false
     @State private var arrivingID: Trip.ID?
+    /// Silinen seyahatin bileti yırtılıp savrulur; animasyon bitince kayıt silinir.
+    @State private var tearingID: Trip.ID?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// Rota paylaşımı mevcut / anketi atlayan kullanıcılara bir kez sorulur.
     @AppStorage("gezzy.routeSharing.prompted") private var routeSharingPrompted = false
     @State private var isAskingRouteSharing = false
@@ -62,7 +65,8 @@ struct TripsView: View {
                         onRemoveCover: { trip in withAnimation { store.removeCoverPhoto(for: trip.id) } },
                         onDelete: { pendingDelete = $0 },
                         onInvite: { inviting = $0 },
-                        arrivingID: arrivingID
+                        arrivingID: arrivingID,
+                        tearingID: tearingID
                     )
                     .frame(maxWidth: .infinity)
                     .aspectRatio(1, contentMode: .fit)
@@ -81,7 +85,8 @@ struct TripsView: View {
                     }
                 }
 
-                Spacer(minLength: 12)
+                // Boşken ortalamayı boş durumun kendi boşlukları yapar.
+                if !trips.isEmpty { Spacer(minLength: 12) }
 
                 Button {
                     startTripCreation()
@@ -92,10 +97,12 @@ struct TripsView: View {
                 .padding(.horizontal, 16)
                 .padding(.bottom, allowanceCaption == nil ? 8 : 0)
                 if let caption = allowanceCaption {
+                    // Butonun gölgesine yapışmasın: üstte nefes payı.
                     Text(caption)
-                        .font(.caption)
+                        .font(.footnote)
                         .foregroundStyle(Color.ink2)
-                        .padding(.bottom, 8)
+                        .padding(.top, 10)
+                        .padding(.bottom, 4)
                 }
             }
             .background { background }
@@ -189,7 +196,7 @@ struct TripsView: View {
                 get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } }
             ), titleVisibility: .visible, presenting: pendingDelete) { trip in
                 Button("\(trip.name) seyahatini sil", role: .destructive) {
-                    withAnimation(TripDeck.settleAnimation) { store.delete(trip.id) }
+                    deleteWithTear(trip)
                 }
             } message: { _ in
                 Text("Plan, harcamalar ve valiz listesi de silinir.")
@@ -202,6 +209,21 @@ struct TripsView: View {
             .onChange(of: AppRouter.shared.pending) { _, _ in openPendingLink() }
             .onAppear { openPendingLink() }
             .animation(.easeInOut(duration: 0.25), value: focused?.id)
+        }
+    }
+
+    /// Bilet ikiye yırtılıp savrulur, ardından seyahat silinir ve deste yerine oturur.
+    private func deleteWithTear(_ trip: Trip) {
+        guard !reduceMotion else {
+            withAnimation(TripDeck.settleAnimation) { store.delete(trip.id) }
+            return
+        }
+        tearingID = trip.id
+        Task {
+            try? await Task.sleep(for: .milliseconds(TicketTear.duration))
+            withAnimation(TripDeck.settleAnimation) { store.delete(trip.id) }
+            try? await Task.sleep(for: .milliseconds(100))
+            tearingID = nil
         }
     }
 
@@ -284,6 +306,7 @@ struct TripsView: View {
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 40)
             }
+            Spacer()
         }
         .frame(maxWidth: .infinity)
     }
