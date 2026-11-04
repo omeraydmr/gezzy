@@ -64,11 +64,13 @@ struct VisaSection: View {
                         }
                     }
                     .scrollTargetLayout()
-                    .padding(.vertical, 6)
+                    // Gölge ve büyüyen kart kırpılmasın; kaydırma kutunun içinde kalır.
+                    .padding(.vertical, 14)
+                    .padding(.horizontal, 2)
                 }
                 .scrollTargetBehavior(.viewAligned)
                 .scrollPosition(id: $focusedID)
-                .scrollClipDisabled()
+                .padding(.vertical, -8)
                 .animation(.spring(duration: 0.35), value: focusedID)
 
                 if rows.count > 1 {
@@ -308,7 +310,11 @@ struct VisaDetailPanel: View {
             }
 
             if case let .required(zone) = result.status {
-                applicationTracker(zone: zone)
+                if store.canEditDetails(of: member, in: trip) {
+                    applicationTracker(zone: zone)
+                } else {
+                    applicationSummary(zone: zone)
+                }
             }
         }
         .tray()
@@ -332,6 +338,46 @@ struct VisaDetailPanel: View {
             }
             trip.visaApplications = list
         }
+    }
+
+    /// Başkasının başvurusu: yalnızca bilgi, değiştirilemez.
+    @ViewBuilder
+    private func applicationSummary(zone: VisaZone?) -> some View {
+        let application = self.application
+        let documents = VisaText.documents(for: zone)
+        let done = Set(application.checkedDocuments).intersection(documents).count
+        VStack(alignment: .leading, spacing: 10) {
+            infoRow(String(localized: "Başvuru durumu"), value: VisaText.statusTitle(application.status), symbol: "flag.fill")
+            if let appointment = application.appointment {
+                let days = Calendar.current.dateComponents([.day], from: Calendar.current.startOfDay(for: .now),
+                                                           to: Calendar.current.startOfDay(for: appointment)).day ?? 0
+                infoRow(String(localized: "Randevu"),
+                        value: days > 0 ? String(localized: "\(AppFormat.shortDate(appointment)) · \(days) gün kaldı")
+                                        : AppFormat.shortDate(appointment),
+                        symbol: "calendar.badge.clock")
+                if !application.center.isEmpty {
+                    infoRow(String(localized: "Yer"), value: application.center, symbol: "mappin")
+                }
+            }
+            infoRow(String(localized: "Belgeler"), value: "\(done)/\(documents.count)", symbol: "checklist")
+            Label("Bu bilgileri yalnızca \(member.name) değiştirebilir.", systemImage: "lock.fill")
+                .font(.caption)
+                .foregroundStyle(Color.ink2)
+        }
+    }
+
+    private func infoRow(_ title: String, value: String, symbol: String) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: symbol)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Color.ink2)
+                .frame(width: 20)
+            Text(title).font(.subheadline).foregroundStyle(Color.ink2)
+            Spacer(minLength: 8)
+            Text(value).font(.system(.subheadline, weight: .semibold)).foregroundStyle(Color.ink)
+                .multilineTextAlignment(.trailing)
+        }
+        .accessibilityElement(children: .combine)
     }
 
     @ViewBuilder

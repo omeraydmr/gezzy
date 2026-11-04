@@ -13,6 +13,11 @@ struct PlanSection: View {
     @State private var dropTarget: Stop.ID?
     @State private var editingHours: Stop?
     @State private var editingStop: Stop?
+    /// Dokunulan durak: yol tarifi seçenekleri.
+    @State private var directionsStop: Stop?
+    /// Sıralama modu: tutamaçtan tutup sürükleyerek sıra değiştirilir.
+    @State private var isReordering = false
+    @Environment(\.openURL) private var openURL
     @State private var dismissedHotelSuggestion: Set<Date> = []
     /// Sürükleme ipucunun gösterildiği açılış sayısı; 3'e ulaşınca ya da kullanıcı bir durak sürükleyince gizlenir.
     @AppStorage("gezzy.hint.dragStops") private var dragHintViews = 0
@@ -191,7 +196,7 @@ struct PlanSection: View {
             .presentationDetents([.medium, .large])
         }
         .sheet(item: $editingStop) { stop in
-            StopDetailsSheet(stop: stop) { saved in
+            StopDetailsSheet(stop: stop, center: trip.destination(on: stop.day).coordinate) { saved in
                 store.update(trip.id) { trip in
                     // Yalnızca düzenlenen alanlar; arada gelen saat/konum/gün/sıra değişiklikleri ezilmesin.
                     if let index = trip.stops.firstIndex(where: { $0.id == saved.id }) {
@@ -200,6 +205,13 @@ struct PlanSection: View {
                         trip.stops[index].startMinutes = saved.startMinutes
                         trip.stops[index].durationMinutes = saved.durationMinutes
                         trip.stops[index].note = saved.note
+                        if trip.stops[index].coordinate != saved.coordinate {
+                            trip.stops[index].coordinate = saved.coordinate
+                            trip.stops[index].address = saved.address
+                            // Yeni yerin saatleri yeniden aranır.
+                            trip.stops[index].openingHours = nil
+                            trip.stops[index].openingHoursLookedUp = nil
+                        }
                     }
                 }
             }
@@ -207,6 +219,7 @@ struct PlanSection: View {
         .task(id: trip.stops.filter { $0.coordinate != nil }.count) { await lookUpOpeningHours() }
         .onChange(of: plan.day) { _, _ in
             lastOrderBeforeOptimize = nil
+            isReordering = false
         }
     }
 
@@ -217,11 +230,28 @@ struct PlanSection: View {
         let totalMeters = plan.totalMeters
         return VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 10) {
-                Text(dayTitle(plan))
-                    .font(.tBodyStrong)
-                    .foregroundStyle(Color.ink)
+                HStack(alignment: .firstTextBaseline) {
+                    Text(dayTitle(plan))
+                        .font(.tBodyStrong)
+                        .foregroundStyle(Color.ink)
+                    Spacer(minLength: 8)
+                    if stops.count > 1 && store.canEdit(trip) {
+                        Button {
+                            withAnimation(.spring(duration: 0.3)) { isReordering.toggle() }
+                        } label: {
+                            Label(isReordering ? String(localized: "Bitti") : String(localized: "Sırala"),
+                                  systemImage: isReordering ? "checkmark" : "arrow.up.arrow.down")
+                                .font(.system(.footnote, weight: .semibold))
+                                .foregroundStyle(tintText)
+                                .padding(.horizontal, 12)
+                                .frame(minHeight: 32)
+                                .background(Color.soft(palette), in: Capsule())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
                 if !stops.isEmpty {
-                    Text(summary(stops: stops.count, meters: totalMeters))
+                    Text(summary(stops: stops.count, done: stops.filter(\.isDone).count, meters: totalMeters))
                         .font(.system(.footnote, weight: .medium))
                         .foregroundStyle(Color.ink2)
                 }
@@ -237,6 +267,12 @@ struct PlanSection: View {
                 EmptyHint(symbol: "mappin.and.ellipse", text: String(localized: "Bu gün için henüz durak yok."))
             }
 
+            if isReordering {
+                ReorderableStops(stops: stops) { ids in
+                    lastOrderBeforeOptimize = nil
+                    applyOrder(ids)
+                }
+            } else {
             if let start = plan.start {
                 AnchorRow(anchor: start, role: .start, timing: plan.arrival.map(AnchorRow.Timing.arrival))
                 if plan.arrival != nil, !dismissedHotelSuggestion.contains(plan.day),
@@ -254,7 +290,8 @@ struct PlanSection: View {
                     HopRow(from: stops[index - 1].coordinate, to: stop.coordinate)
                 }
                 StopRow(stop: stop, number: index + 1, hours: plan.hours[stop.id],
-                        fix: plan.fixes[stop.id], flightWarning: plan.flightWarnings[stop.id]) { fix in apply(fix, to: stop) }
+                        fix: plan.fixes[stop.id], flightWarning: plan.flightWarnings[stop.id],
+                        onToggleDone: store.canEdit(trip) ? { toggleDone(stop) } : nil) { fix in apply(fix, to: stop) }
                     .overlay(alignment: .top) {
                         Capsule()
                             .fill(tint)
@@ -277,6 +314,24 @@ struct PlanSection: View {
                     } isTargeted: { targeted in
                         if targeted { dropTarget = stop.id } else if dropTarget == stop.id { dropTarget = nil }
                     }
+                    .onTapGesture { directionsStop = stop }
+                    // Satırın kendisine bağlı: diyalog dokunulan durağın üstünde açılır.
+                    .confirmationDialog(stop.name, isPresented: Binding(
+                        get: { directionsStop?.id == stop.id },
+                        set: { if !$0 { directionsStop = nil } }
+                    ), titleVisibility: .visible) {
+                        directionsActions(for: stop)
+                    } message: {
+                        if let address = stop.address {
+                            Text(address)
+                        } else if stop.coordinate == nil {
+                            Text("Bu durağın konumu yok; yol tarifi için önce konum ekle.")
+                        }
+                    }
+                    .accessibilityAction(named: Text("Yol tarifi")) { directionsStop = stop }
+                    .accessibilityAction(named: Text(stop.isDone ? "Gidilmedi olarak işaretle" : "Gidildi olarak işaretle")) {
+                        toggleDone(stop)
+                    }
                     .contextMenu { menu(for: stop, index: index, in: plan) }
             }
 
@@ -284,6 +339,7 @@ struct PlanSection: View {
                 if let last = stops.last { HopRow(from: last.coordinate, to: end.coordinate, isTransfer: plan.departure != nil) }
                 else if let start = plan.start { HopRow(from: start.coordinate, to: end.coordinate, isTransfer: plan.arrival != nil || plan.departure != nil) }
                 AnchorRow(anchor: end, role: .end, timing: plan.departure.map(AnchorRow.Timing.departure))
+            }
             }
 
             if stops.contains(where: { $0.openingHours != nil }) {
@@ -296,8 +352,8 @@ struct PlanSection: View {
                 .padding(.top, 10)
             }
 
-            if stops.count > 1 && showsDragHint {
-                Text("Sıralamak için durağı basılı tutup sürükle; başka güne taşımak için üstteki güne bırak.")
+            if stops.count > 1 && showsDragHint && !isReordering {
+                Text("Yol tarifi için durağa dokun. Sırayı \"Sırala\" ile değiştir; başka güne taşımak için durağı basılı tutup üstteki güne bırak.")
                     .font(.caption)
                     .foregroundStyle(Color.ink3)
                     .padding(.top, 10)
@@ -318,8 +374,8 @@ struct PlanSection: View {
         .animation(.spring(duration: 0.3), value: stops.map(\.id))
     }
 
-    private func summary(stops: Int, meters: Double) -> String {
-        var parts = [String(localized: "\(stops) durak")]
+    private func summary(stops: Int, done: Int, meters: Double) -> String {
+        var parts = [done > 0 ? String(localized: "\(done)/\(stops) durak gidildi") : String(localized: "\(stops) durak")]
         if meters > 0 {
             parts.append(AppFormat.distance(meters: meters))
             parts.append(String(localized: "\(Geo.walkingMinutes(meters: meters)) dk yürüyüş"))
@@ -397,7 +453,7 @@ struct PlanSection: View {
             }
             ForEach(pinned) { item in
                 Annotation(item.stop.name, coordinate: item.coordinate, anchor: .bottom) {
-                    NumberedPin(number: item.number, color: palette.pin(item.number - 1), size: 28)
+                    NumberedPin(number: item.number, color: item.stop.isDone ? Color.ink3 : palette.pin(item.number - 1), size: 28)
                 }
             }
         }
@@ -503,6 +559,32 @@ struct PlanSection: View {
         }
     }
 
+    @ViewBuilder
+    private func directionsActions(for stop: Stop) -> some View {
+        if stop.coordinate != nil {
+            Button("Apple Haritalar ile yol tarifi") { StopDirections.openAppleMaps(stop) }
+            if let url = StopDirections.googleMapsURL(stop) {
+                Button("Google Haritalar ile yol tarifi") { openURL(url) }
+            }
+        } else if store.canEdit(trip) {
+            Button("Konum ekle") { editingStop = stop }
+        }
+        if store.canEdit(trip) {
+            Button("Düzenle") { editingStop = stop }
+        }
+    }
+
+    /// Durağa gidildi işareti: ekipçe ortak, geri alınabilir.
+    private func toggleDone(_ stop: Stop) {
+        withAnimation(.spring(duration: 0.3)) {
+            store.update(trip.id) { trip in
+                if let index = trip.stops.firstIndex(where: { $0.id == stop.id }) {
+                    trip.stops[index].doneAt = trip.stops[index].doneAt == nil ? .now : nil
+                }
+            }
+        }
+    }
+
     private func moveStop(_ id: Stop.ID, before target: Stop.ID?, on targetDay: Date) {
         dragHintViews = 3
         Self.showsDragHintThisLaunch = false
@@ -583,15 +665,20 @@ struct StopRow: View {
     var hours: OpeningHours.Status?
     var fix: Trip.HoursFix?
     var flightWarning: FlightDayTiming.StopWarning?
+    /// Gidildi işaretini değiştirir; görüntüleyicide nil (düğme gösterilmez).
+    var onToggleDone: (() -> Void)?
     var onFix: (Trip.HoursFix) -> Void = { _ in }
 
     var body: some View {
         let pinColor = palette.pin(number - 1)
         HStack(spacing: 12) {
-            NumberedPin(number: number, color: pinColor)
+            NumberedPin(number: number, color: stop.isDone ? Color.ink3 : pinColor)
                 .frame(width: 36)
             VStack(alignment: .leading, spacing: 3) {
-                Text(stop.name).font(.tBodyStrong).foregroundStyle(Color.ink)
+                Text(stop.name)
+                    .font(.tBodyStrong)
+                    .foregroundStyle(stop.isDone ? Color.ink2 : Color.ink)
+                    .strikethrough(stop.isDone, color: Color.ink3)
                 Label {
                     Text(detail)
                 } icon: {
@@ -623,12 +710,32 @@ struct StopRow: View {
                 }
             }
             Spacer(minLength: 8)
-            if let start = stop.startMinutes {
+            if let start = stop.startMinutes, !stop.isDone {
                 Tag(text: AppFormat.time(minutes: start), color: palette.pinText(number - 1), soft: .soft(palette))
+            }
+            if let onToggleDone {
+                Button(action: onToggleDone) {
+                    Image(systemName: stop.isDone ? "checkmark.circle.fill" : "circle")
+                        .font(.system(size: 24, weight: .regular))
+                        .foregroundStyle(stop.isDone ? Color.success : Color.ink3)
+                        .contentTransition(.symbolEffect(.replace))
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .sensoryFeedback(.success, trigger: stop.isDone) { _, done in done }
+                .accessibilityHidden(true)
+            } else if stop.isDone {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 24))
+                    .foregroundStyle(Color.success)
+                    .frame(width: 44, height: 44)
+                    .accessibilityHidden(true)
             }
         }
         .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
+        .accessibilityValue(stop.isDone ? Text("Gidildi") : Text(""))
     }
 
     private func flightText(_ warning: FlightDayTiming.StopWarning) -> String {
@@ -1073,5 +1180,94 @@ struct OfflineMapRow: View {
         case let .saved(date): String(localized: "Çevrimdışı kayıtlı · \(AppFormat.shortDate(date)) \(AppFormat.time(date))")
         case let .failed(message): message
         }
+    }
+}
+
+/// Sıralama modu: her satır tutamaçtan tutulup sürüklenir; parmak komşu satırın ortasını geçince satırlar yer
+/// değiştirir. Bırakınca yeni sıra kaydedilir.
+struct ReorderableStops: View {
+    @Environment(\.tripPalette) private var palette
+    let stops: [Stop]
+    let onCommit: ([Stop.ID]) -> Void
+
+    @State private var order: [Stop.ID] = []
+    @State private var dragging: Stop.ID?
+    @State private var dragOffset: CGFloat = 0
+    @State private var startIndex = 0
+    private let rowHeight: CGFloat = 64
+
+    var body: some View {
+        let byID = Dictionary(stops.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        VStack(spacing: 0) {
+            ForEach(Array(order.enumerated()), id: \.element) { index, id in
+                if let stop = byID[id] {
+                    row(stop, number: index + 1)
+                        .frame(height: rowHeight)
+                        .background(Color.tray, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .shadow(color: .black.opacity(dragging == id ? 0.18 : 0), radius: 12, y: 6)
+                        .scaleEffect(dragging == id ? 1.03 : 1)
+                        .offset(y: dragging == id ? dragOffset - CGFloat(index - startIndex) * rowHeight : 0)
+                        .zIndex(dragging == id ? 1 : 0)
+                }
+            }
+        }
+        .coordinateSpace(.named("reorder"))
+        .sensoryFeedback(.selection, trigger: order)
+        .onAppear { order = stops.map(\.id) }
+        .onChange(of: stops.map(\.id)) { _, ids in if dragging == nil { order = ids } }
+    }
+
+    private func row(_ stop: Stop, number: Int) -> some View {
+        HStack(spacing: 12) {
+            NumberedPin(number: number, color: palette.pin(number - 1))
+                .frame(width: 36)
+            Text(stop.name)
+                .font(.tBodyStrong)
+                .foregroundStyle(Color.ink)
+                .lineLimit(1)
+            Spacer(minLength: 8)
+            Image(systemName: "line.3.horizontal")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(Color.ink2)
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
+                .gesture(drag(stop.id))
+                .accessibilityLabel(Text("\(stop.name) sırasını değiştir"))
+                .accessibilityAdjustableAction { direction in
+                    guard let index = order.firstIndex(of: stop.id) else { return }
+                    let target = direction == .increment ? index + 1 : index - 1
+                    guard order.indices.contains(target) else { return }
+                    withAnimation(.spring(duration: 0.25)) { order.swapAt(index, target) }
+                    onCommit(order)
+                }
+        }
+        .padding(.horizontal, 4)
+    }
+
+    private func drag(_ id: Stop.ID) -> some Gesture {
+        // Satır parmakla birlikte kaydığı için ölçüm sabit kapsayıcıya göre; yerel koordinat kayıyordu.
+        DragGesture(minimumDistance: 0, coordinateSpace: .named("reorder"))
+            .onChanged { value in
+                if dragging == nil {
+                    dragging = id
+                    startIndex = order.firstIndex(of: id) ?? 0
+                }
+                dragOffset = value.translation.height
+                // Parmağın olduğu yeni sıra; komşunun yarısını geçince yer değiştirir.
+                let target = min(max(startIndex + Int((dragOffset / rowHeight).rounded()), 0), order.count - 1)
+                if let current = order.firstIndex(of: id), current != target {
+                    withAnimation(.spring(duration: 0.25)) {
+                        order.remove(at: current)
+                        order.insert(id, at: target)
+                    }
+                }
+            }
+            .onEnded { _ in
+                withAnimation(.spring(duration: 0.3)) {
+                    dragging = nil
+                    dragOffset = 0
+                }
+                onCommit(order)
+            }
     }
 }

@@ -32,13 +32,15 @@ struct SchengenCard: View {
                 } else {
                     Tag(text: String(localized: "Sınır aşılıyor"), accent: .orange)
                 }
-                Button {
-                    isAdding = true
-                } label: {
-                    HeaderPlusLabel()
+                if store.canEditDetails(of: member, in: trip) {
+                    Button {
+                        isAdding = true
+                    } label: {
+                        HeaderPlusLabel()
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Önceki ziyaret ekle")
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Önceki ziyaret ekle")
             }
 
             HStack(alignment: .firstTextBaseline, spacing: 4) {
@@ -64,7 +66,8 @@ struct SchengenCard: View {
                 Text("Sayılan ziyaretler").font(.tCaption).foregroundStyle(Color.ink3)
                 stayRow(label: String(localized: "Bu seyahat"), stay: current, color: tint, removable: false)
                 ForEach(window) { stay in
-                    stayRow(label: stay.label, stay: stay, color: Color.ink2, removable: manualIDs.contains(stay.id))
+                    stayRow(label: stay.label, stay: stay, color: Color.ink2,
+                            removable: manualIDs.contains(stay.id) && store.canEditDetails(of: member, in: trip))
                 }
                 if window.isEmpty {
                     Text("Son 180 günde başka Schengen ziyareti yok.")

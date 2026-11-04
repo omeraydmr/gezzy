@@ -398,21 +398,31 @@ final class CloudSync {
         let share = CKShare(rootRecord: record)
         share[CKShare.SystemFieldKey.title] = trip.name as CKRecordValue
         share.publicPermission = .none
-        _ = try await database.modifyRecords(saving: [record, share], deleting: [])
+        let saved = try await saveShare(share, with: [record])
         sharedByMe.insert(tripID)
-        return share
+        return saved
+    }
+
+    /// Paylaşımı kaydeder ve sunucunun döndürdüğü sürümü verir. Bağlantı adresi (`url`) yalnızca kaydedilen
+    /// sürümde bulunur; yerel nesneyle devam etmek ilk QR'ı "bağlantı yok" hatasıyla düşürüyordu.
+    private func saveShare(_ share: CKShare, with records: [CKRecord] = []) async throws -> CKShare {
+        let (results, _) = try await container.privateCloudDatabase.modifyRecords(saving: records + [share], deleting: [],
+                                                                                  savePolicy: .changedKeys)
+        guard let result = results[share.recordID] else { throw CKError(.internalError) }
+        guard let saved = try result.get() as? CKShare else { throw CKError(.internalError) }
+        return saved
     }
 
     /// QR davet bağlantısı: paylaşımı "bağlantıya sahip herkes, salt okur" yapar ve adresini döndürür.
     /// Katılan kişi seyahati görür; düzenleme yetkisini sahip ekibe ekleyerek verir.
     func openInviteLink(for tripID: UUID) async throws -> URL {
-        let share = try await share(for: tripID)
+        var share = try await share(for: tripID)
         if share.publicPermission != .readOnly {
             share.publicPermission = .readOnly
-            _ = try await container.privateCloudDatabase.modifyRecords(saving: [share], deleting: [])
+            share = try await saveShare(share)
         }
-        openInviteLinks.insert(tripID)
         guard let url = share.url else { throw CKError(.internalError) }
+        openInviteLinks.insert(tripID)
         return url
     }
 
@@ -421,7 +431,7 @@ final class CloudSync {
         let share = try await share(for: tripID)
         if share.publicPermission != .none {
             share.publicPermission = .none
-            _ = try await container.privateCloudDatabase.modifyRecords(saving: [share], deleting: [])
+            _ = try await saveShare(share)
         }
         openInviteLinks.remove(tripID)
     }

@@ -40,6 +40,7 @@ struct GezzyApp: App {
         .onChange(of: scenePhase) { _, phase in
             if phase == .background { store.flush() }
             if phase == .active {
+                NotificationScheduler.shared.appBecameActive()
                 Task { await CloudSync.shared.refresh() }
                 LiveActivityController.refresh(trips: store.trips)
                 // Abonelik bitişi `Transaction.updates` ile gelmez; ön plana gelişte yeniden bakılır.

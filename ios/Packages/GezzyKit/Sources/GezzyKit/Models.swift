@@ -191,6 +191,11 @@ public struct Stop: Codable, Hashable, Identifiable, Sendable {
     public var openingHours: String?
     /// Açılış saatleri bir kez arandıysa true (bulunamasa bile tekrar aranmaz).
     public var openingHoursLookedUp: Bool?
+    /// Okunabilir adres (elle ya da haritadan seçilince); konum yalnızca koordinat olarak geldiyse nil.
+    public var address: String?
+    /// Durağa gidildiyse işaretlenme zamanı (ekipçe ortak); nil ise henüz gidilmedi.
+    public var doneAt: Date?
+    public var isDone: Bool { doneAt != nil }
 
     public init(id: UUID = UUID(), day: Date, order: Int, name: String, kind: StopKind, startMinutes: Int? = nil,
                 durationMinutes: Int = 60, coordinate: Coordinate? = nil, note: String = "", openingHours: String? = nil) {
@@ -405,6 +410,8 @@ public struct Trip: Codable, Hashable, Identifiable, Sendable {
     public var packing: [PackingItem]
     /// Son değişiklik zamanı (eşitlemede hangi kopyanın daha yeni olduğunu belirler).
     public var updatedAt: Date?
+    /// Son değişikliği yapan ekip üyesi (bildirim ve son hareketlerde "kim" bilgisi).
+    public var updatedBy: UUID?
     /// Silinen üye/durak/harcama/valiz kimlikleri; eşitlemede silinenlerin geri gelmesini önler.
     public var tombstones: Set<UUID>?
     /// Konaklamalar (eski kayıtlarda yok).

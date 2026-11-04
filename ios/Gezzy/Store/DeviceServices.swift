@@ -39,17 +39,89 @@ final class NotificationScheduler {
         await reschedule()
     }
 
-    /// Başka bir ekip üyesinin değişikliğini hemen bildirir ("Elif bir harcama ekledi").
+    /// Ekipten gelen değişiklikler toplanır; her hareket ayrı bildirim olmaz. Uygulama açıkken bildirim yok (Son hareketler
+    /// yeter). Kapalıyken seyahat başına tek bildirim ("Ömer Kopenhag seyahatinde 3 değişiklik yaptı") en fazla
+    /// `changeWindow` aralıkla gelir; aralık dolmadan gelenler bir sonraki bildirime eklenir.
+    static let changeWindow: TimeInterval = 30 * 60
+
+    private struct PendingChanges: Codable {
+        var tripName: String
+        var editors: [String] = []
+        var count = 0
+        var latest: String?
+        var section: String?
+        var lastPosted: Date?
+    }
+
+    private static let pendingKey = "gezzy.notifications.pendingChanges"
+    @ObservationIgnored private var pendingChanges: [UUID: PendingChanges] =
+        (UserDefaults.standard.data(forKey: NotificationScheduler.pendingKey))
+            .flatMap { try? JSONDecoder().decode([UUID: PendingChanges].self, from: $0) } ?? [:] {
+        didSet {
+            if let data = try? JSONEncoder().encode(pendingChanges) { UserDefaults.standard.set(data, forKey: Self.pendingKey) }
+        }
+    }
+
     func notifyCloudChange(_ summary: TripChanges.Summary) async {
-        guard isEnabled else { return }
+        guard isEnabled, UIApplication.shared.applicationState != .active else { return }
+        let tripID = summary.link.tripID
+        var pending = pendingChanges[tripID] ?? PendingChanges(tripName: summary.title)
+        pending.tripName = summary.title
+        if let editor = summary.editor, !pending.editors.contains(editor) { pending.editors.append(editor) }
+        pending.count += summary.lines.count
+        pending.latest = summary.lines.last ?? pending.latest
+        pending.section = summary.link.section ?? pending.section
+
+        // Son bildirimden bu yana aralık dolmadıysa bildirim aralığın sonuna ertelenir; aynı kimlikle yeniden
+        // eklenen istek öncekinin yerine geçer, böylece arada gelenler tek bildirimde toplanır.
+        // `lastPosted`: son bildirimin gösterildiği ya da gösterileceği an.
+        let now = Date.now
+        let fireAt: Date
+        if let last = pending.lastPosted, last > now {
+            fireAt = last                                       // zaten ertelenmiş: aynı ana içerik güncellenir
+        } else if let last = pending.lastPosted, now.timeIntervalSince(last) < Self.changeWindow {
+            fireAt = last.addingTimeInterval(Self.changeWindow) // aralık dolmadı: aralığın sonuna ertele
+        } else {
+            fireAt = now
+        }
+        pending.lastPosted = fireAt
+        let wait = fireAt.timeIntervalSince(now)
+        let trigger = wait > 1 ? UNTimeIntervalNotificationTrigger(timeInterval: wait, repeats: false) : nil
+        pendingChanges[tripID] = pending
+
         let content = UNMutableNotificationContent()
-        content.title = summary.title
-        content.body = summary.body
+        content.title = pending.tripName
+        content.body = Self.changeBody(pending)
         content.sound = .default
-        content.threadIdentifier = "cloud-\(summary.title)"
-        content.userInfo = summary.link.userInfo
-        let request = UNNotificationRequest(identifier: "cloud-\(UUID().uuidString)", content: content, trigger: nil)
+        content.threadIdentifier = "changes-\(tripID)"
+        content.userInfo = TripLink(tripID: tripID, section: pending.section).userInfo
+        let request = UNNotificationRequest(identifier: "changes-\(tripID)", content: content, trigger: trigger)
         try? await UNUserNotificationCenter.current().add(request)
+    }
+
+    private static func changeBody(_ pending: PendingChanges) -> String {
+        let who: String
+        switch pending.editors.count {
+        case 0: who = String(localized: "Ekipten biri")
+        case 1: who = pending.editors[0]
+        case 2: who = String(localized: "\(pending.editors[0]) ve \(pending.editors[1])")
+        default: who = String(localized: "\(pending.editors[0]) ve \(pending.editors.count - 1) kişi")
+        }
+        let headline = pending.count > 1
+            ? String(localized: "\(who) \(pending.tripName) seyahatinde \(pending.count) değişiklik yaptı.")
+            : String(localized: "\(who) \(pending.tripName) seyahatinde değişiklik yaptı.")
+        guard let latest = pending.latest else { return headline }
+        return headline + "\n" + latest
+    }
+
+    /// Uygulama açıldı: değişiklikler görüldü sayılır; biriken ve bekleyen değişiklik bildirimleri temizlenir.
+    func appBecameActive() {
+        guard !pendingChanges.isEmpty else { return }
+        let ids = pendingChanges.keys.map { "changes-\($0)" }
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: ids)
+        center.removeDeliveredNotifications(withIdentifiers: ids)
+        pendingChanges = [:]
     }
 
     func documentsChanged(_ passport: Passport?) {
