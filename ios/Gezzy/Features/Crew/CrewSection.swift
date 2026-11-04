@@ -184,6 +184,7 @@ struct MemberEditor: View {
                         get: { member.passport != nil },
                         set: { member.passport = $0 ? Passport(expiresOn: Calendar.current.date(byAdding: .year, value: 5, to: .now) ?? .now) : nil }
                     ))
+                    .tint(Color.success)
                     if member.passport != nil {
                         Picker("Tür", selection: passportBinding(\.type)) {
                             ForEach(PassportType.allCases, id: \.self) { Text($0.title).tag($0) }
@@ -262,6 +263,7 @@ struct MemberEditor: View {
                 }
             }
         ))
+        .tint(Color.success)
         if let index {
             DatePicker("Bitiş", selection: Binding(
                 get: { member.passport?.heldVisas[index].validUntil ?? .now },

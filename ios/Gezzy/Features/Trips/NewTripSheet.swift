@@ -62,6 +62,7 @@ struct NewTripSheet: View {
                         ForEach(Self.currencies, id: \.self) { Text($0) }
                     }
                     Toggle("Taslak olarak kaydet", isOn: $isDraft)
+                    .tint(Color.success)
                 }
                 Section {
                     VisaPreview(countryCode: countryCode, passport: store.me.passport, start: startDate, end: endDate,
@@ -120,22 +121,23 @@ struct NewTripSheet: View {
 
     /// Formdaki değerlerle canlı önizleme kartı.
     private var preview: some View {
-        TripTicketCard(trip: draftTrip, side: 230, maxWidth: 340)
-            .animation(.spring(response: 0.5, dampingFraction: 0.75), value: draftTrip.cityLegs.count)
-            .environment(\.coverOverride, previewImage)
-            .overlay(alignment: .topLeading) {
-                PhotosPicker(selection: $photoItem, matching: .images) {
-                    Label(previewImage == nil ? String(localized: "Fotoğraf ekle") : String(localized: "Değiştir"), systemImage: "camera.fill")
-                        .font(.system(.footnote, weight: .semibold))
-                        .foregroundStyle(Color.ink)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(.regularMaterial, in: Capsule())
-                }
-                .padding(12)
+        VStack(spacing: 12) {
+            TripTicketCard(trip: draftTrip, side: 230, maxWidth: 340)
+                .animation(.spring(response: 0.5, dampingFraction: 0.75), value: draftTrip.cityLegs.count)
+                .environment(\.coverOverride, previewImage)
+                .rotationEffect(.degrees(-2))
+            // Kartın altında: kapaktaki gün rozetiyle çakışmasın.
+            PhotosPicker(selection: $photoItem, matching: .images) {
+                Label(previewImage == nil ? String(localized: "Kapak fotoğrafı ekle") : String(localized: "Kapağı değiştir"),
+                      systemImage: "camera.fill")
+                    .font(.system(.footnote, weight: .semibold))
+                    .foregroundStyle(Color.ink)
+                    .padding(.horizontal, 14)
+                    .frame(minHeight: 44)
+                    .background(.regularMaterial, in: Capsule())
             }
-            .rotationEffect(.degrees(-2))
-            .padding(.vertical, 6)
+        }
+        .padding(.vertical, 6)
     }
 
     private var draftTrip: Trip {

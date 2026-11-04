@@ -140,6 +140,7 @@ struct EmergencyEditor: View {
                             set: { isOn in
                                 if isOn { info.allergens.append(allergen) } else { info.allergens.removeAll { $0 == allergen } }
                             }))
+                        .tint(Color.success)
                     }
                     TextField("Diğer alerjiler", text: $info.otherAllergies)
                 } header: {

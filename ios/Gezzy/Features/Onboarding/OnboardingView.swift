@@ -236,6 +236,7 @@ struct OnboardingView: View {
                             .font(.caption).foregroundStyle(Color.ink2)
                     }
                 }
+                .tint(Color.success)
                 if hasPassport {
                     Picker("Pasaport türü", selection: Binding(
                         get: { profile.passport?.type ?? .ordinary },
@@ -425,6 +426,7 @@ struct OnboardingView: View {
                     .foregroundStyle(Color.ink2)
             }
         }
+        .tint(Color.success)
         .tray(padding: 16)
     }
 

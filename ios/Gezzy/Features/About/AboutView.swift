@@ -90,6 +90,7 @@ struct AboutView: View {
                                          set: { value in Task { await notifications.setEnabled(value) } })) {
                         Label("Seyahat bildirimleri", systemImage: "bell.badge")
                     }
+                    .tint(Color.success)
                     if notifications.authorizationDenied {
                         Text("Bildirim izni kapalı. Ayarlar > Gezzy > Bildirimler'den açabilirsin.")
                             .font(.caption)
