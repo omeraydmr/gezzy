@@ -43,7 +43,7 @@ struct CrewSection: View {
 
             InviteCard(trip: trip)
 
-            ActivityFeed(entries: store.activity[trip.id] ?? [])
+            ActivityFeed(entries: store.activity[trip.id] ?? [], members: trip.members)
 
             if CloudSync.shared.sharedWithMe.contains(trip.id), !trip.members.contains(where: { $0.id == store.me.id }) {
                 let canJoin = store.canEdit(trip)
@@ -72,12 +72,21 @@ struct CrewSection: View {
             }
         }
         .sheet(item: $editing) { member in
-            MemberEditor(member: member, canChangeRole: store.role(in: trip) == .owner) { updated in
+            let save: (Member) -> Void = { updated in
                 store.update(trip.id) { trip in
                     if let index = trip.members.firstIndex(where: { $0.id == updated.id }) {
                         trip.members[index] = updated
                     }
                 }
+            }
+            if store.canEditDetails(of: member, in: trip) {
+                MemberEditor(member: member, canChangeRole: store.role(in: trip) == .owner && member.id != store.me.id,
+                             onSave: save)
+            } else {
+                // Başkasının bilgileri: yalnızca görüntülenir; sahip yalnızca yetkiyi değiştirebilir.
+                MemberInfoSheet(member: member, trip: trip,
+                                canChangeRole: store.role(in: trip) == .owner && member.role != .owner,
+                                onSave: save)
             }
         }
         .sheet(isPresented: $isAdding) {
@@ -281,6 +290,86 @@ struct MemberEditor: View {
     }
 }
 
+/// Başka bir ekip üyesinin kartı: bilgiler salt okunur. Seyahatin sahibi yalnızca yetkiyi değiştirebilir.
+struct MemberInfoSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(TripStore.self) private var store
+    @State var member: Member
+    let trip: Trip
+    let canChangeRole: Bool
+    let onSave: (Member) -> Void
+    @State private var original: MemberRole?
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    HStack(spacing: 14) {
+                        AvatarView(member: member, size: 52)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(member.name).font(.tTitle).foregroundStyle(Color.ink)
+                            Text(member.role.title).font(.subheadline).foregroundStyle(Color.ink2)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                    if canChangeRole {
+                        Picker("Yetki", selection: $member.role) {
+                            Text(MemberRole.editor.title).tag(MemberRole.editor)
+                            Text(MemberRole.viewer.title).tag(MemberRole.viewer)
+                        }
+                    }
+                }
+
+                Section("Pasaport ve vize") {
+                    if let passport = member.passport {
+                        LabeledContent("Pasaport", value: passport.type.shortTitle)
+                        LabeledContent("Geçerlilik", value: AppFormat.longDate(passport.expiresOn))
+                        ForEach(passport.heldVisas) { visa in
+                            LabeledContent(VisaText.zoneName(visa.zone),
+                                           value: String(localized: "\(AppFormat.shortDate(visa.validUntil)) tarihine kadar"))
+                        }
+                    } else {
+                        Text("Pasaport bilgisi eklenmedi").foregroundStyle(Color.ink2)
+                    }
+                    let tag = VisaText.tag(store.visaAssessment(for: member, in: trip))
+                    LabeledContent("Bu seyahat", value: tag.text)
+                }
+
+                if let iban = member.iban, !iban.isEmpty {
+                    Section {
+                        Text(IBAN.formatted(iban))
+                            .font(.system(.body, design: .monospaced))
+                            .textSelection(.enabled)
+                        Button("IBAN'ı kopyala", systemImage: "doc.on.doc") { UIPasteboard.general.string = iban }
+                    } header: {
+                        Text("IBAN")
+                    }
+                }
+
+                Section {
+                } footer: {
+                    Label("Bu bilgileri yalnızca \(member.name) kendisi değiştirebilir.", systemImage: "lock.fill")
+                }
+            }
+            .navigationTitle(member.name)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    if canChangeRole && member.role != original {
+                        Button("Kaydet") {
+                            onSave(member)
+                            dismiss()
+                        }
+                    } else {
+                        Button("Bitti") { dismiss() }
+                    }
+                }
+            }
+            .onAppear { if original == nil { original = member.role } }
+        }
+    }
+}
+
 /// iCloud paylaşım davetini (Mesajlar, Mail, AirDrop…) gönderen kart.
 struct InviteCard: View {
     @Environment(\.tripTint) private var tint
@@ -375,6 +464,7 @@ struct InviteCard: View {
 /// Ekipten gelen son değişiklikler ("Elif bir harcama ekledi").
 struct ActivityFeed: View {
     let entries: [ActivityEntry]
+    var members: [Member] = []
     @Environment(\.tripText) private var tintText
     @State private var isExpanded = false
 
@@ -390,7 +480,12 @@ struct ActivityFeed: View {
             }
             ForEach(entries.prefix(isExpanded ? 50 : 4)) { entry in
                 HStack(alignment: .top, spacing: 10) {
-                    Circle().fill(Color.ink3).frame(width: 6, height: 6).padding(.top, 7)
+                    // Kim yaptı: ekipteki avatarı; bilinmiyorsa küçük nokta.
+                    if let editor = entry.editor, let member = members.first(where: { $0.name == editor }) {
+                        AvatarView(member: member, size: 24)
+                    } else {
+                        Circle().fill(Color.ink3).frame(width: 6, height: 6).padding(.top, 7).frame(width: 24)
+                    }
                     VStack(alignment: .leading, spacing: 2) {
                         ForEach(entry.lines, id: \.self) { line in
                             Text(line).font(.subheadline).foregroundStyle(Color.ink)

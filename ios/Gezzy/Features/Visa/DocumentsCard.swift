@@ -15,6 +15,8 @@ struct DocumentsCard: View {
     @State private var isPickingFile = false
     @State private var isShowingCamera = false
     @State private var photoItem: PhotosPickerItem?
+    /// Menü içindeki PhotosPicker açılmıyor; seçici menü dışından, bu bayrakla sunulur.
+    @State private var isPickingPhoto = false
     @State private var pending: PendingFile?
     @State private var previewURL: URL?
 
@@ -59,6 +61,7 @@ struct DocumentsCard: View {
                                       suggestedTitle: url.deletingPathExtension().lastPathComponent)
             }
         }
+        .photosPicker(isPresented: $isPickingPhoto, selection: $photoItem, matching: .images)
         .onChange(of: photoItem) { _, item in
             guard let item else { return }
             Task {
@@ -88,9 +91,7 @@ struct DocumentsCard: View {
     @ViewBuilder
     private var addMenu: some View {
         Button("Dosya seç (PDF, görsel)", systemImage: "folder") { isPickingFile = true }
-        PhotosPicker(selection: $photoItem, matching: .images) {
-            Label("Fotoğraflardan", systemImage: "photo")
-        }
+        Button("Fotoğraflardan", systemImage: "photo") { isPickingPhoto = true }
         if UIImagePickerController.isSourceTypeAvailable(.camera) {
             Button("Kamerayla tara", systemImage: "camera") { isShowingCamera = true }
         }
@@ -145,7 +146,7 @@ struct DocumentsCard: View {
 }
 
 /// Yeni belgenin adı, türü, sahibi ve gizliliği.
-private struct DocumentDetailsSheet: View {
+struct DocumentDetailsSheet: View {
     @Environment(TripStore.self) private var store
     @Environment(\.dismiss) private var dismiss
     let trip: Trip

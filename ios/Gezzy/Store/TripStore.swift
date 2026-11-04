@@ -65,6 +65,7 @@ final class TripStore {
     func add(_ trip: Trip) {
         var trip = trip
         trip.updatedAt = .now
+        trip.updatedBy = me.id
         trips.append(trip)
         save()
         CloudSync.shared.tripChanged(trip.id)
@@ -113,6 +114,14 @@ final class TripStore {
     /// "Sadece görür" yetkisindeki kişi seyahati değiştiremez.
     func canEdit(_ trip: Trip) -> Bool { role(in: trip) != .viewer }
 
+    /// Kişinin kendi bilgileri (pasaport, vize süreci, IBAN) yalnızca kendisi tarafından değiştirilir.
+    /// Uygulamaya hiç katılmamış (iCloud'a bağlanmamış, elle eklenmiş) kişileri seyahatin sahibi doldurur.
+    func canEditDetails(of member: Member, in trip: Trip) -> Bool {
+        guard canEdit(trip) else { return false }
+        if member.id == me.id { return true }
+        return member.cloudUserID == nil && role(in: trip) == .owner
+    }
+
     // MARK: Activity
 
     /// Ekipten gelen değişikliklerin kısa geçmişi (seyahat başına en fazla 50; yalnızca bu cihazda).
@@ -120,7 +129,8 @@ final class TripStore {
     private static let activityKey = "gezzy.activity"
 
     func recordActivity(_ summary: TripChanges.Summary, at date: Date = .now) {
-        let entry = ActivityEntry(date: date, title: summary.title, lines: summary.lines, section: summary.link.section)
+        let entry = ActivityEntry(date: date, title: summary.title, lines: summary.lines, section: summary.link.section,
+                                  editor: summary.editor)
         var list = activity[summary.link.tripID] ?? []
         list.insert(entry, at: 0)
         activity[summary.link.tripID] = Array(list.prefix(50))
@@ -143,6 +153,7 @@ final class TripStore {
         guard trips[index] != before else { return }
         trips[index].recordDeletions(since: before)
         trips[index].updatedAt = .now
+        trips[index].updatedBy = me.id
         save()
         CloudSync.shared.tripChanged(id)
     }
@@ -404,4 +415,6 @@ struct ActivityEntry: Codable, Hashable, Identifiable {
     var title: String
     var lines: [String]
     var section: String?
+    /// Değişikliği yapan kişi (eski kayıtlarda yok).
+    var editor: String?
 }

@@ -36,10 +36,12 @@ struct StopFormFields: View {
 struct StopDetailsSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var draft: Stop
+    let center: Coordinate?
     let onSave: (Stop) -> Void
 
-    init(stop: Stop, onSave: @escaping (Stop) -> Void) {
+    init(stop: Stop, center: Coordinate?, onSave: @escaping (Stop) -> Void) {
         _draft = State(initialValue: stop)
+        self.center = center
         self.onSave = onSave
     }
 
@@ -47,6 +49,7 @@ struct StopDetailsSheet: View {
         NavigationStack {
             Form {
                 Section { StopFormFields(stop: $draft) }
+                StopLocationSection(stop: $draft, center: draft.coordinate ?? center)
             }
             .navigationTitle("Durağı düzenle")
             .navigationBarTitleDisplayMode(.inline)

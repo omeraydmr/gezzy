@@ -61,7 +61,7 @@ struct PlacePickerList: View {
             if focused { detent = .large }
         }
         .sheet(isPresented: $isAddingManually) {
-            ManualPlaceForm(initialName: model.query, day: trip.startDate) { stop in
+            ManualPlaceForm(initialName: model.query, day: trip.startDate, center: trip.destination.coordinate) { stop in
                 model.insert(stop, store: store, tripID: trip.id)
             }
         }
