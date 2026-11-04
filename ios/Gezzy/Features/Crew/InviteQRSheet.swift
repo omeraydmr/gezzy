@@ -93,7 +93,7 @@ struct InviteQRSheet: View {
         do {
             url = try await sync.openInviteLink(for: trip.id)
         } catch {
-            errorText = error.localizedDescription
+            errorText = CloudErrorText.message(for: error)
         }
     }
 
@@ -104,7 +104,7 @@ struct InviteQRSheet: View {
             try await sync.closeInviteLink(for: trip.id)
             dismiss()
         } catch {
-            errorText = error.localizedDescription
+            errorText = CloudErrorText.message(for: error)
         }
     }
 }

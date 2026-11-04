@@ -10878,6 +10878,61 @@
           }
         }
       }
+    },
+    "İnternet ya da iCloud şu an yanıt vermiyor; bağlantı gelince yeniden denenir." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The internet or iCloud isn't responding right now; it will retry when you're back online."
+          }
+        }
+      }
+    },
+    "iCloud alanın dolu; yer açınca eşitleme sürer." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your iCloud storage is full; syncing continues once you free up space."
+          }
+        }
+      }
+    },
+    "iCloud eşitlemesi şu an kullanılamıyor. Sorun bizde; bir sonraki güncellemede düzelecek." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud sync isn't available right now. The problem is on our side and will be fixed in the next update."
+          }
+        }
+      }
+    },
+    "iCloud ile eşitlenemedi; biraz sonra yeniden denenir." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't sync with iCloud; it will try again shortly."
+          }
+        }
+      }
+    },
+    "Davet kabul edilemedi: %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't accept the invitation: %@"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

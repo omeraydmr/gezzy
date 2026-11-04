@@ -1,4 +1,5 @@
 import CloudKit
+import os
 import CoreTransferable
 import Foundation
 import Observation
@@ -82,7 +83,7 @@ final class CloudSync {
             pending.formUnion(store.trips.map(\.id))
             schedulePush(after: .milliseconds(200))
         } catch {
-            status = .unavailable(String(localized: "iCloud'a ulaşılamadı: \(error.localizedDescription)"))
+            status = .unavailable(CloudErrorText.message(for: error))
         }
     }
 
@@ -208,7 +209,7 @@ final class CloudSync {
                 schedulePush(after: .milliseconds(300))
             }
         } catch {
-            status = .failed(error.localizedDescription)
+            status = .failed(CloudErrorText.message(for: error))
         }
     }
 
@@ -283,7 +284,7 @@ final class CloudSync {
                 await pull()
                 return
             } catch {
-                status = .failed(error.localizedDescription)
+                status = .failed(CloudErrorText.message(for: error))
                 pending.insert(id)
                 return
             }
@@ -473,7 +474,7 @@ final class CloudSync {
             do {
                 _ = try await database.modifyRecords(saving: [share], deleting: [])
             } catch {
-                status = .failed(String(localized: "Paylaşım yetkileri güncellenemedi: \(error.localizedDescription)"))
+                status = .failed(String(localized: "Paylaşım yetkileri güncellenemedi: \(CloudErrorText.message(for: error))"))
                 return
             }
         }
@@ -494,7 +495,7 @@ final class CloudSync {
             _ = try await container.accept(metadata)
             await pull()
         } catch {
-            status = .failed("Davet kabul edilemedi: \(error.localizedDescription)")
+            status = .failed(String(localized: "Davet kabul edilemedi: \(CloudErrorText.message(for: error))"))
         }
     }
 
@@ -556,6 +557,37 @@ final class CloudSync {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         return try? decoder.decode(Trip.self, from: data)
+    }
+}
+
+/// iCloud hatalarının kullanıcıya gösterilen metni. Ham CloudKit metni ("Error saving record <CKRecordID…>")
+/// kullanıcıya bir şey anlatmıyor; asıl hata günlüğe yazılır.
+enum CloudErrorText {
+    private static let log = Logger(subsystem: "com.omeraydemir.gezzy", category: "CloudSync")
+
+    static func message(for error: Error) -> String {
+        log.error("CloudKit: \(String(describing: error), privacy: .public)")
+        let code = (error as? CKError).map(underlyingCode) ?? nil
+        switch code {
+        case .networkUnavailable?, .networkFailure?, .serviceUnavailable?, .requestRateLimited?, .zoneBusy?:
+            return String(localized: "İnternet ya da iCloud şu an yanıt vermiyor; bağlantı gelince yeniden denenir.")
+        case .notAuthenticated?:
+            return String(localized: "iCloud'a giriş yapılmamış. Ayarlar'dan giriş yapınca seyahatler eşitlenir.")
+        case .quotaExceeded?:
+            return String(localized: "iCloud alanın dolu; yer açınca eşitleme sürer.")
+        case .serverRejectedRequest?, .invalidArguments?, .badContainer?, .missingEntitlement?, .permissionFailure?:
+            // Örn. üretim şemasında kayıt türü yok: kullanıcının yapabileceği bir şey yok.
+            return String(localized: "iCloud eşitlemesi şu an kullanılamıyor. Sorun bizde; bir sonraki güncellemede düzelecek.")
+        default:
+            return String(localized: "iCloud ile eşitlenemedi; biraz sonra yeniden denenir.")
+        }
+    }
+
+    /// Kısmi hatada (birden çok kayıt) ilk kaydın asıl hata kodu.
+    private static func underlyingCode(_ error: CKError) -> CKError.Code {
+        guard error.code == .partialFailure,
+              let first = error.partialErrorsByItemID?.values.first as? CKError else { return error.code }
+        return first.code
     }
 }
 
