@@ -315,18 +315,15 @@ struct PlanSection: View {
                         if targeted { dropTarget = stop.id } else if dropTarget == stop.id { dropTarget = nil }
                     }
                     .onTapGesture { directionsStop = stop }
-                    // Satırın kendisine bağlı: diyalog dokunulan durağın üstünde açılır.
-                    .confirmationDialog(stop.name, isPresented: Binding(
+                    // Satıra bağlı küçük balon: dokunulan durağın üstünde açılır, ekranı kaplamaz.
+                    .popover(isPresented: Binding(
                         get: { directionsStop?.id == stop.id },
                         set: { if !$0 { directionsStop = nil } }
-                    ), titleVisibility: .visible) {
-                        directionsActions(for: stop)
-                    } message: {
-                        if let address = stop.address {
-                            Text(address)
-                        } else if stop.coordinate == nil {
-                            Text("Bu durağın konumu yok; yol tarifi için önce konum ekle.")
+                    ), attachmentAnchor: .rect(.bounds), arrowEdge: .bottom) {
+                        StopActionsPopover(stop: stop, canEdit: store.canEdit(trip)) { action in
+                            run(action, for: stop)
                         }
+                        .presentationCompactAdaptation(.popover)
                     }
                     .accessibilityAction(named: Text("Yol tarifi")) { directionsStop = stop }
                     .accessibilityAction(named: Text(stop.isDone ? "Gidilmedi olarak işaretle" : "Gidildi olarak işaretle")) {
@@ -559,18 +556,17 @@ struct PlanSection: View {
         }
     }
 
-    @ViewBuilder
-    private func directionsActions(for stop: Stop) -> some View {
-        if stop.coordinate != nil {
-            Button("Apple Haritalar ile yol tarifi") { StopDirections.openAppleMaps(stop) }
-            if let url = StopDirections.googleMapsURL(stop) {
-                Button("Google Haritalar ile yol tarifi") { openURL(url) }
+    /// Balondaki seçim: önce balon kapanır, sayfa açılacaksa kapanış animasyonu bitince açılır (iki sunum çakışmasın).
+    private func run(_ action: StopActionsPopover.Action, for stop: Stop) {
+        directionsStop = nil
+        switch action {
+        case .appleMaps: StopDirections.openAppleMaps(stop)
+        case .googleMaps: if let url = StopDirections.googleMapsURL(stop) { openURL(url) }
+        case .edit:
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(350))
+                editingStop = stop
             }
-        } else if store.canEdit(trip) {
-            Button("Konum ekle") { editingStop = stop }
-        }
-        if store.canEdit(trip) {
-            Button("Düzenle") { editingStop = stop }
         }
     }
 
@@ -1269,5 +1265,57 @@ struct ReorderableStops: View {
                 }
                 onCommit(order)
             }
+    }
+}
+
+/// Durağa dokununca açılan küçük balon: yol tarifi ve düzenleme.
+struct StopActionsPopover: View {
+    enum Action { case appleMaps, googleMaps, edit }
+
+    let stop: Stop
+    let canEdit: Bool
+    let onAction: (Action) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(stop.name).font(.tBodyStrong).foregroundStyle(Color.ink).lineLimit(2)
+                if let address = stop.address {
+                    Text(address).font(.caption).foregroundStyle(Color.ink2).lineLimit(2)
+                } else if stop.coordinate == nil {
+                    Text("Konum yok; yol tarifi için önce konum ekle.").font(.caption).foregroundStyle(Color.ink2)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+
+            Divider()
+            if stop.coordinate != nil {
+                row(String(localized: "Apple Haritalar ile yol tarifi"), symbol: "map", action: .appleMaps)
+                Divider()
+                row(String(localized: "Google Haritalar ile yol tarifi"), symbol: "arrow.triangle.turn.up.right.diamond", action: .googleMaps)
+                if canEdit {
+                    Divider()
+                    row(String(localized: "Düzenle"), symbol: "pencil", action: .edit)
+                }
+            } else if canEdit {
+                row(String(localized: "Konum ekle"), symbol: "mappin.and.ellipse", action: .edit)
+            }
+        }
+        .frame(width: 290)
+    }
+
+    private func row(_ title: String, symbol: String, action: Action) -> some View {
+        Button {
+            onAction(action)
+        } label: {
+            Label(title, systemImage: symbol)
+                .font(.subheadline)
+                .foregroundStyle(Color.ink)
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                .padding(.horizontal, 16)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 }

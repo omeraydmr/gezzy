@@ -6,6 +6,7 @@ import GezzyKit
 struct ManualPlaceForm: View {
     @Environment(\.dismiss) private var dismiss
     @State private var draft: Stop
+    @State private var isPickingOnMap = false
     let onAdd: (Stop) -> Void
     let center: Coordinate?
 
@@ -20,8 +21,9 @@ struct ManualPlaceForm: View {
         NavigationStack {
             Form {
                 Section { StopFormFields(stop: $draft, showsTime: false) }
-                StopLocationSection(stop: $draft, center: center, isRequired: true)
+                StopLocationSection(stop: $draft, center: center, isRequired: true, isPickingOnMap: $isPickingOnMap)
             }
+            .stopMapPicker(isPresented: $isPickingOnMap, stop: $draft, center: center)
             .navigationTitle("Elle ekle")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

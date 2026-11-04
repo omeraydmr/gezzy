@@ -36,6 +36,7 @@ struct StopFormFields: View {
 struct StopDetailsSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var draft: Stop
+    @State private var isPickingOnMap = false
     let center: Coordinate?
     let onSave: (Stop) -> Void
 
@@ -49,8 +50,9 @@ struct StopDetailsSheet: View {
         NavigationStack {
             Form {
                 Section { StopFormFields(stop: $draft) }
-                StopLocationSection(stop: $draft, center: draft.coordinate ?? center)
+                StopLocationSection(stop: $draft, center: draft.coordinate ?? center, isPickingOnMap: $isPickingOnMap)
             }
+            .stopMapPicker(isPresented: $isPickingOnMap, stop: $draft, center: center)
             .navigationTitle("Durağı düzenle")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
