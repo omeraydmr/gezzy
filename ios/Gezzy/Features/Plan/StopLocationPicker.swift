@@ -11,9 +11,11 @@ struct StopLocationSection: View {
     let center: Coordinate?
     var isRequired = false
 
+    /// Harita seçici formun dışından (üst gezinme yığınından) sunulur: Form satırına bağlı sheet açılır açılmaz kapanıyordu.
+    @Binding var isPickingOnMap: Bool
+
     @State private var completer = AddressCompleter()
     @State private var query = ""
-    @State private var isPickingOnMap = false
     @State private var isResolving = false
 
     var body: some View {
@@ -72,12 +74,6 @@ struct StopLocationSection: View {
                      : String(localized: "Konum yoksa durak haritada görünmez ve yol tarifi alınamaz."))
             }
         }
-        .sheet(isPresented: $isPickingOnMap) {
-            MapPinPicker(start: stop.coordinate ?? center) { coordinate, address in
-                stop.coordinate = coordinate
-                stop.address = address
-            }
-        }
     }
 
     private func choose(_ completion: MKLocalSearchCompletion) async {
@@ -90,6 +86,21 @@ struct StopLocationSection: View {
         stop.address = [completion.title, completion.subtitle].filter { !$0.isEmpty }.joined(separator: ", ")
         if stop.name.trimmingCharacters(in: .whitespaces).isEmpty { stop.name = completion.title }
         query = ""
+    }
+}
+
+extension View {
+    /// Durak konumu için harita seçiciyi formun bulunduğu ekrandan sunar.
+    func stopMapPicker(isPresented: Binding<Bool>, stop: Binding<Stop>, center: Coordinate?) -> some View {
+        sheet(isPresented: isPresented) {
+            MapPinPicker(start: stop.wrappedValue.coordinate ?? center) { coordinate, address in
+                stop.wrappedValue.coordinate = coordinate
+                stop.wrappedValue.address = address
+                if stop.wrappedValue.name.trimmingCharacters(in: .whitespaces).isEmpty, let address {
+                    stop.wrappedValue.name = address.components(separatedBy: ", ").first ?? address
+                }
+            }
+        }
     }
 }
 
